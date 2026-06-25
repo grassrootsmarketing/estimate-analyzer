@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Estimate Analyzer — LA Contractor Pricing</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#171e26; --panel2:#1d2731; --line:#2a3744;
+    --ink:#e8edf2; --muted:#93a4b3; --accent:#ff8c42; --accent2:#ffb072;
+    --good:#3ecf8e; --warn:#f5c451; --bad:#f06548;
+    --chip:#22303c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{padding:22px 24px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#19222c,#11171e)}
+  header h1{margin:0;font-size:20px;letter-spacing:.2px}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 400px;gap:22px}
+  @media(max-width:980px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px}
+  .card h2{margin:0 0 4px;font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent2)}
+  .card .sub{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+  label{display:block;font-size:12px;color:var(--muted);margin:0 0 4px}
+  input,select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:9px 10px;font-size:14px;outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  .row{display:grid;gap:10px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  table{width:100%;border-collapse:collapse;margin-top:4px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);text-align:left;padding:6px 6px;font-weight:600}
+  td{padding:4px 4px;border-top:1px solid var(--line)}
+  td input,td select{padding:7px 8px}
+  td.num input{text-align:right}
+  .lt-cost{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--ink);font-size:14px;padding-right:8px}
+  .del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
+  .del:hover{color:var(--bad)}
+  .btn{background:var(--accent);color:#1a1108;border:none;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:13.5px}
+  .btn.sec{background:var(--chip);color:var(--ink);font-weight:600}
+  .btn:hover{filter:brightness(1.06)}
+  .btnrow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .totline{display:flex;justify-content:space-between;padding:7px 0;border-top:1px dashed var(--line);font-variant-numeric:tabular-nums}
+  .totline.big{font-size:17px;font-weight:700;border-top:1px solid var(--line);margin-top:4px;padding-top:12px}
+  .muted{color:var(--muted)}
+  .pricebox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .pricebox .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .pricebox .val{font-size:30px;font-weight:800;margin:2px 0;font-variant-numeric:tabular-nums}
+  .pricebox.rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .pricebox.rec .val{color:var(--accent2)}
+  .scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0 4px}
+  .sc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 8px;text-align:center}
+  .sc.active{border-color:var(--accent);background:#22191040}
+  .sc .m{font-size:11px;color:var(--muted)}
+  .sc .p{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+  .flag{border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13.5px;border:1px solid}
+  .flag.good{background:#143026;border-color:#1f5a40;color:#9ff0c8}
+  .flag.warn{background:#352c12;border-color:#6b561a;color:#ffe39a}
+  .flag.bad{background:#3a1c17;border-color:#7a342a;color:#ffb3a6}
+  .flag b{color:#fff}
+  .slider{width:100%}
+  .marg-head{display:flex;justify-content:space-between;align-items:baseline}
+  .marg-head .big{font-size:22px;font-weight:800;color:var(--accent2)}
+  details{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  summary{cursor:pointer;color:var(--accent2);font-size:13px}
+  details p,details li{color:var(--muted);font-size:13px}
+  .bench{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .pill{display:inline-block;background:var(--chip);border-radius:20px;padding:2px 9px;font-size:11.5px;margin:2px 4px 0 0;color:var(--muted)}
+  .foot{max-width:1180px;margin:0 auto;padding:0 24px 36px;color:var(--muted);font-size:12px}
+  a{color:var(--accent2)}
+  .addsel{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .addsel select{width:auto;min-width:160px}
+  .upload-card{border-color:var(--accent);background:linear-gradient(180deg,#1c2530,#171e26)}
+  .drop{border:1.5px dashed #4a5b6b;border-radius:12px;padding:22px 14px;text-align:center;color:var(--muted);
+    cursor:pointer;transition:.15s;font-size:13.5px}
+  .drop:hover,.drop.over{border-color:var(--accent);background:#21303c;color:var(--ink)}
+  .drop b{color:var(--accent2)}
+  .link{color:var(--accent2);text-decoration:underline;cursor:pointer}
+  .modebar{grid-column:1/-1;display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;margin-bottom:2px}
+  .modebtn{flex:1;background:transparent;border:none;color:var(--muted);padding:11px 10px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
+  .modebtn.active{background:var(--accent);color:#1a1108}
+  .modebtn:hover:not(.active){background:var(--chip);color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧰 Estimate Analyzer <span class="muted" style="font-weight:400;font-size:14px">· Los Angeles · 2026</span></h1>
+  <p>Price every job to a target gross margin with room to negotiate — without slipping below break-even or quoting yourself out of the deal.</p>
+</header>
+
+<div class="wrap">
+  <div class="modebar">
+    <button class="modebtn active" id="modeAnalyze">📋 Analyze a priced estimate</button>
+    <button class="modebtn" id="modeCost">🧮 Build price from my costs</button>
+  </div>
+  <!-- LEFT: INPUTS -->
+  <div>
+    <div class="card upload-card">
+      <h2>📄 Import from estimate PDF</h2>
+      <p class="sub">Upload a quote or estimate PDF — it pulls out the line-item costs and the total, then runs the margin analysis automatically. Always eyeball the imported lines before you trust the number.</p>
+      <div id="drop" class="drop">
+        <b>Drag a PDF here</b>, or <span class="link" id="browseLink">browse your files</span>
+        <input id="pdfInput" type="file" accept="application/pdf" hidden>
+      </div>
+      <div id="importMsg" class="bench"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>Job details</h2>
+      <p class="sub">Used for the over/under-pricing sanity check against LA market rates.</p>
+      <div class="row g2">
+        <div><label>Job name</label><input id="jobName" placeholder="e.g. Marisol Ave unit turnover" /></div>
+        <div><label>Client type</label>
+          <select id="clientType">
+            <option>Individual homeowner</option>
+            <option>Apartment / property management</option>
+            <option>Small commercial</option>
+          </select>
+        </div>
+      </div>
+      <div class="row g3" style="margin-top:10px">
+        <div><label>Benchmark category</label>
+          <select id="benchCat"></select>
+        </div>
+        <div><label id="qtyLbl">Project size</label><input id="benchQty" type="number" min="0" step="any" placeholder="e.g. 1200" /></div>
+        <div><label>Market range (auto)</label><input id="benchRange" disabled /></div>
+      </div>
+      <div class="bench" id="benchNote"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2 id="costsTitle">Estimate line items (priced)</h2>
+      <p class="sub" id="costsSub">These are the prices from the estimate — margin already baked in. (Switch to "Build price from my costs" if you're entering raw costs.)</p>
+      <table>
+        <thead><tr>
+          <th style="width:30%">Item</th><th style="width:30%">Description</th>
+          <th style="width:13%" class="num">Qty</th><th style="width:15%" class="num">Unit cost</th>
+          <th style="width:12%" class="num">Cost</th><th></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="addsel">
+        <button class="btn sec" onclick="addRow()">+ Add line</button>
+        <select id="quickAdd" onchange="quickAdd()">
+          <option value="">Quick add…</option>
+          <option value="Subcontractor">Subcontractor labor</option>
+          <option value="Materials">Materials</option>
+          <option value="Equipment / rental">Equipment / rental</option>
+          <option value="Permits / fees">Permits / fees</option>
+          <option value="Dump / disposal">Dump / disposal</option>
+          <option value="Owner labor">Owner labor (your hours)</option>
+        </select>
+      </div>
+
+      <div class="row g3" style="margin-top:16px">
+        <div><label>Contingency % (wiggle room)</label><input id="contingency" type="number" value="10" min="0" step="0.5" /></div>
+        <div><label>Overhead % of price</label><input id="overhead" type="number" value="12" min="0" step="0.5" /></div>
+        <div><label>Sales tax on materials %</label><input id="tax" type="number" value="9.5" min="0" step="0.1" /></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div>
+    <div class="card">
+      <h2 id="marginTitle">Baked-in margin (assumed)</h2>
+      <div class="marg-head">
+        <span class="muted" id="margLbl">Margin already in the estimate</span>
+        <span class="big" id="margVal">45%</span>
+      </div>
+      <input class="slider" id="margin" type="range" min="20" max="65" value="45" step="1" />
+      <div class="scenarios">
+        <div class="sc" data-m="40"><div class="m">40% floor</div><div class="p" id="p40">—</div></div>
+        <div class="sc active" data-m="45"><div class="m">45% target</div><div class="p" id="p45">—</div></div>
+        <div class="sc" data-m="50"><div class="m">50% stretch</div><div class="p" id="p50">—</div></div>
+      </div>
+
+      <div class="pricebox rec" style="margin-top:12px">
+        <div class="lbl" id="recLbl">Bid price (total)</div>
+        <div class="val" id="recPrice">$0</div>
+        <div class="muted" id="recSub" style="font-size:12.5px"></div>
+      </div>
+
+      <div class="row g2">
+        <div class="pricebox"><div class="lbl" id="beLbl">Implied cost</div><div class="val" id="bePrice" style="font-size:22px">$0</div><div class="muted" id="beSub" style="font-size:11.5px">what's left for cost + overhead</div></div>
+        <div class="pricebox"><div class="lbl">Net profit</div><div class="val" id="netProfit" style="font-size:22px">$0</div><div class="muted" style="font-size:11.5px">after overhead</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>Test a quote</h2>
+      <p class="sub">Enter a price you're considering to see the margin and any red flags.</p>
+      <label>Proposed price ($)</label>
+      <input id="proposed" type="number" min="0" step="any" placeholder="e.g. 9500" />
+      <div id="quoteFlags"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>Cost summary</h2>
+      <div class="totline"><span class="muted">Direct cost</span><span id="sDirect">$0</span></div>
+      <div class="totline"><span class="muted">+ Material tax</span><span id="sTax">$0</span></div>
+      <div class="totline"><span class="muted">+ Contingency</span><span id="sCont">$0</span></div>
+      <div class="totline big"><span>True job cost</span><span id="sTrue">$0</span></div>
+      <div class="totline"><span class="muted">Markup at target</span><span id="sMarkup">—</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  <details>
+    <summary>How the math works &amp; why these guardrails</summary>
+    <p><b>Gross margin</b> = profit as a % of the price you charge. Price = True&nbsp;Cost ÷ (1 − margin). A 45% margin means cost is 55% of price.<br>
+    <b>Markup</b> is the % added on top of cost — a 45% margin equals an ~82% markup. The tool shows both so you don't confuse them.<br>
+    <b>True job cost</b> = subs + materials (+ tax) + equipment + permits + disposal + your labor, then a contingency buffer for the unknowns.<br>
+    <b>Break-even</b> covers your true cost <i>plus</i> allocated overhead — quote below it and the job loses money even if it "feels" profitable.<br>
+    <b>Net profit</b> is what's left after overhead. A 40–50% gross margin on subcontracted work typically nets ~28–38% after a 12% overhead load — that's your real wiggle room.</p>
+    <p class="muted">Reality check on the target: most LA general contractors mark up subcontracted/pass-through work 20–35% (≈17–26% margin). A 40–50% gross-margin target is healthy for self-performed trade work (painting, drywall, handyman) and gives negotiating room, but on large pass-through GC jobs the over-pricing flag will warn you when the market won't bear it. Don't lose the bid chasing the number.</p>
+    <p class="muted">LA 2026 benchmarks built in — painting $3–$6.50/sf · drywall labor $1–$3/sf · flooring $2.50–$18/sf installed (by material) · dry-room remodel ~$100+/sf · bath remodel $200–$600/sf · kitchen remodel $135–$450+/sf · MEP service labor $95–$200/hr. Always your judgment over the calculator.</p>
+  </details>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+const fmt = n => (n<0?"-$":"$") + Math.abs(Math.round(n)).toLocaleString();
+const fmt2 = n => "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+
+// LA 2026 benchmark ranges. unit: 'sf' or 'hr'. low/high are $ per unit of FINISHED price.
+const BENCH = {
+  "— none / skip check —": null,
+  "Interior painting (per sf)":           {unit:"sf", low:3.00, high:6.50, note:"2-coat standard prep; older homes +$0.50–0.75/sf."},
+  "Drywall hang & finish (per sf)":       {unit:"sf", low:2.00, high:5.00, note:"Labor $1–3/sf; +5–10% for structural/seismic."},
+  "Flooring — vinyl/laminate (per sf)":   {unit:"sf", low:4.00, high:8.00, note:"Installed incl. material."},
+  "Flooring — tile (per sf)":             {unit:"sf", low:10.00, high:15.00, note:"Porcelain/ceramic installed."},
+  "Flooring — hardwood (per sf)":         {unit:"sf", low:8.00, high:18.00, note:"Engineered $8–15, solid $12–18 installed."},
+  "Remodel — dry room (per sf)":          {unit:"sf", low:100, high:250, note:"Bedrooms/offices, no plumbing."},
+  "Remodel — bathroom (per sf)":          {unit:"sf", low:200, high:600, note:"Wet room; finish level drives range."},
+  "Remodel — kitchen (per sf)":           {unit:"sf", low:135, high:450, note:"Budget $135/sf → mid $400+/sf."},
+  "MEP service labor (per hour)":         {unit:"hr", low:95, high:200, note:"What customers pay; sub cost ~$60–110/hr."},
+};
+
+let rows = [];
+const $ = id => document.getElementById(id);
+
+function defaultRows(){
+  rows = [
+    {item:"Subcontractor", desc:"", qty:1, unit:0},
+    {item:"Materials", desc:"", qty:1, unit:0},
+    {item:"Permits / fees", desc:"", qty:1, unit:0},
+  ];
+}
+function isTaxable(it){ return /material/i.test(it); }
+
+function render(){
+  const tb = $("rows"); tb.innerHTML = "";
+  rows.forEach((r,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input value="'+r.item.replace(/"/g,'&quot;')+'" oninput="upd('+i+",'item',this.value)\"></td>"+
+      '<td><input value="'+r.desc.replace(/"/g,'&quot;')+'" placeholder="optional" oninput="upd('+i+",'desc',this.value)\"></td>"+
+      '<td class="num"><input type="number" step="any" value="'+r.qty+'" oninput="upd('+i+",'qty',this.value)\"></td>"+
+      '<td class="num"><input type="number" step="any" value="'+r.unit+'" oninput="upd('+i+",'unit',this.value)\"></td>"+
+      '<td class="lt-cost">'+fmt(r.qty*r.unit)+'</td>'+
+      '<td><button class="del" onclick="delRow('+i+')" title="remove">×</button></td>';
+    tb.appendChild(tr);
+  });
+  calc();
+}
+function upd(i,k,v){
+  if(k==='qty'||k==='unit'){ rows[i][k]=parseFloat(v)||0; render(); }
+  else { rows[i][k]=v; calc(); }
+}
+function addRow(){ rows.push({item:"",desc:"",qty:1,unit:0}); render(); }
+function quickAdd(){ const v=$("quickAdd").value; if(!v) return; rows.push({item:v,desc:"",qty:1,unit:0}); $("quickAdd").value=""; render(); }
+function delRow(i){ rows.splice(i,1); render(); }
+
+let MODE="analyze"; // "analyze" = numbers are prices (margin baked in) · "cost" = numbers are costs, build a price
+function roundUp(v,step){ return isFinite(v)? Math.ceil(v/step)*step : v; }
+function priceAtCost(tc,mm){ return mm>=1?Infinity:tc/(1-mm); }
+function setActive(m){ document.querySelectorAll(".sc").forEach(el=>el.classList.toggle("active", Math.abs(+el.dataset.m - m*100)<0.5)); }
+
+function setMode(mode){
+  MODE=mode;
+  $("modeAnalyze").classList.toggle("active", mode==="analyze");
+  $("modeCost").classList.toggle("active", mode==="cost");
+  if(mode==="cost"){
+    $("costsTitle").textContent="Job costs";
+    $("costsSub").textContent="Enter what the job actually costs you. Subs are billed as flat cost; markup is added on top.";
+    $("marginTitle").textContent="Target margin";
+    $("margLbl").textContent="Gross margin on price";
+    $("recLbl").textContent="Recommended price (rounded up)";
+    $("beLbl").textContent="Break-even (floor)";
+    $("beSub").textContent="below this you lose money";
+    $("margin").value=40;
+  } else {
+    $("costsTitle").textContent="Estimate line items (priced)";
+    $("costsSub").textContent="These are the prices from the estimate — margin already baked in. Switch to \"Build price from my costs\" if you're entering raw costs.";
+    $("marginTitle").textContent="Baked-in margin (assumed)";
+    $("margLbl").textContent="Margin already in the estimate";
+    $("recLbl").textContent="Bid price (total)";
+    $("beLbl").textContent="Implied cost";
+    $("beSub").textContent="cost the bid leaves room for";
+    $("margin").value=45;
+  }
+  calc();
+}
+
+function calc(){
+  let direct=0, taxable=0;
+  rows.forEach(r=>{ const c=r.qty*r.unit; direct+=c; if(isTaxable(r.item)) taxable+=c; });
+  const taxRate=(parseFloat($("tax").value)||0)/100;
+  const taxAmt=taxable*taxRate;
+  const cont=(parseFloat($("contingency").value)||0)/100;
+  const oh=(parseFloat($("overhead").value)||0)/100;
+  const m=(parseFloat($("margin").value)||0)/100;
+  $("margVal").textContent=Math.round(m*100)+"%";
+  setActive(m);
+
+  if(MODE==="cost"){
+    const baseCost=direct+taxAmt;
+    const contAmt=baseCost*cont;
+    const trueCost=baseCost+contAmt;
+    const rec=roundUp(priceAtCost(trueCost,m),50);     // round the bid UP to a clean $50
+    const grossProfit=rec-trueCost;
+    const net=grossProfit-rec*oh;
+    const markup=trueCost>0?(rec/trueCost-1)*100:0;
+    const realM=rec>0?grossProfit/rec*100:0;
+    const be=oh<1?trueCost/(1-oh):Infinity;
+    $("p40").textContent=fmt(roundUp(priceAtCost(trueCost,.40),50));
+    $("p45").textContent=fmt(roundUp(priceAtCost(trueCost,.45),50));
+    $("p50").textContent=fmt(roundUp(priceAtCost(trueCost,.50),50));
+    $("recPrice").textContent=fmt(rec);
+    $("recSub").textContent="Rounded up · gross profit "+fmt(grossProfit)+" · "+realM.toFixed(0)+"% margin · "+markup.toFixed(0)+"% markup";
+    $("bePrice").textContent=fmt(be);
+    $("netProfit").textContent=fmt(net);
+    $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
+    $("sDirect").textContent=fmt(direct);
+    $("sTax").textContent=fmt(taxAmt);
+    $("sCont").textContent=fmt(contAmt);
+    $("sTrue").textContent=fmt(trueCost);
+    $("sMarkup").textContent=markup>0?markup.toFixed(0)+"% on cost":"—";
+    benchmarkCheck(rec);
+    quoteCheck(trueCost, be, oh, m);
+  } else {
+    const price=direct;                          // line items are already PRICES
+    const impliedCost=price*(1-m);
+    const grossProfit=price*m;
+    const net=grossProfit-price*oh;
+    $("p40").textContent=fmt(price*0.40);
+    $("p45").textContent=fmt(price*0.45);
+    $("p50").textContent=fmt(price*0.50);
+    $("recPrice").textContent=fmt(price);
+    $("recSub").textContent="Bid total · assuming "+(m*100).toFixed(0)+"% margin baked in → profit "+fmt(grossProfit);
+    $("bePrice").textContent=fmt(impliedCost);
+    $("netProfit").textContent=fmt(net);
+    $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
+    $("sDirect").textContent=fmt(price);
+    $("sTax").textContent="—";
+    $("sCont").textContent="—";
+    $("sTrue").textContent=fmt(impliedCost);
+    $("sMarkup").textContent=(m*100).toFixed(0)+"% margin assumed";
+    benchmarkCheck(price);
+    $("quoteFlags").innerHTML="";
+  }
+}
+
+function currentBench(){ return BENCH[$("benchCat").value]; }
+
+function benchmarkCheck(rec){
+  const b = currentBench();
+  const noteEl = $("benchNote");
+  const qty = parseFloat($("benchQty").value)||0;
+  if(!b){ $("benchRange").value=""; noteEl.textContent=""; return; }
+  $("benchRange").value = "$"+b.low+"–$"+b.high+"/"+b.unit;
+  if(qty<=0){ noteEl.textContent = b.note+"  Enter project size to compare."; return; }
+  const implied = rec/qty;
+  noteEl.innerHTML = "Your recommended price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs LA market <b>$"+b.low+"–$"+b.high+"/"+b.unit+"</b>. <span class='muted'>"+b.note+"</span>";
+}
+
+function quoteCheck(trueCost, be, oh, targetM){
+  const box=$("quoteFlags"); box.innerHTML="";
+  const flags=[];
+  const b=currentBench(); const qty=parseFloat($("benchQty").value)||0;
+  if(b && qty>0){
+    const rec = (targetM<1)? trueCost/(1-targetM):Infinity;
+    const implied=rec/qty;
+    if(implied > b.high*1.12) flags.push(["warn","At your target margin the price is <b>"+fmt2(implied)+"/"+b.unit+"</b> — above the LA market top of <b>$"+b.high+"/"+b.unit+"</b>. You may be <b>over-priced</b> for this client; expect pushback unless the scope justifies it."]);
+    else if(implied < b.low*0.9) flags.push(["warn","At your target margin the price is <b>"+fmt2(implied)+"/"+b.unit+"</b> — below the LA market floor of <b>$"+b.low+"/"+b.unit+"</b>. You may be <b>under-priced</b>; check you captured all costs."]);
+  }
+  const p = parseFloat($("proposed").value);
+  if(!isNaN(p) && p>0){
+    const m = (p-trueCost)/p*100;
+    const net = (p-trueCost) - p*oh;
+    if(p < trueCost) flags.push(["bad","<b>Below cost.</b> This quote doesn't even cover your true job cost of <b>"+fmt(trueCost)+"</b>. You'd lose <b>"+fmt(trueCost-p)+"</b> before overhead."]);
+    else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+m.toFixed(0)+"% — covers direct cost but not overhead. Net loss of <b>"+fmt(-net)+"</b>."]);
+    else if(m < 40) flags.push(["warn","Margin <b>"+m.toFixed(0)+"%</b> — profitable (net "+fmt(net)+") but under your 40% floor. Little wiggle room left for change orders or surprises."]);
+    else if(m <= 50) flags.push(["good","Margin <b>"+m.toFixed(0)+"%</b> — in your 40–50% target band. Net profit <b>"+fmt(net)+"</b> after overhead. 👍"]);
+    else flags.push(["good","Margin <b>"+m.toFixed(0)+"%</b> — above target (net "+fmt(net)+"). Great if you win it; watch you're not leaving the bid on the table."]);
+  }
+  flags.forEach(f=>{ const d=document.createElement("div"); d.className="flag "+f[0]; d.innerHTML=f[1]; box.appendChild(d); });
+}
+
+Object.keys(BENCH).forEach(k=>{ const o=document.createElement("option"); o.textContent=k; $("benchCat").appendChild(o); });
+function syncQtyLabel(){ const b=currentBench(); $("qtyLbl").textContent = b? (b.unit==='hr'?"Labor hours":"Square feet") : "Project size"; }
+$("benchCat").addEventListener("change",function(){ syncQtyLabel(); calc(); });
+["margin","contingency","overhead","tax","benchQty","proposed"].forEach(id=>$(id).addEventListener("input",calc));
+
+$("modeAnalyze").addEventListener("click",function(){ setMode("analyze"); });
+$("modeCost").addEventListener("click",function(){ setMode("cost"); });
+defaultRows(); render(); syncQtyLabel(); setMode("analyze");
+
+/* ---------------- PDF IMPORT ---------------- */
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+const AMT_RE = /\$\s?\d[\d,]*(?:\.\d{2})?|\b\d[\d,]*\.\d{2}\b/g;
+function parseAmount(s){ const n=parseFloat(String(s).replace(/[^0-9.]/g,"")); return isFinite(n)?n:0; }
+function categorize(desc){
+  const d=desc.toLowerCase();
+  if(/permit|inspection|\bfees?\b|plan check/.test(d)) return "Permits / fees";
+  if(/dump|disposal|haul|debris|dumpster|trash/.test(d)) return "Dump / disposal";
+  if(/rental|scaffold|\blift\b|equipment|machine/.test(d)) return "Equipment / rental";
+  if(/material|supplies|lumber|fixture|cabinet|hardware|sheet|grout|primer|stock/.test(d)) return "Materials";
+  if(/labor|install|sub|contractor|crew|demo|framing|finish|service|hour|hrs/.test(d)) return "Subcontractor";
+  return "Materials"; // default: treat as taxable material (conservative on cost)
+}
+// Some subset fonts (e.g. QuickBooks PDFs) shift glyph codes into the control range.
+// Digits/punctuation land in -; adding 29 recovers them without touching real ASCII.
+const SHIFT=/[-]/g;
+function norm(s){ return s.replace(/[-]/g,function(c){return String.fromCharCode(c.charCodeAt(0)+29);}); }
+// Authoritative norm (ASCII-only): shift glyph codes 15-28 up by 29 to recover digits/punctuation.
+function norm(s){ var o=""; for(var i=0;i<s.length;i++){ var k=s.charCodeAt(i); o+=String.fromCharCode(k>=15&&k<=28?k+29:k); } return o; }
+async function extractLines(file){
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const lines=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const tc=await (await pdf.getPage(p)).getTextContent();
+    const byY={};
+    tc.items.forEach(it=>{ if(!it.str)return; const y=Math.round(it.transform[5]);
+      (byY[y]=byY[y]||[]).push(it); });
+    Object.keys(byY).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const its=byY[y].sort((a,b)=>a.transform[4]-b.transform[4]);
+      // join glyph-by-glyph: concatenate abutting glyphs, add a space only on a real gap.
+      // This rebuilds numbers like "15,700.00" that pdf.js emits as separate positioned glyphs.
+      let out="",pe=null,pcw=4;
+      its.forEach(it=>{ const x=it.transform[4], w=it.width||0, cw=w/Math.max(it.str.length,1)||pcw;
+        if(pe!==null && (x-pe)>pcw*0.5) out+=" ";
+        out+=it.str; pe=x+w; pcw=cw||pcw; });
+      out=norm(out).replace(/\s+/g," ").trim();
+      if(out) lines.push(out);
+    });
+  }
+  return lines;
+}
+function setMsg(html,cls){ const e=$("importMsg"); e.innerHTML=html; e.style.color = cls==="bad"?"#ffb3a6":(cls==="good"?"#9ff0c8":"var(--muted)"); }
+async function handleFile(file){
+  if(!file) return;
+  if(file.type!=="application/pdf" && !/\.pdf$/i.test(file.name)){ setMsg("That's not a PDF. Upload a .pdf estimate.","bad"); return; }
+  if(!window.pdfjsLib){ setMsg("PDF reader didn't load (check your connection) — you can still enter lines manually.","bad"); return; }
+  setMsg("Reading <b>"+file.name+"</b>…");
+  try{
+    const lines=await extractLines(file);
+    const items=[]; const totals=[]; let prev="";
+    const TOTLBL=/^(grand\s*total|total\s*due|amount\s*due|balance\s*due|project\s*total|total)\s*:?\s*$/i;
+    lines.forEach(raw=>{
+      const line=raw.replace(/\d[\d,]*(?:\.\d+)?\s*%/g," ").replace(/\s+/g," ").trim(); // strip percentages (rates, tax %)
+      const m=line.match(AMT_RE); if(!m){ prev=line; return; }
+      const amt=parseAmount(m[m.length-1]); if(amt<=0){ prev=line; return; }
+      const prevLbl=TOTLBL.test(prev); const prevStrong=/grand|project|contract/i.test(prev); prev=line; // total label may sit on its own line above the amount
+      const isSub=/sub[\s-]*total/i.test(line);
+      const isTotal=/(grand\s*total|total\s*due|amount\s*due|balance\s*due|project\s*total|contract\s*(sum|total|price)|\btotal\b)/i.test(line);
+      const isTax=/\bsales?\s*tax\b|\buse\s*tax\b|\btax\b/i.test(line);
+      const isAdj=/discount|credit|\bdeposit\b|\bpaid\b|\bless\b|down\s*payment|retainer/i.test(line);
+      const isMeta=/\binvoice\b|\binv\.?\s*#|\bquote\s*#|\bestimate\s*#|\bdated?\b|\bp\.?\s*o\.?\s*#|\baccount\s*#|\bphone\b|\btel\b|\bfax\b|valid\s*(for|through|until)/i.test(line);
+      const isRange=/\$\s?\d[\d,]*(?:\.\d{2})?\s*(?:-|–|—|to)\s*\$?\s?\d[\d,]*(?:\.\d{2})?/i.test(line); // "$3,000 - $5,000"
+      if(isSub) return;                                   // subtotals are not line items
+      if(isTotal||prevLbl){ totals.push({amt, strong:/grand|due|project|contract/i.test(line)||prevStrong}); return; }
+      if(isTax||isAdj||isMeta||isRange) return;           // skip tax, discounts, metadata, price ranges
+      let desc=line.replace(AMT_RE,"")
+        .replace(/\b(qty|quantity|each|ea|hrs?|hours?|units?|@|per)\b/gi," ")
+        .replace(/[\s.\-–:;|=#*]+$/,"").replace(/^[\s.\-–:;|=#*]+/,"")
+        .replace(/\s+/g," ").trim();
+      if(desc.length<2) desc="Line item";
+      items.push({item:categorize(line), desc:desc.slice(0,60), qty:1, unit:amt});
+    });
+    if(!items.length){ setMsg("Couldn't read line items from this PDF — it may be a scanned image (no text layer). Enter the costs manually below.","bad"); return; }
+    items.splice(0,items.length, ...items.filter((it,i,a)=> !(i>0 && it.unit===a[i-1].unit && it.desc==="Line item"))); // drop footer repeats of the prior amount
+    rows=items; render();
+    let total=0; const strong=totals.find(t=>t.strong);
+    if(strong) total=strong.amt; else if(totals.length) total=Math.max.apply(null,totals.map(t=>t.amt));
+    var loaded=false;
+    if(items.length===1){ $("proposed").value=Math.round(items[0].unit); loaded=true; }      // single line item = the price
+    else if(strong){ $("proposed").value=Math.round(strong.amt); loaded=true; }              // one clearly-labelled grand total
+    // otherwise leave the quote blank: ambiguous multi-amount packet, user picks
+    calc();
+    const direct=items.reduce((s,r)=>s+r.unit,0);
+    const distinct=[...new Set(items.map(r=>r.unit))];
+    const packet = items.length>3 && distinct.length<items.length;   // many lines, repeated values
+    const totMsg = totals.length ? (" Total label(s) seen: "+[...new Set(totals.map(t=>t.amt))].map(fmt).join(", ")+".") : "";
+    const priceMsg = loaded ? " Loaded the price into Test-a-quote." : " <b>Set the price yourself</b> in Test-a-quote — multiple amounts here, no single clear total.";
+    const warn = packet ? " ⚠ Looks like a multi-page packet with repeated prices — check for duplicate lines before trusting." : " Review every line & item type below.";
+    setMsg("Imported <b>"+items.length+"</b> line"+(items.length>1?"s":"")+" summing <b>"+fmt(direct)+"</b>."+totMsg+priceMsg+warn,"good");
+  }catch(e){ setMsg("Couldn't parse that PDF ("+(e&&e.message?e.message:"error")+"). Try another file or enter lines manually.","bad"); }
+}
+const drop=$("drop");
+$("browseLink").addEventListener("click",()=>$("pdfInput").click());
+drop.addEventListener("click",e=>{ if(e.target.id!=="browseLink") $("pdfInput").click(); });
+$("pdfInput").addEventListener("change",e=>handleFile(e.target.files[0]));
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; handleFile(f); });
+</script>
+</body>
+</html>
