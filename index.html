@@ -124,11 +124,11 @@
   <!-- LEFT: INPUTS -->
   <div>
     <div class="card upload-card">
-      <h2>📄 Import from estimate PDF</h2>
-      <p class="sub">Upload a quote or estimate PDF — it pulls out the line-item costs and the total, then runs the margin analysis automatically. Always eyeball the imported lines before you trust the number.</p>
+      <h2>📄 Import estimate — PDF or photo</h2>
+      <p class="sub">Drop a PDF, a scan, or a phone photo (PNG/JPG) of an estimate — it pulls out the line-item costs and total, then runs the margin analysis. Scans &amp; images are read with OCR, so always eyeball the numbers before trusting them.</p>
       <div id="drop" class="drop">
-        <b>Drag a PDF here</b>, or <span class="link" id="browseLink">browse your files</span>
-        <input id="pdfInput" type="file" accept="application/pdf" hidden>
+        <b>Drag a PDF or photo here</b>, or <span class="link" id="browseLink">browse your files</span>
+        <input id="pdfInput" type="file" accept="application/pdf,image/*" hidden>
       </div>
       <div id="importMsg" class="bench"></div>
     </div>
@@ -196,11 +196,11 @@
         <span class="muted" id="margLbl">Margin already in the estimate</span>
         <span class="big" id="margVal">45%</span>
       </div>
-      <input class="slider" id="margin" type="range" min="20" max="65" value="45" step="1" />
+      <input class="slider" id="margin" type="range" min="10" max="120" value="45" step="1" />
       <div class="scenarios">
-        <div class="sc" data-m="40"><div class="m">40% floor</div><div class="p" id="p40">—</div></div>
-        <div class="sc active" data-m="45"><div class="m">45% target</div><div class="p" id="p45">—</div></div>
-        <div class="sc" data-m="50"><div class="m">50% stretch</div><div class="p" id="p50">—</div></div>
+        <div class="sc" data-m="40"><div class="m">40%</div><div class="p" id="p40">—</div></div>
+        <div class="sc active" data-m="45"><div class="m">45%</div><div class="p" id="p45">—</div></div>
+        <div class="sc" data-m="50"><div class="m">50%</div><div class="p" id="p50">—</div></div>
       </div>
 
       <div class="pricebox rec" style="margin-top:12px">
@@ -268,6 +268,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const fmt = n => (n<0?"-$":"$") + Math.abs(Math.round(n)).toLocaleString();
 const fmt2 = n => "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -333,8 +334,8 @@ function setMode(mode){
   if(mode==="cost"){
     $("costsTitle").textContent="Job costs";
     $("costsSub").textContent="Enter what the job actually costs you. Subs are billed as flat cost; markup is added on top.";
-    $("marginTitle").textContent="Target margin";
-    $("margLbl").textContent="Gross margin on price";
+    $("marginTitle").textContent="Markup on cost";
+    $("margLbl").textContent="% added on top of your cost";
     $("recLbl").textContent="Recommended price (rounded up)";
     $("beLbl").textContent="Break-even (floor)";
     $("beSub").textContent="below this you lose money";
@@ -367,17 +368,16 @@ function calc(){
     const baseCost=direct+taxAmt;
     const contAmt=baseCost*cont;
     const trueCost=baseCost+contAmt;
-    const rec=roundUp(priceAtCost(trueCost,m),50);     // round the bid UP to a clean $50
+    const rec=roundUp(trueCost*(1+m),50);              // MARKUP: add m% on top of cost, round up to a clean $50
     const grossProfit=rec-trueCost;
     const net=grossProfit-rec*oh;
-    const markup=trueCost>0?(rec/trueCost-1)*100:0;
-    const realM=rec>0?grossProfit/rec*100:0;
+    const realM=rec>0?grossProfit/rec*100:0;           // resulting true gross margin (reference only)
     const be=oh<1?trueCost/(1-oh):Infinity;
-    $("p40").textContent=fmt(roundUp(priceAtCost(trueCost,.40),50));
-    $("p45").textContent=fmt(roundUp(priceAtCost(trueCost,.45),50));
-    $("p50").textContent=fmt(roundUp(priceAtCost(trueCost,.50),50));
+    $("p40").textContent=fmt(roundUp(trueCost*1.40,50));
+    $("p45").textContent=fmt(roundUp(trueCost*1.45,50));
+    $("p50").textContent=fmt(roundUp(trueCost*1.50,50));
     $("recPrice").textContent=fmt(rec);
-    $("recSub").textContent="Rounded up · gross profit "+fmt(grossProfit)+" · "+realM.toFixed(0)+"% margin · "+markup.toFixed(0)+"% markup";
+    $("recSub").textContent="+"+(m*100).toFixed(0)+"% markup · gross profit "+fmt(grossProfit)+" · "+realM.toFixed(0)+"% true margin";
     $("bePrice").textContent=fmt(be);
     $("netProfit").textContent=fmt(net);
     $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
@@ -385,9 +385,9 @@ function calc(){
     $("sTax").textContent=fmt(taxAmt);
     $("sCont").textContent=fmt(contAmt);
     $("sTrue").textContent=fmt(trueCost);
-    $("sMarkup").textContent=markup>0?markup.toFixed(0)+"% on cost":"—";
+    $("sMarkup").textContent=(m*100).toFixed(0)+"% on cost";
     benchmarkCheck(rec);
-    quoteCheck(trueCost, be, oh, m);
+    quoteCheck(trueCost, be, oh, rec);
   } else {
     const price=direct;                          // line items are already PRICES
     const impliedCost=price*(1-m);
@@ -424,12 +424,11 @@ function benchmarkCheck(rec){
   noteEl.innerHTML = "Your recommended price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs LA market <b>$"+b.low+"–$"+b.high+"/"+b.unit+"</b>. <span class='muted'>"+b.note+"</span>";
 }
 
-function quoteCheck(trueCost, be, oh, targetM){
+function quoteCheck(trueCost, be, oh, rec){
   const box=$("quoteFlags"); box.innerHTML="";
   const flags=[];
   const b=currentBench(); const qty=parseFloat($("benchQty").value)||0;
-  if(b && qty>0){
-    const rec = (targetM<1)? trueCost/(1-targetM):Infinity;
+  if(b && qty>0 && isFinite(rec)){
     const implied=rec/qty;
     if(implied > b.high*1.12) flags.push(["warn","At your target margin the price is <b>"+fmt2(implied)+"/"+b.unit+"</b> — above the LA market top of <b>$"+b.high+"/"+b.unit+"</b>. You may be <b>over-priced</b> for this client; expect pushback unless the scope justifies it."]);
     else if(implied < b.low*0.9) flags.push(["warn","At your target margin the price is <b>"+fmt2(implied)+"/"+b.unit+"</b> — below the LA market floor of <b>$"+b.low+"/"+b.unit+"</b>. You may be <b>under-priced</b>; check you captured all costs."]);
@@ -499,54 +498,91 @@ async function extractLines(file){
   return lines;
 }
 function setMsg(html,cls){ const e=$("importMsg"); e.innerHTML=html; e.style.color = cls==="bad"?"#ffb3a6":(cls==="good"?"#9ff0c8":"var(--muted)"); }
+// shared line parser — used by both the PDF text layer and OCR text
+function parseEstimateLines(lines){
+  const items=[], totals=[]; let prev="";
+  const TOTLBL=/^(grand\s*total|total\s*due|amount\s*due|balance\s*due|project\s*total|total)\s*:?\s*$/i;
+  lines.forEach(raw=>{
+    const line=raw.replace(/\d[\d,]*(?:\.\d+)?\s*%/g," ").replace(/\s+/g," ").trim(); // strip percentages (rates, tax %)
+    const m=line.match(AMT_RE); if(!m){ prev=line; return; }
+    const amt=parseAmount(m[m.length-1]); if(amt<=0){ prev=line; return; }
+    const prevLbl=TOTLBL.test(prev); const prevStrong=/grand|project|contract/i.test(prev); prev=line; // total label may sit on its own line above the amount
+    const isSub=/sub[\s-]*total/i.test(line);
+    const isTotal=/(grand\s*total|total\s*due|amount\s*due|balance\s*due|project\s*total|contract\s*(sum|total|price)|\btotal\b)/i.test(line);
+    const isTax=/\bsales?\s*tax\b|\buse\s*tax\b|\btax\b/i.test(line);
+    const isAdj=/discount|credit|\bdeposit\b|\bpaid\b|\bless\b|down\s*payment|retainer/i.test(line);
+    const isMeta=/\binvoice\b|\binv\.?\s*#|\bquote\s*#|\bestimate\s*#|\bdated?\b|\bp\.?\s*o\.?\s*#|\baccount\s*#|\bphone\b|\btel\b|\bfax\b|valid\s*(for|through|until)/i.test(line);
+    const isRange=/\$\s?\d[\d,]*(?:\.\d{2})?\s*(?:-|–|—|to)\s*\$?\s?\d[\d,]*(?:\.\d{2})?/i.test(line); // "$3,000 - $5,000"
+    if(isSub) return;
+    if(isTotal||prevLbl){ totals.push({amt, strong:/grand|due|project|contract/i.test(line)||prevStrong}); return; }
+    if(isTax||isAdj||isMeta||isRange) return;
+    let desc=line.replace(AMT_RE,"")
+      .replace(/\b(qty|quantity|each|ea|hrs?|hours?|units?|@|per)\b/gi," ")
+      .replace(/[\s.\-–:;|=#*]+$/,"").replace(/^[\s.\-–:;|=#*]+/,"")
+      .replace(/\s+/g," ").trim();
+    if(desc.length<2) desc="Line item";
+    items.push({item:categorize(line), desc:desc.slice(0,60), qty:1, unit:amt});
+  });
+  items.splice(0,items.length, ...items.filter((it,i,a)=> !(i>0 && it.unit===a[i-1].unit && it.desc==="Line item"))); // drop footer repeats
+  return {items, totals};
+}
+// OCR helpers (Tesseract.js) for photos & scanned PDFs
+function ocrToLines(t){ return (t||"").split(/\r?\n+/).map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean); }
+async function ocrImageSrc(src,label){
+  const r=await Tesseract.recognize(src,"eng",{logger:m=>{ if(m.status==="recognizing text") setMsg((label||"Reading")+" — OCR "+Math.round((m.progress||0)*100)+"%"); }});
+  return r.data.text;
+}
+async function ocrPdf(file){
+  const buf=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const n=Math.min(pdf.numPages,8); let text="";
+  for(let p=1;p<=n;p++){
+    const page=await pdf.getPage(p); const vp=page.getViewport({scale:2});
+    const c=document.createElement("canvas"); c.width=vp.width; c.height=vp.height;
+    await page.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;
+    text+="\n"+await ocrImageSrc(c,"Scanned PDF p."+p+"/"+n);
+  }
+  return text;
+}
 async function handleFile(file){
   if(!file) return;
-  if(file.type!=="application/pdf" && !/\.pdf$/i.test(file.name)){ setMsg("That's not a PDF. Upload a .pdf estimate.","bad"); return; }
-  if(!window.pdfjsLib){ setMsg("PDF reader didn't load (check your connection) — you can still enter lines manually.","bad"); return; }
-  setMsg("Reading <b>"+file.name+"</b>…");
+  const isPdf=file.type==="application/pdf"||/\.pdf$/i.test(file.name);
+  const isImg=/^image\//.test(file.type)||/\.(png|jpe?g|webp|gif|bmp|tiff?)$/i.test(file.name);
+  if(!isPdf&&!isImg){ setMsg("Upload a PDF or an image (PNG/JPG) of the estimate.","bad"); return; }
+  setMsg("Reading <b>"+esc(file.name)+"</b>…");
   try{
-    const lines=await extractLines(file);
-    const items=[]; const totals=[]; let prev="";
-    const TOTLBL=/^(grand\s*total|total\s*due|amount\s*due|balance\s*due|project\s*total|total)\s*:?\s*$/i;
-    lines.forEach(raw=>{
-      const line=raw.replace(/\d[\d,]*(?:\.\d+)?\s*%/g," ").replace(/\s+/g," ").trim(); // strip percentages (rates, tax %)
-      const m=line.match(AMT_RE); if(!m){ prev=line; return; }
-      const amt=parseAmount(m[m.length-1]); if(amt<=0){ prev=line; return; }
-      const prevLbl=TOTLBL.test(prev); const prevStrong=/grand|project|contract/i.test(prev); prev=line; // total label may sit on its own line above the amount
-      const isSub=/sub[\s-]*total/i.test(line);
-      const isTotal=/(grand\s*total|total\s*due|amount\s*due|balance\s*due|project\s*total|contract\s*(sum|total|price)|\btotal\b)/i.test(line);
-      const isTax=/\bsales?\s*tax\b|\buse\s*tax\b|\btax\b/i.test(line);
-      const isAdj=/discount|credit|\bdeposit\b|\bpaid\b|\bless\b|down\s*payment|retainer/i.test(line);
-      const isMeta=/\binvoice\b|\binv\.?\s*#|\bquote\s*#|\bestimate\s*#|\bdated?\b|\bp\.?\s*o\.?\s*#|\baccount\s*#|\bphone\b|\btel\b|\bfax\b|valid\s*(for|through|until)/i.test(line);
-      const isRange=/\$\s?\d[\d,]*(?:\.\d{2})?\s*(?:-|–|—|to)\s*\$?\s?\d[\d,]*(?:\.\d{2})?/i.test(line); // "$3,000 - $5,000"
-      if(isSub) return;                                   // subtotals are not line items
-      if(isTotal||prevLbl){ totals.push({amt, strong:/grand|due|project|contract/i.test(line)||prevStrong}); return; }
-      if(isTax||isAdj||isMeta||isRange) return;           // skip tax, discounts, metadata, price ranges
-      let desc=line.replace(AMT_RE,"")
-        .replace(/\b(qty|quantity|each|ea|hrs?|hours?|units?|@|per)\b/gi," ")
-        .replace(/[\s.\-–:;|=#*]+$/,"").replace(/^[\s.\-–:;|=#*]+/,"")
-        .replace(/\s+/g," ").trim();
-      if(desc.length<2) desc="Line item";
-      items.push({item:categorize(line), desc:desc.slice(0,60), qty:1, unit:amt});
-    });
-    if(!items.length){ setMsg("Couldn't read line items from this PDF — it may be a scanned image (no text layer). Enter the costs manually below.","bad"); return; }
-    items.splice(0,items.length, ...items.filter((it,i,a)=> !(i>0 && it.unit===a[i-1].unit && it.desc==="Line item"))); // drop footer repeats of the prior amount
+    let lines=[], usedOcr=false;
+    if(isPdf){
+      if(!window.pdfjsLib){ setMsg("PDF reader didn't load — check your connection.","bad"); return; }
+      lines=await extractLines(file);
+      const chars=lines.join("").replace(/\s/g,"").length;
+      if(chars<20){ // no real text layer = a scan
+        if(!window.Tesseract){ setMsg("This PDF is a scan and the OCR engine didn't load — check your connection, then retry.","bad"); return; }
+        setMsg("No text layer found — running OCR on the scan (this can take a moment)…");
+        lines=ocrToLines(await ocrPdf(file)); usedOcr=true;
+      }
+    } else {
+      if(!window.Tesseract){ setMsg("OCR engine didn't load — check your connection, then retry.","bad"); return; }
+      setMsg("Running OCR on the image (this can take a moment)…");
+      lines=ocrToLines(await ocrImageSrc(file,"Reading image")); usedOcr=true;
+    }
+    const {items, totals}=parseEstimateLines(lines);
+    if(!items.length){ setMsg(usedOcr?"OCR couldn't find priced line items — the image may be blurry or low-contrast. Try a sharper, straight-on photo, or enter the costs manually.":"Couldn't read line items from this PDF. Enter the costs manually below.","bad"); return; }
     rows=items; render();
     let total=0; const strong=totals.find(t=>t.strong);
     if(strong) total=strong.amt; else if(totals.length) total=Math.max.apply(null,totals.map(t=>t.amt));
     var loaded=false;
-    if(items.length===1){ $("proposed").value=Math.round(items[0].unit); loaded=true; }      // single line item = the price
-    else if(strong){ $("proposed").value=Math.round(strong.amt); loaded=true; }              // one clearly-labelled grand total
-    // otherwise leave the quote blank: ambiguous multi-amount packet, user picks
+    if(items.length===1){ $("proposed").value=Math.round(items[0].unit); loaded=true; }
+    else if(strong){ $("proposed").value=Math.round(strong.amt); loaded=true; }
     calc();
     const direct=items.reduce((s,r)=>s+r.unit,0);
     const distinct=[...new Set(items.map(r=>r.unit))];
-    const packet = items.length>3 && distinct.length<items.length;   // many lines, repeated values
-    const totMsg = totals.length ? (" Total label(s) seen: "+[...new Set(totals.map(t=>t.amt))].map(fmt).join(", ")+".") : "";
-    const priceMsg = loaded ? " Loaded the price into Test-a-quote." : " <b>Set the price yourself</b> in Test-a-quote — multiple amounts here, no single clear total.";
-    const warn = packet ? " ⚠ Looks like a multi-page packet with repeated prices — check for duplicate lines before trusting." : " Review every line & item type below.";
-    setMsg("Imported <b>"+items.length+"</b> line"+(items.length>1?"s":"")+" summing <b>"+fmt(direct)+"</b>."+totMsg+priceMsg+warn,"good");
-  }catch(e){ setMsg("Couldn't parse that PDF ("+(e&&e.message?e.message:"error")+"). Try another file or enter lines manually.","bad"); }
+    const packet=items.length>3 && distinct.length<items.length;
+    const totMsg=totals.length?(" Total label(s) seen: "+[...new Set(totals.map(t=>t.amt))].map(fmt).join(", ")+"."):"";
+    const priceMsg=loaded?" Loaded the price into Test-a-quote.":" <b>Set the price yourself</b> in Test-a-quote — multiple amounts here, no single clear total.";
+    const ocrMsg=usedOcr?" <b>Read by OCR</b> — double-check every number; scans/photos can misread digits.":"";
+    const warn=packet?" ⚠ Looks like a multi-page packet with repeated prices — check for duplicates.":" Review every line & item type below.";
+    setMsg("Imported <b>"+items.length+"</b> line"+(items.length>1?"s":"")+" summing <b>"+fmt(direct)+"</b>."+totMsg+priceMsg+ocrMsg+warn,"good");
+  }catch(e){ setMsg("Couldn't read that file ("+(e&&e.message?e.message:"error")+"). Try a clearer file or enter lines manually.","bad"); }
 }
 const drop=$("drop");
 $("browseLink").addEventListener("click",()=>$("pdfInput").click());
@@ -577,11 +613,11 @@ function compute(s){
   const taxAmt=taxable*taxRate;
   if(s.mode==="cost"){
     const baseCost=direct+taxAmt, contAmt=baseCost*cont, trueCost=baseCost+contAmt;
-    const rec=m>=1?Infinity:Math.ceil(trueCost/(1-m)/50)*50;
+    const rec=Math.ceil(trueCost*(1+m)/50)*50;          // MARKUP: cost + m%
     const grossProfit=rec-trueCost, net=grossProfit-rec*oh,
-          markup=trueCost>0?(rec/trueCost-1)*100:0, realM=rec>0?grossProfit/rec*100:0,
+          markup=m*100, realM=rec>0?grossProfit/rec*100:0,
           be=oh<1?trueCost/(1-oh):Infinity;
-    return {mode:"cost",direct,taxAmt,contAmt,trueCost,price:rec,grossProfit,net,markup,marginPct:realM,breakeven:be,targetMargin:m*100};
+    return {mode:"cost",direct,taxAmt,contAmt,trueCost,price:rec,grossProfit,net,markup,marginPct:realM,breakeven:be,markupPct:m*100};
   }
   const price=direct, impliedCost=price*(1-m), grossProfit=price*m, net=grossProfit-price*oh;
   return {mode:"analyze",direct,price,impliedCost,grossProfit,net,marginPct:m*100,assumed:m*100};
@@ -629,8 +665,8 @@ function buildSummary(s){
   let res;
   if(r.mode==="cost"){
     res="<tr><td>True job cost</td><td style='text-align:right'>"+fmt(r.trueCost)+"</td></tr>"+
-      "<tr><td>Recommended price ("+r.targetMargin.toFixed(0)+"% target, rounded up)</td><td style='text-align:right'><b>"+fmt(r.price)+"</b></td></tr>"+
-      "<tr><td>Gross margin</td><td style='text-align:right'>"+r.marginPct.toFixed(1)+"%</td></tr>"+
+      "<tr><td>Recommended price (+"+(r.markupPct||0).toFixed(0)+"% markup, rounded up)</td><td style='text-align:right'><b>"+fmt(r.price)+"</b></td></tr>"+
+      "<tr><td>True gross margin</td><td style='text-align:right'>"+r.marginPct.toFixed(1)+"%</td></tr>"+
       "<tr><td>Net profit (after overhead)</td><td style='text-align:right'>"+fmt(r.net)+"</td></tr>"+
       "<tr><td>Break-even (floor)</td><td style='text-align:right'>"+fmt(r.breakeven)+"</td></tr>";
   } else {
