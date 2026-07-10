@@ -2,278 +2,365 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0f1419" />
 <title>Estimate Analyzer — LA Contractor Pricing</title>
 <style>
   :root{
     --bg:#0f1419; --panel:#171e26; --panel2:#1d2731; --line:#2a3744;
     --ink:#e8edf2; --muted:#93a4b3; --accent:#ff8c42; --accent2:#ffb072;
-    --good:#3ecf8e; --warn:#f5c451; --bad:#f06548;
-    --chip:#22303c;
+    --good:#3ecf8e; --warn:#f5c451; --bad:#f06548; --chip:#22303c;
+    --navh:62px;
   }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  header{padding:22px 24px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#19222c,#11171e)}
-  header h1{margin:0;font-size:20px;letter-spacing:.2px}
-  header p{margin:4px 0 0;color:var(--muted);font-size:13px}
-  .wrap{max-width:1180px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 400px;gap:22px}
-  @media(max-width:980px){.wrap{grid-template-columns:1fr}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px}
-  .card h2{margin:0 0 4px;font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent2)}
-  .card .sub{color:var(--muted);font-size:12.5px;margin:0 0 14px}
-  label{display:block;font-size:12px;color:var(--muted);margin:0 0 4px}
-  input,select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
-    border-radius:8px;padding:9px 10px;font-size:14px;outline:none}
-  input:focus,select:focus{border-color:var(--accent)}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+  h1,h2,h3{margin:0}
+  a{color:var(--accent2)}
+  .app{max-width:640px;margin:0 auto;padding:0 14px}
+  header{position:sticky;top:0;z-index:30;background:rgba(15,20,25,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:10px}
+  header .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto}
+  header .ttl{font-size:16px;font-weight:800;letter-spacing:.2px}
+  header .sub{font-size:11px;color:var(--muted);margin-top:-2px}
+  .view{display:none;padding:14px 0 24px}
+  .view.on{display:block}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent2);margin-bottom:4px}
+  .card .sub{color:var(--muted);font-size:12.5px;margin-bottom:12px}
+  label{display:block}
+  .lbl{font-size:12px;color:var(--muted);margin-bottom:5px;display:block}
+  input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:11px;padding:12px 12px;font-size:16px;outline:none;min-height:46px}
+  textarea{min-height:90px;resize:vertical}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent)}
   .row{display:grid;gap:10px}
   .g2{grid-template-columns:1fr 1fr}
   .g3{grid-template-columns:1fr 1fr 1fr}
-  table{width:100%;border-collapse:collapse;margin-top:4px}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);text-align:left;padding:6px 6px;font-weight:600}
-  td{padding:4px 4px;border-top:1px solid var(--line)}
-  td input,td select{padding:7px 8px}
-  td.num input{text-align:right}
-  .lt-cost{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--ink);font-size:14px;padding-right:8px}
-  .del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
-  .del:hover{color:var(--bad)}
-  .btn{background:var(--accent);color:#1a1108;border:none;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:13.5px}
-  .btn.sec{background:var(--chip);color:var(--ink);font-weight:600}
-  .btn:hover{filter:brightness(1.06)}
-  .btnrow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-  .totline{display:flex;justify-content:space-between;padding:7px 0;border-top:1px dashed var(--line);font-variant-numeric:tabular-nums}
-  .totline.big{font-size:17px;font-weight:700;border-top:1px solid var(--line);margin-top:4px;padding-top:12px}
-  .muted{color:var(--muted)}
-  .pricebox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
-  .pricebox .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-  .pricebox .val{font-size:30px;font-weight:800;margin:2px 0;font-variant-numeric:tabular-nums}
-  .pricebox.rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-  .pricebox.rec .val{color:var(--accent2)}
-  .scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0 4px}
-  .sc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 8px;text-align:center}
-  .sc.active{border-color:var(--accent);background:#22191040}
+  .field{margin-bottom:12px}
+  .field:last-child{margin-bottom:0}
+  /* segmented mode toggle */
+  .seg{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:14px}
+  .seg button{flex:1;background:transparent;border:none;color:var(--muted);padding:12px 8px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer}
+  .seg button.active{background:var(--accent);color:#1a1108}
+  /* result */
+  .result{background:linear-gradient(180deg,#1d2731,#171e26);border:1px solid var(--accent);
+    box-shadow:0 0 0 1px var(--accent) inset}
+  .marg-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+  .marg-head .t{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent2)}
+  .marg-head .big{font-size:22px;font-weight:800;color:var(--accent2)}
+  .slider{width:100%;margin:6px 0 2px;height:34px}
+  .scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0}
+  .sc{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
+  .sc.active{border-color:var(--accent)}
   .sc .m{font-size:11px;color:var(--muted)}
-  .sc .p{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
-  .flag{border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13.5px;border:1px solid}
+  .sc .p{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .recbox{margin-top:6px}
+  .recbox .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .recbox .v{font-size:40px;font-weight:900;color:var(--accent2);font-variant-numeric:tabular-nums;line-height:1.05;margin:2px 0}
+  .recbox .s{font-size:12.5px;color:var(--muted)}
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .stat .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .stat .s2{font-size:10.5px;color:var(--muted)}
+  /* buttons */
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .btn{flex:1;min-width:120px;background:var(--chip);border:1px solid var(--line);color:var(--ink);
+    border-radius:12px;padding:13px 10px;font-weight:800;font-size:14px;cursor:pointer;min-height:48px}
+  .btn.primary{background:var(--accent);color:#1a1108;border-color:var(--accent)}
+  .btn.ghost{background:transparent}
+  .btn:active{transform:translateY(1px)}
+  .btn.wide{flex-basis:100%}
+  .savednote{font-size:12px;color:var(--good);margin-top:8px;min-height:15px}
+  /* import */
+  .drop{border:1.6px dashed #4a5b6b;border-radius:14px;padding:22px 14px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
+  .drop.over{border-color:var(--accent);background:#21303c;color:var(--ink)}
+  .drop b{color:var(--accent2)}
+  .link{color:var(--accent2);text-decoration:underline;cursor:pointer}
+  .bench{font-size:12.5px;color:var(--muted);margin-top:8px}
+  /* line items */
+  .litem{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:11px;margin-bottom:9px}
+  .litem-r1{display:flex;gap:8px;align-items:center}
+  .litem-item{flex:1}
+  .litem-desc{margin-top:8px}
+  .litem-r2{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:8px}
+  .fld span{font-size:10.5px;color:var(--muted);display:block;margin-bottom:3px}
+  .litem-cost{text-align:right;padding-bottom:11px;min-width:78px}
+  .litem-cost span{font-size:10.5px;color:var(--muted);display:block}
+  .litem-cost b{font-size:16px;font-variant-numeric:tabular-nums}
+  .del{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;width:44px;height:44px;font-size:22px;line-height:1;cursor:pointer;flex:0 0 auto}
+  .del:active{color:var(--bad)}
+  .addsel{display:flex;gap:8px;margin-top:6px}
+  .addsel .btn{min-width:0}
+  /* totlines / flags */
+  .totline{display:flex;justify-content:space-between;padding:8px 0;border-top:1px dashed var(--line);font-variant-numeric:tabular-nums;font-size:14px}
+  .totline.big{font-size:16px;font-weight:800;border-top:1px solid var(--line)}
+  .muted{color:var(--muted)}
+  .flag{border-radius:11px;padding:11px 12px;margin-top:10px;font-size:13.5px;border:1px solid}
   .flag.good{background:#143026;border-color:#1f5a40;color:#9ff0c8}
   .flag.warn{background:#352c12;border-color:#6b561a;color:#ffe39a}
   .flag.bad{background:#3a1c17;border-color:#7a342a;color:#ffb3a6}
   .flag b{color:#fff}
-  .slider{width:100%}
-  .marg-head{display:flex;justify-content:space-between;align-items:baseline}
-  .marg-head .big{font-size:22px;font-weight:800;color:var(--accent2)}
-  details{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  details{margin-top:6px}
   summary{cursor:pointer;color:var(--accent2);font-size:13px}
-  details p,details li{color:var(--muted);font-size:13px}
-  .bench{font-size:12.5px;color:var(--muted);margin-top:6px}
-  .pill{display:inline-block;background:var(--chip);border-radius:20px;padding:2px 9px;font-size:11.5px;margin:2px 4px 0 0;color:var(--muted)}
-  .foot{max-width:1180px;margin:0 auto;padding:0 24px 36px;color:var(--muted);font-size:12px}
-  a{color:var(--accent2)}
-  .addsel{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
-  .addsel select{width:auto;min-width:160px}
-  .upload-card{border-color:var(--accent);background:linear-gradient(180deg,#1c2530,#171e26)}
-  .drop{border:1.5px dashed #4a5b6b;border-radius:12px;padding:22px 14px;text-align:center;color:var(--muted);
-    cursor:pointer;transition:.15s;font-size:13.5px}
-  .drop:hover,.drop.over{border-color:var(--accent);background:#21303c;color:var(--ink)}
-  .drop b{color:var(--accent2)}
-  .link{color:var(--accent2);text-decoration:underline;cursor:pointer}
-  .modebar{grid-column:1/-1;display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;margin-bottom:2px}
-  .modebtn{flex:1;background:transparent;border:none;color:var(--muted);padding:11px 10px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
-  .modebtn.active{background:var(--accent);color:#1a1108}
-  .modebtn:hover:not(.active){background:var(--chip);color:var(--ink)}
-  .topnav{max-width:1180px;margin:0 auto;padding:14px 24px 0;display:flex;gap:8px}
-  .navbtn{background:transparent;border:1px solid var(--line);border-bottom:none;color:var(--muted);padding:9px 18px;border-radius:9px 9px 0 0;font-size:14px;font-weight:700;cursor:pointer}
-  .navbtn.active{background:var(--panel);color:var(--accent2)}
-  .actionrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-  .actbtn{flex:1;min-width:130px;background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:11px;font-weight:700;font-size:13px;cursor:pointer}
-  .actbtn.primary{background:var(--accent);color:#1a1108;border-color:var(--accent)}
-  .actbtn:hover{filter:brightness(1.08)}
-  .saved-note{font-size:11.5px;color:var(--good);margin-top:8px;min-height:14px}
-  .arch-wrap{max-width:1180px;margin:0 auto;padding:18px 24px 48px}
-  .arch-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px}
-  .arch-head h2{margin:0;color:var(--accent2);font-size:18px}
-  .arch-entry{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
-  .arch-meta{font-size:11.5px;color:var(--muted);margin-bottom:3px}
-  .arch-title{font-size:15px;font-weight:700}
-  .arch-nums{font-size:12.5px;color:var(--muted);margin-top:5px;font-variant-numeric:tabular-nums;line-height:1.7}
-  .arch-nums b{color:var(--ink)}
-  .arch-actions{display:flex;gap:6px;flex-wrap:wrap}
-  .arch-actions button{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer}
-  .arch-actions button:hover{filter:brightness(1.12)}
-  .arch-actions .del:hover{color:var(--bad)}
-  .arch-empty{color:var(--muted);text-align:center;padding:44px;border:1px dashed var(--line);border-radius:12px}
+  details p{color:var(--muted);font-size:12.5px}
   .tag{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:20px;background:var(--chip);color:var(--accent2);margin-left:8px;vertical-align:middle}
+  /* archive */
+  .arch-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .arch-tools .btn{flex:0 1 auto;min-width:0;padding:10px 12px;font-size:12.5px;min-height:42px}
+  .arch-entry{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+  .arch-meta{font-size:11px;color:var(--muted)}
+  .arch-title{font-size:15px;font-weight:800;margin:2px 0}
+  .arch-nums{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.7}
+  .arch-nums b{color:var(--ink)}
+  .arch-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .arch-row button{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;min-height:40px}
+  .arch-row .del:active{color:var(--bad)}
+  .arch-empty{color:var(--muted);text-align:center;padding:40px 20px;border:1px dashed var(--line);border-radius:14px}
+  /* logo preview */
+  .logoprev{width:64px;height:64px;border-radius:12px;border:1px solid var(--line);background:var(--panel2) center/contain no-repeat;flex:0 0 auto}
+  /* bottom nav */
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:40;height:calc(var(--navh) + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);background:rgba(19,26,33,.96);backdrop-filter:blur(10px);
+    border-top:1px solid var(--line);display:flex}
+  .nav button{flex:1;background:transparent;border:none;color:var(--muted);font-size:11px;font-weight:700;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+  .nav button .ic{font-size:20px;line-height:1}
+  .nav button.active{color:var(--accent2)}
+  /* toast */
+  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:calc(var(--navh) + 16px + env(safe-area-inset-bottom));
+    background:#0b1e15;border:1px solid #1f5a40;color:#9ff0c8;padding:11px 16px;border-radius:12px;font-size:13.5px;font-weight:700;
+    z-index:60;opacity:0;pointer-events:none;transition:.25s;max-width:90%;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .backbtn{background:transparent;border:none;color:var(--accent2);font-size:14px;font-weight:700;cursor:pointer;padding:0;margin-bottom:8px}
+  .switch{display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .switch input{width:auto;min-height:auto}
+  @media(min-width:720px){
+    .app{max-width:720px}
+    .recbox .v{font-size:44px}
+  }
 </style>
 </head>
 <body>
+
 <header>
-  <h1>🧰 Estimate Analyzer <span class="muted" style="font-weight:400;font-size:14px">· Los Angeles · 2026</span></h1>
-  <p>Price every job to a target gross margin with room to negotiate — without slipping below break-even or quoting yourself out of the deal.</p>
+  <div class="logo" id="brandLogo">🧰</div>
+  <div>
+    <div class="ttl" id="brandName">Estimate Analyzer</div>
+    <div class="sub">LA contractor pricing · 2026</div>
+  </div>
 </header>
 
-<div class="topnav">
-  <button class="navbtn active" id="tabCalc">🧮 Calculator</button>
-  <button class="navbtn" id="tabArchive">📚 Archive</button>
-</div>
+<div class="app">
 
-<div id="calcView">
-<div class="wrap">
-  <div class="modebar">
-    <button class="modebtn active" id="modeAnalyze">📋 Analyze a priced estimate</button>
-    <button class="modebtn" id="modeCost">🧮 Build price from my costs</button>
-  </div>
-  <!-- LEFT: INPUTS -->
-  <div>
-    <div class="card upload-card">
-      <h2>📄 Import estimate — PDF or photo</h2>
-      <p class="sub">Drop a PDF, a scan, or a phone photo (PNG/JPG) of an estimate — it pulls out the line-item costs and total, then runs the margin analysis. Scans &amp; images are read with OCR, so always eyeball the numbers before trusting them.</p>
-      <div id="drop" class="drop">
-        <b>Drag a PDF or photo here</b>, or <span class="link" id="browseLink">browse your files</span>
-        <input id="pdfInput" type="file" accept="application/pdf,image/*" hidden>
-      </div>
-      <div id="importMsg" class="bench"></div>
+  <!-- ============ CALCULATOR ============ -->
+  <section class="view on" id="calcView">
+    <div class="seg">
+      <button id="modeAnalyze" class="active">📋 Analyze a bid</button>
+      <button id="modeCost">🧮 Build from cost</button>
     </div>
 
-    <div class="card" style="margin-top:18px">
-      <h2>Job details</h2>
-      <p class="sub">Used for the over/under-pricing sanity check against LA market rates.</p>
-      <div class="row g2">
-        <div><label>Job name</label><input id="jobName" placeholder="e.g. Marisol Ave unit turnover" /></div>
-        <div><label>Client type</label>
-          <select id="clientType">
-            <option>Individual homeowner</option>
-            <option>Apartment / property management</option>
-            <option>Small commercial</option>
-          </select>
-        </div>
-      </div>
-      <div class="row g3" style="margin-top:10px">
-        <div><label>Benchmark category</label>
-          <select id="benchCat"></select>
-        </div>
-        <div><label id="qtyLbl">Project size</label><input id="benchQty" type="number" min="0" step="any" placeholder="e.g. 1200" /></div>
-        <div><label>Market range (auto)</label><input id="benchRange" disabled /></div>
-      </div>
-      <div class="bench" id="benchNote"></div>
-    </div>
-
-    <div class="card" style="margin-top:18px">
-      <h2 id="costsTitle">Estimate line items (priced)</h2>
-      <p class="sub" id="costsSub">These are the prices from the estimate — margin already baked in. (Switch to "Build price from my costs" if you're entering raw costs.)</p>
-      <table>
-        <thead><tr>
-          <th style="width:30%">Item</th><th style="width:30%">Description</th>
-          <th style="width:13%" class="num">Qty</th><th style="width:15%" class="num">Unit cost</th>
-          <th style="width:12%" class="num">Cost</th><th></th>
-        </tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-      <div class="addsel">
-        <button class="btn sec" onclick="addRow()">+ Add line</button>
-        <select id="quickAdd" onchange="quickAdd()">
-          <option value="">Quick add…</option>
-          <option value="Subcontractor">Subcontractor labor</option>
-          <option value="Materials">Materials</option>
-          <option value="Equipment / rental">Equipment / rental</option>
-          <option value="Permits / fees">Permits / fees</option>
-          <option value="Dump / disposal">Dump / disposal</option>
-          <option value="Owner labor">Owner labor (your hours)</option>
-        </select>
-      </div>
-
-      <div class="row g3" style="margin-top:16px">
-        <div><label>Contingency % (wiggle room)</label><input id="contingency" type="number" value="10" min="0" step="0.5" /></div>
-        <div><label>Overhead % of price</label><input id="overhead" type="number" value="12" min="0" step="0.5" /></div>
-        <div><label>Sales tax on materials %</label><input id="tax" type="number" value="9.5" min="0" step="0.1" /></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT: RESULTS -->
-  <div>
-    <div class="card">
-      <h2 id="marginTitle">Baked-in margin (assumed)</h2>
+    <div class="card result">
       <div class="marg-head">
-        <span class="muted" id="margLbl">Margin already in the estimate</span>
+        <span class="t" id="marginTitle">Baked-in margin</span>
         <span class="big" id="margVal">45%</span>
       </div>
+      <div class="lbl" id="margLbl" style="margin-bottom:2px">Margin already in the estimate</div>
       <input class="slider" id="margin" type="range" min="10" max="120" value="45" step="1" />
       <div class="scenarios">
         <div class="sc" data-m="40"><div class="m">40%</div><div class="p" id="p40">—</div></div>
         <div class="sc active" data-m="45"><div class="m">45%</div><div class="p" id="p45">—</div></div>
         <div class="sc" data-m="50"><div class="m">50%</div><div class="p" id="p50">—</div></div>
       </div>
-
-      <div class="pricebox rec" style="margin-top:12px">
-        <div class="lbl" id="recLbl">Bid price (total)</div>
-        <div class="val" id="recPrice">$0</div>
-        <div class="muted" id="recSub" style="font-size:12.5px"></div>
+      <div class="recbox">
+        <div class="l" id="recLbl">Bid price (total)</div>
+        <div class="v" id="recPrice">$0</div>
+        <div class="s" id="recSub"></div>
       </div>
-
-      <div class="row g2">
-        <div class="pricebox"><div class="lbl" id="beLbl">Implied cost</div><div class="val" id="bePrice" style="font-size:22px">$0</div><div class="muted" id="beSub" style="font-size:11.5px">what's left for cost + overhead</div></div>
-        <div class="pricebox"><div class="lbl">Net profit</div><div class="val" id="netProfit" style="font-size:22px">$0</div><div class="muted" style="font-size:11.5px">after overhead</div></div>
+      <div class="duo">
+        <div class="stat"><div class="l" id="beLbl">Implied cost</div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">cost the bid leaves room for</div></div>
+        <div class="stat"><div class="l">Net profit</div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
       </div>
-      <div class="actionrow">
-        <button class="actbtn primary" id="saveArch">💾 Save to archive</button>
-        <button class="actbtn" id="dlCurrent">⬇ Download summary</button>
+      <div class="btns">
+        <button class="btn primary" id="saveArch">💾 Save</button>
+        <button class="btn" id="dlCurrent">⬇ Summary</button>
+        <button class="btn wide" id="openProposal">📄 Create client proposal</button>
       </div>
-      <div class="saved-note" id="savedNote"></div>
+      <div class="savednote" id="savedNote"></div>
     </div>
 
-    <div class="card" style="margin-top:18px">
+    <div class="card">
+      <h2>📄 Import — PDF or photo</h2>
+      <p class="sub">Drop a PDF, scan, or phone photo (PNG/JPG) of an estimate. Scans &amp; images use OCR — always eyeball the numbers.</p>
+      <div id="drop" class="drop"><b>Tap to add a PDF or photo</b>, or <span class="link" id="browseLink">browse files</span>
+        <input id="pdfInput" type="file" accept="application/pdf,image/*" hidden>
+      </div>
+      <div id="importMsg" class="bench"></div>
+    </div>
+
+    <div class="card">
+      <h2>Job details</h2>
+      <div class="field"><span class="lbl">Job name</span><input id="jobName" placeholder="e.g. Marisol Ave unit turnover" /></div>
+      <div class="field"><span class="lbl">Client type</span>
+        <select id="clientType">
+          <option>Individual homeowner</option>
+          <option>Apartment / property management</option>
+          <option>Small commercial</option>
+        </select>
+      </div>
+      <div class="row g2">
+        <div><span class="lbl">Benchmark check</span><select id="benchCat"></select></div>
+        <div><span class="lbl" id="qtyLbl">Project size</span><input id="benchQty" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1200" /></div>
+      </div>
+      <input id="benchRange" style="display:none" disabled />
+      <div class="bench" id="benchNote"></div>
+    </div>
+
+    <div class="card">
+      <h2 id="costsTitle">Estimate line items (priced)</h2>
+      <p class="sub" id="costsSub">These are the prices from the estimate — margin already baked in.</p>
+      <div id="rows"></div>
+      <datalist id="catlist">
+        <option value="Subcontractor"></option><option value="Materials"></option>
+        <option value="Equipment / rental"></option><option value="Permits / fees"></option>
+        <option value="Dump / disposal"></option><option value="Owner labor"></option>
+      </datalist>
+      <div class="addsel">
+        <button class="btn" onclick="addRow()">+ Add line</button>
+        <select id="quickAdd" onchange="quickAdd()">
+          <option value="">Quick add…</option>
+          <option value="Subcontractor">Subcontractor</option>
+          <option value="Materials">Materials</option>
+          <option value="Equipment / rental">Equipment / rental</option>
+          <option value="Permits / fees">Permits / fees</option>
+          <option value="Dump / disposal">Dump / disposal</option>
+          <option value="Owner labor">Owner labor</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Rates</h2>
+      <div class="row g3">
+        <div><span class="lbl">Contingency %</span><input id="contingency" type="number" inputmode="decimal" value="10" min="0" step="0.5" /></div>
+        <div><span class="lbl">Overhead %</span><input id="overhead" type="number" inputmode="decimal" value="12" min="0" step="0.5" /></div>
+        <div><span class="lbl">Mat. tax %</span><input id="tax" type="number" inputmode="decimal" value="9.5" min="0" step="0.1" /></div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Test a quote</h2>
-      <p class="sub">Enter a price you're considering to see the margin and any red flags.</p>
-      <label>Proposed price ($)</label>
-      <input id="proposed" type="number" min="0" step="any" placeholder="e.g. 9500" />
+      <p class="sub">Enter a price you're considering to check its margin.</p>
+      <input id="proposed" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 9500" />
       <div id="quoteFlags"></div>
     </div>
 
-    <div class="card" style="margin-top:18px">
+    <div class="card">
       <h2>Cost summary</h2>
-      <div class="totline"><span class="muted">Direct cost</span><span id="sDirect">$0</span></div>
+      <div class="totline"><span class="muted">Direct</span><span id="sDirect">$0</span></div>
       <div class="totline"><span class="muted">+ Material tax</span><span id="sTax">$0</span></div>
       <div class="totline"><span class="muted">+ Contingency</span><span id="sCont">$0</span></div>
       <div class="totline big"><span>True job cost</span><span id="sTrue">$0</span></div>
-      <div class="totline"><span class="muted">Markup at target</span><span id="sMarkup">—</span></div>
+      <div class="totline"><span class="muted">Markup</span><span id="sMarkup">—</span></div>
+      <details><summary>How the math works</summary>
+        <p><b>Markup</b> (Build-from-cost mode) adds % on top of your cost: $1,000 +10% = $1,100. <b>Margin</b> (Analyze mode) is profit as a % of the final price. <b>Break-even</b> covers true cost + overhead — quote below it and you lose money. LA 2026 benchmarks are built into the over/under check.</p>
+      </details>
     </div>
-  </div>
-</div>
+  </section>
 
-<div class="foot">
-  <details>
-    <summary>How the math works &amp; why these guardrails</summary>
-    <p><b>Gross margin</b> = profit as a % of the price you charge. Price = True&nbsp;Cost ÷ (1 − margin). A 45% margin means cost is 55% of price.<br>
-    <b>Markup</b> is the % added on top of cost — a 45% margin equals an ~82% markup. The tool shows both so you don't confuse them.<br>
-    <b>True job cost</b> = subs + materials (+ tax) + equipment + permits + disposal + your labor, then a contingency buffer for the unknowns.<br>
-    <b>Break-even</b> covers your true cost <i>plus</i> allocated overhead — quote below it and the job loses money even if it "feels" profitable.<br>
-    <b>Net profit</b> is what's left after overhead. A 40–50% gross margin on subcontracted work typically nets ~28–38% after a 12% overhead load — that's your real wiggle room.</p>
-    <p class="muted">Reality check on the target: most LA general contractors mark up subcontracted/pass-through work 20–35% (≈17–26% margin). A 40–50% gross-margin target is healthy for self-performed trade work (painting, drywall, handyman) and gives negotiating room, but on large pass-through GC jobs the over-pricing flag will warn you when the market won't bear it. Don't lose the bid chasing the number.</p>
-    <p class="muted">LA 2026 benchmarks built in — painting $3–$6.50/sf · drywall labor $1–$3/sf · flooring $2.50–$18/sf installed (by material) · dry-room remodel ~$100+/sf · bath remodel $200–$600/sf · kitchen remodel $135–$450+/sf · MEP service labor $95–$200/hr. Always your judgment over the calculator.</p>
-  </details>
-</div>
-</div><!-- /calcView -->
-
-<div id="archiveView" style="display:none">
-  <div class="arch-wrap">
-    <div class="arch-head">
-      <h2>📚 Saved estimates <span class="muted" id="archCount" style="font-size:13px;font-weight:400"></span></h2>
-      <div class="arch-actions">
-        <button id="dlLast">⬇ Download last session</button>
-        <button id="clearArch">Clear all</button>
+  <!-- ============ ARCHIVE ============ -->
+  <section class="view" id="archiveView">
+    <div class="card" style="padding-bottom:8px">
+      <h2>📚 Saved estimates <span class="muted" id="archCount" style="font-weight:400"></span></h2>
+      <input id="archSearch" placeholder="Search by job name…" style="margin:6px 0 12px" />
+      <div class="arch-tools">
+        <button class="btn" id="dlLast">⬇ Last session</button>
+        <button class="btn" id="exportArch">⬆ Backup</button>
+        <button class="btn" id="importArch">⬇ Restore</button>
+        <button class="btn ghost" id="clearArch">Clear all</button>
+        <input id="importArchInput" type="file" accept="application/json,.json" hidden>
       </div>
     </div>
     <div id="archiveList"></div>
-    <p class="muted" style="font-size:12px;margin-top:16px">Your last 20 saved estimates, stored on this device. On the Calculator, hit <b>Save to archive</b> to log one. Everything also auto-saves, so if your computer crashes your in-progress work is still here when you return.</p>
-  </div>
+    <p class="muted" style="font-size:12px">Your last 20 saved estimates live on this device and auto-save (crash-safe). Use <b>Backup</b> to export a file you can restore on another device.</p>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="view" id="settingsView">
+    <div class="card">
+      <h2>Company profile</h2>
+      <p class="sub">Shown on your client proposals. Saved on this device only.</p>
+      <div class="field" style="display:flex;gap:12px;align-items:center">
+        <div class="logoprev" id="coLogoPrev"></div>
+        <div style="flex:1">
+          <span class="lbl">Logo</span>
+          <button class="btn" id="pickLogo" style="min-height:42px">Choose logo…</button>
+          <input id="coLogo" type="file" accept="image/*" hidden>
+          <button class="btn ghost" id="clearLogo" style="min-height:38px;margin-top:6px;font-size:12px">Remove</button>
+        </div>
+      </div>
+      <div class="field"><span class="lbl">Company name</span><input id="coName" placeholder="All Terrain Builders" /></div>
+      <div class="field"><span class="lbl">License #</span><input id="coLicense" placeholder="CSLB #000000" /></div>
+      <div class="row g2 field">
+        <div><span class="lbl">Phone</span><input id="coPhone" inputmode="tel" placeholder="(310) 555-1212" /></div>
+        <div><span class="lbl">Email</span><input id="coEmail" inputmode="email" placeholder="you@company.com" /></div>
+      </div>
+      <div class="field"><span class="lbl">Address</span><input id="coAddress" placeholder="7908 Moorcroft Ave, Canoga Park, CA" /></div>
+    </div>
+    <div class="card">
+      <h2>Default rates</h2>
+      <p class="sub">Applied to new estimates automatically.</p>
+      <div class="row g2">
+        <div><span class="lbl">Default markup %</span><input id="defMarkup" type="number" inputmode="decimal" value="40" min="0" step="1" /></div>
+        <div><span class="lbl">Overhead %</span><input id="defOverhead" type="number" inputmode="decimal" value="12" min="0" step="0.5" /></div>
+        <div><span class="lbl">Contingency %</span><input id="defContingency" type="number" inputmode="decimal" value="10" min="0" step="0.5" /></div>
+        <div><span class="lbl">Material tax %</span><input id="defTax" type="number" inputmode="decimal" value="9.5" min="0" step="0.1" /></div>
+      </div>
+      <div class="btns"><button class="btn primary wide" id="saveSettings">Save profile &amp; defaults</button></div>
+    </div>
+  </section>
+
+  <!-- ============ PROPOSAL ============ -->
+  <section class="view" id="proposalView">
+    <button class="backbtn" id="proposalBack">‹ Back to calculator</button>
+    <div class="card">
+      <h2>Create client proposal</h2>
+      <p class="sub">Uses your current estimate total (<b id="propTotal">$0</b>) and your company profile. Your cost &amp; margin are never shown to the client.</p>
+      <div class="field"><span class="lbl">Client name</span><input id="clientName" placeholder="Olive Creek HOA" /></div>
+      <div class="field"><span class="lbl">Client address</span><input id="clientAddress" placeholder="21800 Schoenborn St, Canoga Park, CA" /></div>
+      <div class="field"><span class="lbl">Scope of work</span><textarea id="projScope" placeholder="Describe the work in plain language the client will read…"></textarea></div>
+      <div class="row g2 field">
+        <div><span class="lbl">Deposit %</span><input id="depositPct" type="number" inputmode="decimal" value="25" min="0" max="100" step="5" /></div>
+        <div class="switch" style="align-self:end;padding-bottom:12px"><span class="lbl" style="margin:0">Itemize line prices</span><input id="itemize" type="checkbox" checked></div>
+      </div>
+      <div class="field"><span class="lbl">Terms</span><textarea id="termsText"></textarea></div>
+      <div class="btns"><button class="btn primary wide" id="genProposal">Preview / download proposal</button></div>
+      <p class="muted" style="font-size:11.5px;margin-top:8px">Opens a print-ready page — use your browser's <b>Share → Print → Save as PDF</b> to send it. If a pop-up is blocked, it downloads instead.</p>
+    </div>
+  </section>
+
 </div>
+
+<nav class="nav">
+  <button id="navCalc" class="active"><span class="ic">🧮</span>Calculator</button>
+  <button id="navArchive"><span class="ic">📚</span>Archive</button>
+  <button id="navSettings"><span class="ic">⚙️</span>Settings</button>
+</nav>
+
+<div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const fmt = n => (n<0?"-$":"$") + Math.abs(Math.round(n)).toLocaleString();
 const fmt2 = n => "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const $ = id => document.getElementById(id);
+function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
 
-// LA 2026 benchmark ranges. unit: 'sf' or 'hr'. low/high are $ per unit of FINISHED price.
+// LA 2026 benchmark ranges.
 const BENCH = {
   "— none / skip check —": null,
   "Interior painting (per sf)":           {unit:"sf", low:3.00, high:6.50, note:"2-coat standard prep; older homes +$0.50–0.75/sf."},
@@ -288,43 +375,35 @@ const BENCH = {
 };
 
 let rows = [];
-const $ = id => document.getElementById(id);
-
-function defaultRows(){
-  rows = [
-    {item:"Subcontractor", desc:"", qty:1, unit:0},
-    {item:"Materials", desc:"", qty:1, unit:0},
-    {item:"Permits / fees", desc:"", qty:1, unit:0},
-  ];
-}
+function defaultRows(){ rows=[{item:"Subcontractor",desc:"",qty:1,unit:0},{item:"Materials",desc:"",qty:1,unit:0},{item:"Permits / fees",desc:"",qty:1,unit:0}]; }
 function isTaxable(it){ return /material/i.test(it); }
 
 function render(){
-  const tb = $("rows"); tb.innerHTML = "";
+  const tb=$("rows"); tb.innerHTML="";
   rows.forEach((r,i)=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML =
-      '<td><input value="'+r.item.replace(/"/g,'&quot;')+'" oninput="upd('+i+",'item',this.value)\"></td>"+
-      '<td><input value="'+r.desc.replace(/"/g,'&quot;')+'" placeholder="optional" oninput="upd('+i+",'desc',this.value)\"></td>"+
-      '<td class="num"><input type="number" step="any" value="'+r.qty+'" oninput="upd('+i+",'qty',this.value)\"></td>"+
-      '<td class="num"><input type="number" step="any" value="'+r.unit+'" oninput="upd('+i+",'unit',this.value)\"></td>"+
-      '<td class="lt-cost">'+fmt(r.qty*r.unit)+'</td>'+
-      '<td><button class="del" onclick="delRow('+i+')" title="remove">×</button></td>';
-    tb.appendChild(tr);
+    const d=document.createElement("div"); d.className="litem";
+    d.innerHTML=`
+      <div class="litem-r1">
+        <input class="litem-item" list="catlist" value="${esc(r.item)}" placeholder="Item / trade" oninput="upd(${i},'item',this.value)">
+        <button class="del" onclick="delRow(${i})" aria-label="remove">×</button>
+      </div>
+      <input class="litem-desc" value="${esc(r.desc)}" placeholder="description (optional)" oninput="upd(${i},'desc',this.value)">
+      <div class="litem-r2">
+        <label class="fld"><span>Qty</span><input type="number" inputmode="decimal" step="any" value="${r.qty}" oninput="upd(${i},'qty',this.value)"></label>
+        <label class="fld"><span>Unit $</span><input type="number" inputmode="decimal" step="any" value="${r.unit}" oninput="upd(${i},'unit',this.value)"></label>
+        <div class="litem-cost"><span>Line</span><b>${fmt(r.qty*r.unit)}</b></div>
+      </div>`;
+    tb.appendChild(d);
   });
   calc();
 }
-function upd(i,k,v){
-  if(k==='qty'||k==='unit'){ rows[i][k]=parseFloat(v)||0; render(); }
-  else { rows[i][k]=v; calc(); }
-}
+function upd(i,k,v){ if(k==='qty'||k==='unit'){ rows[i][k]=parseFloat(v)||0; render(); } else { rows[i][k]=v; calc(); } }
 function addRow(){ rows.push({item:"",desc:"",qty:1,unit:0}); render(); }
 function quickAdd(){ const v=$("quickAdd").value; if(!v) return; rows.push({item:v,desc:"",qty:1,unit:0}); $("quickAdd").value=""; render(); }
 function delRow(i){ rows.splice(i,1); render(); }
 
-let MODE="analyze"; // "analyze" = numbers are prices (margin baked in) · "cost" = numbers are costs, build a price
+let MODE="analyze";
 function roundUp(v,step){ return isFinite(v)? Math.ceil(v/step)*step : v; }
-function priceAtCost(tc,mm){ return mm>=1?Infinity:tc/(1-mm); }
 function setActive(m){ document.querySelectorAll(".sc").forEach(el=>el.classList.toggle("active", Math.abs(+el.dataset.m - m*100)<0.5)); }
 
 function setMode(mode){
@@ -333,17 +412,17 @@ function setMode(mode){
   $("modeCost").classList.toggle("active", mode==="cost");
   if(mode==="cost"){
     $("costsTitle").textContent="Job costs";
-    $("costsSub").textContent="Enter what the job actually costs you. Subs are billed as flat cost; markup is added on top.";
+    $("costsSub").textContent="Enter what the job actually costs you. Markup is added on top.";
     $("marginTitle").textContent="Markup on cost";
     $("margLbl").textContent="% added on top of your cost";
     $("recLbl").textContent="Recommended price (rounded up)";
     $("beLbl").textContent="Break-even (floor)";
     $("beSub").textContent="below this you lose money";
-    $("margin").value=40;
+    $("margin").value = (PROFILE.defMarkup!=null && PROFILE.defMarkup!=="") ? PROFILE.defMarkup : 40;
   } else {
     $("costsTitle").textContent="Estimate line items (priced)";
-    $("costsSub").textContent="These are the prices from the estimate — margin already baked in. Switch to \"Build price from my costs\" if you're entering raw costs.";
-    $("marginTitle").textContent="Baked-in margin (assumed)";
+    $("costsSub").textContent="These are the prices from the estimate — margin already baked in.";
+    $("marginTitle").textContent="Baked-in margin";
     $("margLbl").textContent="Margin already in the estimate";
     $("recLbl").textContent="Bid price (total)";
     $("beLbl").textContent="Implied cost";
@@ -365,99 +444,73 @@ function calc(){
   setActive(m);
 
   if(MODE==="cost"){
-    const baseCost=direct+taxAmt;
-    const contAmt=baseCost*cont;
-    const trueCost=baseCost+contAmt;
-    const rec=roundUp(trueCost*(1+m),50);              // MARKUP: add m% on top of cost, round up to a clean $50
-    const grossProfit=rec-trueCost;
-    const net=grossProfit-rec*oh;
-    const realM=rec>0?grossProfit/rec*100:0;           // resulting true gross margin (reference only)
+    const baseCost=direct+taxAmt, contAmt=baseCost*cont, trueCost=baseCost+contAmt;
+    const rec=roundUp(trueCost*(1+m),50);
+    const grossProfit=rec-trueCost, net=grossProfit-rec*oh, realM=rec>0?grossProfit/rec*100:0;
     const be=oh<1?trueCost/(1-oh):Infinity;
     $("p40").textContent=fmt(roundUp(trueCost*1.40,50));
     $("p45").textContent=fmt(roundUp(trueCost*1.45,50));
     $("p50").textContent=fmt(roundUp(trueCost*1.50,50));
     $("recPrice").textContent=fmt(rec);
-    $("recSub").textContent="+"+(m*100).toFixed(0)+"% markup · gross profit "+fmt(grossProfit)+" · "+realM.toFixed(0)+"% true margin";
+    $("recSub").textContent="+"+(m*100).toFixed(0)+"% markup · profit "+fmt(grossProfit)+" · "+realM.toFixed(0)+"% true margin";
     $("bePrice").textContent=fmt(be);
     $("netProfit").textContent=fmt(net);
     $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
-    $("sDirect").textContent=fmt(direct);
-    $("sTax").textContent=fmt(taxAmt);
-    $("sCont").textContent=fmt(contAmt);
-    $("sTrue").textContent=fmt(trueCost);
-    $("sMarkup").textContent=(m*100).toFixed(0)+"% on cost";
-    benchmarkCheck(rec);
-    quoteCheck(trueCost, be, oh, rec);
+    $("sDirect").textContent=fmt(direct); $("sTax").textContent=fmt(taxAmt); $("sCont").textContent=fmt(contAmt);
+    $("sTrue").textContent=fmt(trueCost); $("sMarkup").textContent=(m*100).toFixed(0)+"% on cost";
+    benchmarkCheck(rec); quoteCheck(trueCost, be, oh, rec);
   } else {
-    const price=direct;                          // line items are already PRICES
-    const impliedCost=price*(1-m);
-    const grossProfit=price*m;
-    const net=grossProfit-price*oh;
-    $("p40").textContent=fmt(price*0.40);
-    $("p45").textContent=fmt(price*0.45);
-    $("p50").textContent=fmt(price*0.50);
+    const price=direct, impliedCost=price*(1-m), grossProfit=price*m, net=grossProfit-price*oh;
+    $("p40").textContent=fmt(price*0.40); $("p45").textContent=fmt(price*0.45); $("p50").textContent=fmt(price*0.50);
     $("recPrice").textContent=fmt(price);
     $("recSub").textContent="Bid total · assuming "+(m*100).toFixed(0)+"% margin baked in → profit "+fmt(grossProfit);
     $("bePrice").textContent=fmt(impliedCost);
-    $("netProfit").textContent=fmt(net);
-    $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
-    $("sDirect").textContent=fmt(price);
-    $("sTax").textContent="—";
-    $("sCont").textContent="—";
-    $("sTrue").textContent=fmt(impliedCost);
-    $("sMarkup").textContent=(m*100).toFixed(0)+"% margin assumed";
-    benchmarkCheck(price);
-    $("quoteFlags").innerHTML="";
+    $("netProfit").textContent=fmt(net); $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
+    $("sDirect").textContent=fmt(price); $("sTax").textContent="—"; $("sCont").textContent="—";
+    $("sTrue").textContent=fmt(impliedCost); $("sMarkup").textContent=(m*100).toFixed(0)+"% margin assumed";
+    benchmarkCheck(price); $("quoteFlags").innerHTML="";
   }
+  if($("propTotal")) $("propTotal").textContent=$("recPrice").textContent;
 }
 
 function currentBench(){ return BENCH[$("benchCat").value]; }
-
 function benchmarkCheck(rec){
-  const b = currentBench();
-  const noteEl = $("benchNote");
-  const qty = parseFloat($("benchQty").value)||0;
-  if(!b){ $("benchRange").value=""; noteEl.textContent=""; return; }
-  $("benchRange").value = "$"+b.low+"–$"+b.high+"/"+b.unit;
-  if(qty<=0){ noteEl.textContent = b.note+"  Enter project size to compare."; return; }
-  const implied = rec/qty;
-  noteEl.innerHTML = "Your recommended price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs LA market <b>$"+b.low+"–$"+b.high+"/"+b.unit+"</b>. <span class='muted'>"+b.note+"</span>";
+  const b=currentBench(), noteEl=$("benchNote"), qty=parseFloat($("benchQty").value)||0;
+  if(!b){ noteEl.textContent=""; return; }
+  if(qty<=0){ noteEl.textContent=b.note+"  Enter project size to compare."; return; }
+  const implied=rec/qty;
+  noteEl.innerHTML="Your price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs LA market <b>$"+b.low+"–$"+b.high+"/"+b.unit+"</b>. <span class='muted'>"+b.note+"</span>";
 }
-
 function quoteCheck(trueCost, be, oh, rec){
-  const box=$("quoteFlags"); box.innerHTML="";
-  const flags=[];
-  const b=currentBench(); const qty=parseFloat($("benchQty").value)||0;
+  const box=$("quoteFlags"); box.innerHTML=""; const flags=[];
+  const b=currentBench(), qty=parseFloat($("benchQty").value)||0;
   if(b && qty>0 && isFinite(rec)){
     const implied=rec/qty;
-    if(implied > b.high*1.12) flags.push(["warn","At your target margin the price is <b>"+fmt2(implied)+"/"+b.unit+"</b> — above the LA market top of <b>$"+b.high+"/"+b.unit+"</b>. You may be <b>over-priced</b> for this client; expect pushback unless the scope justifies it."]);
-    else if(implied < b.low*0.9) flags.push(["warn","At your target margin the price is <b>"+fmt2(implied)+"/"+b.unit+"</b> — below the LA market floor of <b>$"+b.low+"/"+b.unit+"</b>. You may be <b>under-priced</b>; check you captured all costs."]);
+    if(implied > b.high*1.12) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — above the LA market top of <b>$"+b.high+"/"+b.unit+"</b>. Possibly <b>over-priced</b>; expect pushback unless scope justifies it."]);
+    else if(implied < b.low*0.9) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — below the LA market floor of <b>$"+b.low+"/"+b.unit+"</b>. Possibly <b>under-priced</b>; check you captured all costs."]);
   }
-  const p = parseFloat($("proposed").value);
+  const p=parseFloat($("proposed").value);
   if(!isNaN(p) && p>0){
-    const m = (p-trueCost)/p*100;
-    const net = (p-trueCost) - p*oh;
-    if(p < trueCost) flags.push(["bad","<b>Below cost.</b> This quote doesn't even cover your true job cost of <b>"+fmt(trueCost)+"</b>. You'd lose <b>"+fmt(trueCost-p)+"</b> before overhead."]);
-    else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+m.toFixed(0)+"% — covers direct cost but not overhead. Net loss of <b>"+fmt(-net)+"</b>."]);
-    else if(m < 40) flags.push(["warn","Margin <b>"+m.toFixed(0)+"%</b> — profitable (net "+fmt(net)+") but under your 40% floor. Little wiggle room left for change orders or surprises."]);
-    else if(m <= 50) flags.push(["good","Margin <b>"+m.toFixed(0)+"%</b> — in your 40–50% target band. Net profit <b>"+fmt(net)+"</b> after overhead. 👍"]);
-    else flags.push(["good","Margin <b>"+m.toFixed(0)+"%</b> — above target (net "+fmt(net)+"). Great if you win it; watch you're not leaving the bid on the table."]);
+    const mm=(p-trueCost)/p*100, net=(p-trueCost)-p*oh;
+    if(p < trueCost) flags.push(["bad","<b>Below cost.</b> Doesn't cover your true job cost of <b>"+fmt(trueCost)+"</b>. You'd lose <b>"+fmt(trueCost-p)+"</b>."]);
+    else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+mm.toFixed(0)+"% — covers direct cost but not overhead. Net loss <b>"+fmt(-net)+"</b>."]);
+    else if(mm < 40) flags.push(["warn","Margin <b>"+mm.toFixed(0)+"%</b> — profitable (net "+fmt(net)+") but thin. Little room for change orders."]);
+    else if(mm <= 50) flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b> — in the 40–50% band. Net <b>"+fmt(net)+"</b>. 👍"]);
+    else flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b> — above target (net "+fmt(net)+")."]);
   }
   flags.forEach(f=>{ const d=document.createElement("div"); d.className="flag "+f[0]; d.innerHTML=f[1]; box.appendChild(d); });
 }
 
 Object.keys(BENCH).forEach(k=>{ const o=document.createElement("option"); o.textContent=k; $("benchCat").appendChild(o); });
-function syncQtyLabel(){ const b=currentBench(); $("qtyLbl").textContent = b? (b.unit==='hr'?"Labor hours":"Square feet") : "Project size"; }
+function syncQtyLabel(){ const b=currentBench(); $("qtyLbl").textContent=b?(b.unit==='hr'?"Labor hours":"Square feet"):"Project size"; }
 $("benchCat").addEventListener("change",function(){ syncQtyLabel(); calc(); });
 ["margin","contingency","overhead","tax","benchQty","proposed"].forEach(id=>$(id).addEventListener("input",calc));
+$("modeAnalyze").addEventListener("click",()=>setMode("analyze"));
+$("modeCost").addEventListener("click",()=>setMode("cost"));
 
-$("modeAnalyze").addEventListener("click",function(){ setMode("analyze"); });
-$("modeCost").addEventListener("click",function(){ setMode("cost"); });
-defaultRows(); render(); syncQtyLabel(); setMode("analyze");
-
-/* ---------------- PDF IMPORT ---------------- */
+/* ---------------- PDF / OCR IMPORT ---------------- */
 if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
-const AMT_RE = /\$\s?\d[\d,]*(?:\.\d{2})?|\b\d[\d,]*\.\d{2}\b/g;
+const AMT_RE=/\$\s?\d[\d,]*(?:\.\d{2})?|\b\d[\d,]*\.\d{2}\b/g;
 function parseAmount(s){ const n=parseFloat(String(s).replace(/[^0-9.]/g,"")); return isFinite(n)?n:0; }
 function categorize(desc){
   const d=desc.toLowerCase();
@@ -466,81 +519,56 @@ function categorize(desc){
   if(/rental|scaffold|\blift\b|equipment|machine/.test(d)) return "Equipment / rental";
   if(/material|supplies|lumber|fixture|cabinet|hardware|sheet|grout|primer|stock/.test(d)) return "Materials";
   if(/labor|install|sub|contractor|crew|demo|framing|finish|service|hour|hrs/.test(d)) return "Subcontractor";
-  return "Materials"; // default: treat as taxable material (conservative on cost)
+  return "Materials";
 }
-// Some subset fonts (e.g. QuickBooks PDFs) shift glyph codes into the control range.
-// Digits/punctuation land in -; adding 29 recovers them without touching real ASCII.
-const SHIFT=/[-]/g;
-function norm(s){ return s.replace(/[-]/g,function(c){return String.fromCharCode(c.charCodeAt(0)+29);}); }
-// Authoritative norm (ASCII-only): shift glyph codes 15-28 up by 29 to recover digits/punctuation.
 function norm(s){ var o=""; for(var i=0;i<s.length;i++){ var k=s.charCodeAt(i); o+=String.fromCharCode(k>=15&&k<=28?k+29:k); } return o; }
 async function extractLines(file){
-  const buf=await file.arrayBuffer();
-  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
-  const lines=[];
+  const buf=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:buf}).promise; const lines=[];
   for(let p=1;p<=pdf.numPages;p++){
-    const tc=await (await pdf.getPage(p)).getTextContent();
-    const byY={};
-    tc.items.forEach(it=>{ if(!it.str)return; const y=Math.round(it.transform[5]);
-      (byY[y]=byY[y]||[]).push(it); });
+    const tc=await (await pdf.getPage(p)).getTextContent(); const byY={};
+    tc.items.forEach(it=>{ if(!it.str)return; const y=Math.round(it.transform[5]); (byY[y]=byY[y]||[]).push(it); });
     Object.keys(byY).map(Number).sort((a,b)=>b-a).forEach(y=>{
       const its=byY[y].sort((a,b)=>a.transform[4]-b.transform[4]);
-      // join glyph-by-glyph: concatenate abutting glyphs, add a space only on a real gap.
-      // This rebuilds numbers like "15,700.00" that pdf.js emits as separate positioned glyphs.
       let out="",pe=null,pcw=4;
       its.forEach(it=>{ const x=it.transform[4], w=it.width||0, cw=w/Math.max(it.str.length,1)||pcw;
-        if(pe!==null && (x-pe)>pcw*0.5) out+=" ";
-        out+=it.str; pe=x+w; pcw=cw||pcw; });
-      out=norm(out).replace(/\s+/g," ").trim();
-      if(out) lines.push(out);
+        if(pe!==null && (x-pe)>pcw*0.5) out+=" "; out+=it.str; pe=x+w; pcw=cw||pcw; });
+      out=norm(out).replace(/\s+/g," ").trim(); if(out) lines.push(out);
     });
   }
   return lines;
 }
-function setMsg(html,cls){ const e=$("importMsg"); e.innerHTML=html; e.style.color = cls==="bad"?"#ffb3a6":(cls==="good"?"#9ff0c8":"var(--muted)"); }
-// shared line parser — used by both the PDF text layer and OCR text
+function setMsg(html,cls){ const e=$("importMsg"); e.innerHTML=html; e.style.color=cls==="bad"?"#ffb3a6":(cls==="good"?"#9ff0c8":"var(--muted)"); }
 function parseEstimateLines(lines){
   const items=[], totals=[]; let prev="";
   const TOTLBL=/^(grand\s*total|total\s*due|amount\s*due|balance\s*due|project\s*total|total)\s*:?\s*$/i;
   lines.forEach(raw=>{
-    const line=raw.replace(/\d[\d,]*(?:\.\d+)?\s*%/g," ").replace(/\s+/g," ").trim(); // strip percentages (rates, tax %)
+    const line=raw.replace(/\d[\d,]*(?:\.\d+)?\s*%/g," ").replace(/\s+/g," ").trim();
     const m=line.match(AMT_RE); if(!m){ prev=line; return; }
     const amt=parseAmount(m[m.length-1]); if(amt<=0){ prev=line; return; }
-    const prevLbl=TOTLBL.test(prev); const prevStrong=/grand|project|contract/i.test(prev); prev=line; // total label may sit on its own line above the amount
+    const prevLbl=TOTLBL.test(prev); const prevStrong=/grand|project|contract/i.test(prev); prev=line;
     const isSub=/sub[\s-]*total/i.test(line);
     const isTotal=/(grand\s*total|total\s*due|amount\s*due|balance\s*due|project\s*total|contract\s*(sum|total|price)|\btotal\b)/i.test(line);
     const isTax=/\bsales?\s*tax\b|\buse\s*tax\b|\btax\b/i.test(line);
     const isAdj=/discount|credit|\bdeposit\b|\bpaid\b|\bless\b|down\s*payment|retainer/i.test(line);
     const isMeta=/\binvoice\b|\binv\.?\s*#|\bquote\s*#|\bestimate\s*#|\bdated?\b|\bp\.?\s*o\.?\s*#|\baccount\s*#|\bphone\b|\btel\b|\bfax\b|valid\s*(for|through|until)/i.test(line);
-    const isRange=/\$\s?\d[\d,]*(?:\.\d{2})?\s*(?:-|–|—|to)\s*\$?\s?\d[\d,]*(?:\.\d{2})?/i.test(line); // "$3,000 - $5,000"
+    const isRange=/\$\s?\d[\d,]*(?:\.\d{2})?\s*(?:-|–|—|to)\s*\$?\s?\d[\d,]*(?:\.\d{2})?/i.test(line);
     if(isSub) return;
     if(isTotal||prevLbl){ totals.push({amt, strong:/grand|due|project|contract/i.test(line)||prevStrong}); return; }
     if(isTax||isAdj||isMeta||isRange) return;
-    let desc=line.replace(AMT_RE,"")
-      .replace(/\b(qty|quantity|each|ea|hrs?|hours?|units?|@|per)\b/gi," ")
-      .replace(/[\s.\-–:;|=#*]+$/,"").replace(/^[\s.\-–:;|=#*]+/,"")
-      .replace(/\s+/g," ").trim();
+    let desc=line.replace(AMT_RE,"").replace(/\b(qty|quantity|each|ea|hrs?|hours?|units?|@|per)\b/gi," ").replace(/[\s.\-–:;|=#*]+$/,"").replace(/^[\s.\-–:;|=#*]+/,"").replace(/\s+/g," ").trim();
     if(desc.length<2) desc="Line item";
     items.push({item:categorize(line), desc:desc.slice(0,60), qty:1, unit:amt});
   });
-  items.splice(0,items.length, ...items.filter((it,i,a)=> !(i>0 && it.unit===a[i-1].unit && it.desc==="Line item"))); // drop footer repeats
+  items.splice(0,items.length, ...items.filter((it,i,a)=> !(i>0 && it.unit===a[i-1].unit && it.desc==="Line item")));
   return {items, totals};
 }
-// OCR helpers (Tesseract.js) for photos & scanned PDFs
 function ocrToLines(t){ return (t||"").split(/\r?\n+/).map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean); }
-async function ocrImageSrc(src,label){
-  const r=await Tesseract.recognize(src,"eng",{logger:m=>{ if(m.status==="recognizing text") setMsg((label||"Reading")+" — OCR "+Math.round((m.progress||0)*100)+"%"); }});
-  return r.data.text;
-}
+async function ocrImageSrc(src,label){ const r=await Tesseract.recognize(src,"eng",{logger:m=>{ if(m.status==="recognizing text") setMsg((label||"Reading")+" — OCR "+Math.round((m.progress||0)*100)+"%"); }}); return r.data.text; }
 async function ocrPdf(file){
-  const buf=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:buf}).promise;
-  const n=Math.min(pdf.numPages,8); let text="";
-  for(let p=1;p<=n;p++){
-    const page=await pdf.getPage(p); const vp=page.getViewport({scale:2});
+  const buf=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:buf}).promise; const n=Math.min(pdf.numPages,8); let text="";
+  for(let p=1;p<=n;p++){ const page=await pdf.getPage(p); const vp=page.getViewport({scale:2});
     const c=document.createElement("canvas"); c.width=vp.width; c.height=vp.height;
-    await page.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;
-    text+="\n"+await ocrImageSrc(c,"Scanned PDF p."+p+"/"+n);
-  }
+    await page.render({canvasContext:c.getContext("2d"),viewport:vp}).promise; text+="\n"+await ocrImageSrc(c,"Scanned PDF p."+p+"/"+n); }
   return text;
 }
 async function handleFile(file){
@@ -554,10 +582,9 @@ async function handleFile(file){
     if(isPdf){
       if(!window.pdfjsLib){ setMsg("PDF reader didn't load — check your connection.","bad"); return; }
       lines=await extractLines(file);
-      const chars=lines.join("").replace(/\s/g,"").length;
-      if(chars<20){ // no real text layer = a scan
+      if(lines.join("").replace(/\s/g,"").length<20){
         if(!window.Tesseract){ setMsg("This PDF is a scan and the OCR engine didn't load — check your connection, then retry.","bad"); return; }
-        setMsg("No text layer found — running OCR on the scan (this can take a moment)…");
+        setMsg("No text layer — running OCR on the scan (this can take a moment)…");
         lines=ocrToLines(await ocrPdf(file)); usedOcr=true;
       }
     } else {
@@ -566,63 +593,53 @@ async function handleFile(file){
       lines=ocrToLines(await ocrImageSrc(file,"Reading image")); usedOcr=true;
     }
     const {items, totals}=parseEstimateLines(lines);
-    if(!items.length){ setMsg(usedOcr?"OCR couldn't find priced line items — the image may be blurry or low-contrast. Try a sharper, straight-on photo, or enter the costs manually.":"Couldn't read line items from this PDF. Enter the costs manually below.","bad"); return; }
+    if(!items.length){ setMsg(usedOcr?"OCR couldn't find priced line items — try a sharper, straight-on photo, or enter costs manually.":"Couldn't read line items from this PDF. Enter costs manually.","bad"); return; }
     rows=items; render();
     let total=0; const strong=totals.find(t=>t.strong);
     if(strong) total=strong.amt; else if(totals.length) total=Math.max.apply(null,totals.map(t=>t.amt));
-    var loaded=false;
+    let loaded=false;
     if(items.length===1){ $("proposed").value=Math.round(items[0].unit); loaded=true; }
     else if(strong){ $("proposed").value=Math.round(strong.amt); loaded=true; }
     calc();
     const direct=items.reduce((s,r)=>s+r.unit,0);
-    const distinct=[...new Set(items.map(r=>r.unit))];
-    const packet=items.length>3 && distinct.length<items.length;
-    const totMsg=totals.length?(" Total label(s) seen: "+[...new Set(totals.map(t=>t.amt))].map(fmt).join(", ")+"."):"";
-    const priceMsg=loaded?" Loaded the price into Test-a-quote.":" <b>Set the price yourself</b> in Test-a-quote — multiple amounts here, no single clear total.";
-    const ocrMsg=usedOcr?" <b>Read by OCR</b> — double-check every number; scans/photos can misread digits.":"";
-    const warn=packet?" ⚠ Looks like a multi-page packet with repeated prices — check for duplicates.":" Review every line & item type below.";
+    const distinct=[...new Set(items.map(r=>r.unit))]; const packet=items.length>3 && distinct.length<items.length;
+    const totMsg=totals.length?(" Totals seen: "+[...new Set(totals.map(t=>t.amt))].map(fmt).join(", ")+"."):"";
+    const priceMsg=loaded?" Loaded the price into Test-a-quote.":" <b>Set the price yourself</b> — multiple amounts, no single clear total.";
+    const ocrMsg=usedOcr?" <b>Read by OCR</b> — double-check every number.":"";
+    const warn=packet?" ⚠ Multi-page packet with repeated prices — check for duplicates.":" Review every line below.";
     setMsg("Imported <b>"+items.length+"</b> line"+(items.length>1?"s":"")+" summing <b>"+fmt(direct)+"</b>."+totMsg+priceMsg+ocrMsg+warn,"good");
-  }catch(e){ setMsg("Couldn't read that file ("+(e&&e.message?e.message:"error")+"). Try a clearer file or enter lines manually.","bad"); }
+  }catch(e){ setMsg("Couldn't read that file ("+(e&&e.message?e.message:"error")+"). Try a clearer file or enter manually.","bad"); }
 }
 const drop=$("drop");
-$("browseLink").addEventListener("click",()=>$("pdfInput").click());
+$("browseLink").addEventListener("click",e=>{ e.stopPropagation(); $("pdfInput").click(); });
 drop.addEventListener("click",e=>{ if(e.target.id!=="browseLink") $("pdfInput").click(); });
 $("pdfInput").addEventListener("change",e=>handleFile(e.target.files[0]));
 ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
 drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; handleFile(f); });
 
-/* ---------------- PERSISTENCE + ARCHIVE + DOWNLOADS ---------------- */
-const LS_STATE="ea_state", LS_ARCH="ea_archive";
-function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
-
+/* ---------------- STATE / PERSISTENCE ---------------- */
+const LS_STATE="ea_state", LS_ARCH="ea_archive", LS_PROFILE="ea_profile";
 function getState(){
-  return { ts:Date.now(), mode:MODE,
-    jobName:$("jobName").value, clientType:$("clientType").value,
-    benchCat:$("benchCat").value, benchQty:$("benchQty").value,
-    margin:$("margin").value, contingency:$("contingency").value,
-    overhead:$("overhead").value, tax:$("tax").value, proposed:$("proposed").value,
+  return { ts:Date.now(), mode:MODE, jobName:$("jobName").value, clientType:$("clientType").value,
+    benchCat:$("benchCat").value, benchQty:$("benchQty").value, margin:$("margin").value,
+    contingency:$("contingency").value, overhead:$("overhead").value, tax:$("tax").value, proposed:$("proposed").value,
     rows: rows.map(r=>({item:r.item,desc:r.desc,qty:r.qty,unit:r.unit})) };
 }
-// recompute derived numbers from a state object (mirrors calc())
 function compute(s){
-  const m=(parseFloat(s.margin)||0)/100, cont=(parseFloat(s.contingency)||0)/100,
-        oh=(parseFloat(s.overhead)||0)/100, taxRate=(parseFloat(s.tax)||0)/100;
+  const m=(parseFloat(s.margin)||0)/100, cont=(parseFloat(s.contingency)||0)/100, oh=(parseFloat(s.overhead)||0)/100, taxRate=(parseFloat(s.tax)||0)/100;
   let direct=0, taxable=0;
   (s.rows||[]).forEach(r=>{ const c=(+r.qty||0)*(+r.unit||0); direct+=c; if(/material/i.test(r.item)) taxable+=c; });
   const taxAmt=taxable*taxRate;
   if(s.mode==="cost"){
     const baseCost=direct+taxAmt, contAmt=baseCost*cont, trueCost=baseCost+contAmt;
-    const rec=Math.ceil(trueCost*(1+m)/50)*50;          // MARKUP: cost + m%
-    const grossProfit=rec-trueCost, net=grossProfit-rec*oh,
-          markup=m*100, realM=rec>0?grossProfit/rec*100:0,
-          be=oh<1?trueCost/(1-oh):Infinity;
-    return {mode:"cost",direct,taxAmt,contAmt,trueCost,price:rec,grossProfit,net,markup,marginPct:realM,breakeven:be,markupPct:m*100};
+    const rec=Math.ceil(trueCost*(1+m)/50)*50;
+    const grossProfit=rec-trueCost, net=grossProfit-rec*oh, realM=rec>0?grossProfit/rec*100:0, be=oh<1?trueCost/(1-oh):Infinity;
+    return {mode:"cost",direct,taxAmt,contAmt,trueCost,price:rec,grossProfit,net,marginPct:realM,breakeven:be,markupPct:m*100};
   }
   const price=direct, impliedCost=price*(1-m), grossProfit=price*m, net=grossProfit-price*oh;
   return {mode:"analyze",direct,price,impliedCost,grossProfit,net,marginPct:m*100,assumed:m*100};
 }
-
 function persist(){ try{ localStorage.setItem(LS_STATE, JSON.stringify(getState())); }catch(e){} }
 function getArchive(){ try{ return JSON.parse(localStorage.getItem(LS_ARCH))||[]; }catch(e){ return []; } }
 function setArchive(a){ try{ localStorage.setItem(LS_ARCH, JSON.stringify(a)); }catch(e){} }
@@ -630,110 +647,213 @@ function setArchive(a){ try{ localStorage.setItem(LS_ARCH, JSON.stringify(a)); }
 function saveToArchive(){
   const st=getState(); const entry={id:"e"+st.ts, state:st, results:compute(st)};
   const a=getArchive(); a.unshift(entry); if(a.length>20) a.length=20; setArchive(a);
-  const n=$("savedNote"); n.textContent="✓ Saved to archive ("+a.length+"/20)"; setTimeout(()=>{n.textContent="";},3000);
-  renderArchive();
+  toast("✓ Saved to archive ("+a.length+"/20)"); renderArchive();
 }
-
+let ARCH_Q="";
 function renderArchive(){
-  const a=getArchive(), list=$("archiveList"); $("archCount").textContent="("+a.length+"/20)";
-  if(!a.length){ list.innerHTML='<div class="arch-empty">No saved estimates yet. On the Calculator, click <b>💾 Save to archive</b> to log one.</div>'; return; }
+  const all=getArchive(), list=$("archiveList"); $("archCount").textContent="("+all.length+"/20)";
+  const a=ARCH_Q ? all.filter(e=>((e.state.jobName||"")+"").toLowerCase().includes(ARCH_Q)) : all;
+  if(!all.length){ list.innerHTML='<div class="arch-empty">No saved estimates yet. On the Calculator, tap <b>💾 Save</b> to log one.</div>'; return; }
+  if(!a.length){ list.innerHTML='<div class="arch-empty">No estimates match “'+esc(ARCH_Q)+'”.</div>'; return; }
   list.innerHTML="";
   a.forEach(e=>{
     const s=e.state, r=e.results||compute(s);
-    const when=new Date(s.ts).toLocaleString(undefined,{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+    const when=new Date(s.ts).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
     const name=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const tag=r.mode==="cost"?"Build from cost":"Priced estimate";
     const nums=r.mode==="cost"
-      ? "Recommended <b>"+fmt(r.price)+"</b> · true cost "+fmt(r.trueCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net)+" · break-even "+fmt(r.breakeven)
+      ? "Price <b>"+fmt(r.price)+"</b> · cost "+fmt(r.trueCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net)
       : "Bid <b>"+fmt(r.price)+"</b> · implied cost "+fmt(r.impliedCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net);
     const div=document.createElement("div"); div.className="arch-entry";
-    div.innerHTML='<div style="min-width:240px"><div class="arch-meta">'+when+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span></div><div class="arch-nums">'+nums+'</div></div>'+
-      '<div class="arch-actions"><button data-a="load">Load</button><button data-a="dl">⬇ Download</button><button class="del" data-a="del">Delete</button></div>';
-    div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); showTab("calc"); };
+    div.innerHTML='<div class="arch-meta">'+when+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span></div><div class="arch-nums">'+nums+'</div>'+
+      '<div class="arch-row"><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
+    div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); showView("calc"); toast("Loaded into calculator"); };
+    div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; const arr=getArchive(); arr.unshift({id:"e"+st.ts,state:st,results:compute(st)}); if(arr.length>20)arr.length=20; setArchive(arr); renderArchive(); toast("Duplicated"); };
+    div.querySelector('[data-a=rename]').onclick=()=>{ const nn=prompt("Rename estimate:", s.jobName||""); if(nn==null) return; const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.state.jobName=nn; setArchive(arr); renderArchive(); } };
     div.querySelector('[data-a=dl]').onclick=()=>downloadSummary(s);
-    div.querySelector('[data-a=del]').onclick=()=>{ setArchive(getArchive().filter(x=>x.id!==e.id)); renderArchive(); };
+    div.querySelector('[data-a=del]').onclick=()=>{ if(confirm("Delete this estimate?")){ setArchive(getArchive().filter(x=>x.id!==e.id)); renderArchive(); } };
     list.appendChild(div);
   });
 }
 
+/* ---------------- SUMMARY DOWNLOAD ---------------- */
 function buildSummary(s){
   const r=compute(s), name=(s.jobName&&s.jobName.trim())||"Estimate", when=new Date(s.ts||Date.now()).toLocaleString();
   const rowsHtml=(s.rows||[]).filter(x=>((+x.qty||0)*(+x.unit||0))!==0||x.item||x.desc).map(x=>{
     const c=(+x.qty||0)*(+x.unit||0);
-    return "<tr><td>"+esc(x.item)+"</td><td>"+esc(x.desc)+"</td><td style='text-align:right'>"+(+x.qty||0)+"</td><td style='text-align:right'>"+fmt(+x.unit||0)+"</td><td style='text-align:right'>"+fmt(c)+"</td></tr>";
+    return "<tr><td>"+esc(x.item)+"</td><td>"+esc(x.desc)+"</td><td class=r>"+(+x.qty||0)+"</td><td class=r>"+fmt(+x.unit||0)+"</td><td class=r>"+fmt(c)+"</td></tr>";
   }).join("");
   let res;
   if(r.mode==="cost"){
-    res="<tr><td>True job cost</td><td style='text-align:right'>"+fmt(r.trueCost)+"</td></tr>"+
-      "<tr><td>Recommended price (+"+(r.markupPct||0).toFixed(0)+"% markup, rounded up)</td><td style='text-align:right'><b>"+fmt(r.price)+"</b></td></tr>"+
-      "<tr><td>True gross margin</td><td style='text-align:right'>"+r.marginPct.toFixed(1)+"%</td></tr>"+
-      "<tr><td>Net profit (after overhead)</td><td style='text-align:right'>"+fmt(r.net)+"</td></tr>"+
-      "<tr><td>Break-even (floor)</td><td style='text-align:right'>"+fmt(r.breakeven)+"</td></tr>";
+    res="<tr><td>True job cost</td><td class=r>"+fmt(r.trueCost)+"</td></tr><tr><td>Recommended price (+"+(r.markupPct||0).toFixed(0)+"% markup)</td><td class=r><b>"+fmt(r.price)+"</b></td></tr><tr><td>True gross margin</td><td class=r>"+r.marginPct.toFixed(1)+"%</td></tr><tr><td>Net profit (after overhead)</td><td class=r>"+fmt(r.net)+"</td></tr><tr><td>Break-even</td><td class=r>"+fmt(r.breakeven)+"</td></tr>";
   } else {
-    res="<tr><td>Bid total (priced estimate)</td><td style='text-align:right'><b>"+fmt(r.price)+"</b></td></tr>"+
-      "<tr><td>Assumed baked-in margin</td><td style='text-align:right'>"+r.assumed.toFixed(0)+"%</td></tr>"+
-      "<tr><td>Implied cost</td><td style='text-align:right'>"+fmt(r.impliedCost)+"</td></tr>"+
-      "<tr><td>Gross profit</td><td style='text-align:right'>"+fmt(r.grossProfit)+"</td></tr>"+
-      "<tr><td>Net profit (after overhead)</td><td style='text-align:right'>"+fmt(r.net)+"</td></tr>";
+    res="<tr><td>Bid total</td><td class=r><b>"+fmt(r.price)+"</b></td></tr><tr><td>Assumed baked-in margin</td><td class=r>"+r.assumed.toFixed(0)+"%</td></tr><tr><td>Implied cost</td><td class=r>"+fmt(r.impliedCost)+"</td></tr><tr><td>Gross profit</td><td class=r>"+fmt(r.grossProfit)+"</td></tr><tr><td>Net profit</td><td class=r>"+fmt(r.net)+"</td></tr>";
   }
-  return "<!DOCTYPE html><html><head><meta charset='utf-8'><title>"+esc(name)+" — Estimate Summary</title>"+
-    "<style>body{font:14px Arial,Helvetica,sans-serif;color:#1a2330;max-width:740px;margin:30px auto;padding:0 20px}h1{font-size:20px;margin:0 0 2px}.sub{color:#667;margin:0 0 18px;font-size:12px}table{width:100%;border-collapse:collapse;margin:8px 0 22px}th,td{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}th{text-align:left;background:#f3f5f8}h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 4px;color:#9a4a11}.foot{color:#889;font-size:11px;margin-top:26px;border-top:1px solid #dde;padding-top:10px}@media print{body{margin:0}}</style></head><body>"+
-    "<h1>Estimate Analyzer — Summary</h1><p class='sub'>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+" · "+(r.mode==="cost"?"Build price from costs":"Analyze priced estimate")+"</p>"+
-    "<h2>Line items</h2><table><thead><tr><th>Item</th><th>Description</th><th style='text-align:right'>Qty</th><th style='text-align:right'>Unit</th><th style='text-align:right'>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr></thead><tbody>"+(rowsHtml||"<tr><td colspan='5'>(no line items)</td></tr>")+"</tbody></table>"+
-    "<h2>Result</h2><table><tbody>"+res+"</tbody></table>"+
-    "<div class='foot'>Generated by Estimate Analyzer · estimate-analyzer-atb.vercel.app · Figures are estimates — verify against your own costs and the LA market before quoting.</div></body></html>";
+  return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(name)+" — Summary</title><style>body{font:14px Arial,sans-serif;color:#1a2330;max-width:740px;margin:26px auto;padding:0 18px}h1{font-size:20px;margin:0}.s{color:#667;font-size:12px;margin:2px 0 16px}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}.r{text-align:right}th{text-align:left;background:#f3f5f8}h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9a4a11;margin:16px 0 4px}.f{color:#889;font-size:11px;border-top:1px solid #dde;padding-top:10px;margin-top:22px}</style></head><body><h1>Estimate — internal summary</h1><div class=s>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+"</div><h2>Line items</h2><table><tr><th>Item</th><th>Description</th><th class=r>Qty</th><th class=r>Unit</th><th class=r>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr>"+(rowsHtml||"<tr><td colspan=5>(none)</td></tr>")+"</table><h2>Result</h2><table>"+res+"</table><div class=f>Internal worksheet — not for the client. estimate-analyzer-atb.vercel.app</div></body></html>";
 }
-function downloadSummary(s){
-  const blob=new Blob([buildSummary(s)],{type:"text/html"}), url=URL.createObjectURL(blob), a=document.createElement("a");
-  const nm=((s.jobName&&s.jobName.trim())||"estimate").replace(/[^a-z0-9]+/gi,"-").toLowerCase().replace(/^-|-$/g,"");
-  a.href=url; a.download="estimate-"+(nm||"summary")+"-"+new Date(s.ts||Date.now()).toISOString().slice(0,10)+".html";
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+function downloadHTML(html, filename){
+  const blob=new Blob([html],{type:"text/html"}), url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
+function slugify(x){ return String(x||"estimate").replace(/[^a-z0-9]+/gi,"-").toLowerCase().replace(/^-|-$/g,"")||"estimate"; }
+function downloadSummary(s){ downloadHTML(buildSummary(s), "estimate-"+slugify(s.jobName)+"-"+new Date(s.ts||Date.now()).toISOString().slice(0,10)+".html"); }
 
-function showTab(t){
-  const cal=t!=="archive";
-  $("calcView").style.display=cal?"":"none";
-  $("archiveView").style.display=cal?"none":"";
-  $("tabCalc").classList.toggle("active",cal);
-  $("tabArchive").classList.toggle("active",!cal);
-  if(!cal) renderArchive();
+/* ---------------- COMPANY PROFILE ---------------- */
+let PROFILE={};
+function getProfile(){ try{ return JSON.parse(localStorage.getItem(LS_PROFILE))||{}; }catch(e){ return {}; } }
+function loadProfileIntoForm(){
+  const p=PROFILE;
+  $("coName").value=p.name||""; $("coLicense").value=p.license||""; $("coPhone").value=p.phone||"";
+  $("coEmail").value=p.email||""; $("coAddress").value=p.address||"";
+  $("defMarkup").value=p.defMarkup!=null?p.defMarkup:40; $("defOverhead").value=p.defOverhead!=null?p.defOverhead:12;
+  $("defContingency").value=p.defContingency!=null?p.defContingency:10; $("defTax").value=p.defTax!=null?p.defTax:9.5;
+  $("coLogoPrev").style.backgroundImage=p.logo?("url("+p.logo+")"):"";
+  applyBrand();
 }
+function applyBrand(){
+  if(PROFILE.name){ $("brandName").textContent=PROFILE.name; }
+  if(PROFILE.logo){ $("brandLogo").style.background="#0000"; $("brandLogo").innerHTML='<img src="'+PROFILE.logo+'" style="width:30px;height:30px;border-radius:8px;object-fit:cover">'; }
+}
+$("pickLogo").addEventListener("click",()=>$("coLogo").click());
+$("coLogo").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  if(f.size>1200000){ toast("Logo too big — use one under ~1 MB"); return; }
+  const rd=new FileReader(); rd.onload=()=>{ PROFILE.logo=rd.result; $("coLogoPrev").style.backgroundImage="url("+rd.result+")"; }; rd.readAsDataURL(f);
+});
+$("clearLogo").addEventListener("click",()=>{ PROFILE.logo=""; $("coLogoPrev").style.backgroundImage=""; });
+$("saveSettings").addEventListener("click",()=>{
+  PROFILE.name=$("coName").value.trim(); PROFILE.license=$("coLicense").value.trim(); PROFILE.phone=$("coPhone").value.trim();
+  PROFILE.email=$("coEmail").value.trim(); PROFILE.address=$("coAddress").value.trim();
+  PROFILE.defMarkup=$("defMarkup").value; PROFILE.defOverhead=$("defOverhead").value; PROFILE.defContingency=$("defContingency").value; PROFILE.defTax=$("defTax").value;
+  try{ localStorage.setItem(LS_PROFILE, JSON.stringify(PROFILE)); }catch(e){}
+  applyBrand(); toast("Profile saved"); showView("calc");
+});
 
-// restore-aware: apply a saved state to the calculator
+/* ---------------- CLIENT PROPOSAL ---------------- */
+function proposalLines(s){
+  const r=compute(s), total=r.price;
+  const raw=(s.rows||[]).map(x=>({item:x.item,desc:(x.desc&&x.desc.trim())||x.item||"Work",amt:(+x.qty||0)*(+x.unit||0)})).filter(x=>x.amt>0);
+  if(s.mode==="cost"){
+    const ct=raw.reduce((a,x)=>a+x.amt,0);
+    return raw.map(x=>({desc:x.desc, price: ct>0? Math.round(total*(x.amt/ct)) : 0}));
+  }
+  return raw.map(x=>({desc:x.desc, price:Math.round(x.amt)}));
+}
+function buildProposal(s, inp){
+  const p=PROFILE, r=compute(s), total=r.price;
+  const dep=Math.max(0,Math.min(100,inp.deposit||0)), depAmt=Math.round(total*dep/100), bal=total-depAmt;
+  const head=(p.logo?"<img src='"+p.logo+"' style='height:52px;border-radius:8px;margin-bottom:6px'>":"")+
+    "<div style='font-size:22px;font-weight:800'>"+esc(p.name||"Your Company")+"</div>"+
+    "<div class=m>"+[esc(p.license||""),esc(p.phone||""),esc(p.email||""),esc(p.address||"")].filter(Boolean).join(" · ")+"</div>";
+  let items="";
+  if(inp.itemize){
+    const L=proposalLines(s);
+    items="<h2>Scope &amp; pricing</h2><table>"+L.map(x=>"<tr><td>"+esc(x.desc)+"</td><td class=r>"+fmt(x.price)+"</td></tr>").join("")+"</table>";
+  }
+  const scope=inp.scope?("<h2>Scope of work</h2><p>"+esc(inp.scope).replace(/\n/g,"<br>")+"</p>"):"";
+  const terms=inp.terms?("<h2>Terms</h2><p class=t>"+esc(inp.terms).replace(/\n/g,"<br>")+"</p>"):"";
+  return "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Proposal — "+esc(p.name||"")+"</title>"+
+    "<style>body{font:14px Arial,Helvetica,sans-serif;color:#1a2330;max-width:760px;margin:24px auto;padding:0 22px}.m{color:#667;font-size:12px;margin-top:2px}h1{font-size:15px;letter-spacing:2px;color:#9a4a11;margin:22px 0 4px}h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:#9a4a11;margin:20px 0 6px}p{margin:6px 0}.t{white-space:normal;color:#333}.top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a2330;padding-bottom:12px}.meta{text-align:right;font-size:12px;color:#667}table{width:100%;border-collapse:collapse;margin:6px 0}td{border-bottom:1px solid #e2e6ea;padding:8px;font-size:13.5px}.r{text-align:right;white-space:nowrap}.tot{display:flex;justify-content:space-between;font-size:18px;font-weight:800;border-top:2px solid #1a2330;padding-top:10px;margin-top:6px}.pay{background:#f5f7f9;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13.5px}.sig{display:flex;gap:40px;margin-top:34px}.sig div{flex:1;border-top:1px solid #99a;padding-top:6px;font-size:12px;color:#667}.print{position:fixed;top:10px;right:10px}@media print{.print{display:none}body{margin:0}}</style></head><body>"+
+    "<button class=print onclick='window.print()' style='padding:8px 14px;font-size:13px'>🖨 Print / Save PDF</button>"+
+    "<div class=top><div>"+head+"</div><div class=meta>PROPOSAL<br>"+new Date().toLocaleDateString()+"<br>#"+String(s.ts||Date.now()).slice(-6)+"</div></div>"+
+    "<h1>PROPOSAL</h1>"+
+    "<h2>Prepared for</h2><p><b>"+esc(inp.client||"Client")+"</b>"+(inp.clientAddr?"<br>"+esc(inp.clientAddr):"")+"</p>"+
+    scope+items+
+    "<div class=tot><span>Total</span><span>"+fmt(total)+"</span></div>"+
+    (dep>0?"<div class=pay><b>Deposit ("+dep+"%):</b> "+fmt(depAmt)+" &nbsp;·&nbsp; <b>Balance on completion:</b> "+fmt(bal)+"</div>":"")+
+    terms+
+    "<div class=sig><div>Client signature &amp; date</div><div>"+esc(p.name||"Contractor")+" &amp; date</div></div>"+
+    "</body></html>";
+}
+$("openProposal").addEventListener("click",()=>{
+  if(!PROFILE.name){ toast("Add your company name in Settings first"); showView("settings"); return; }
+  if(!$("termsText").value){ $("termsText").value="This proposal is valid for 30 days. Price covers the scope described above; unforeseen conditions discovered during work (hidden damage, code upgrades) may require a written change order. Permits not included unless stated."; }
+  $("propTotal").textContent=$("recPrice").textContent;
+  showView("proposal");
+});
+$("proposalBack").addEventListener("click",()=>showView("calc"));
+$("genProposal").addEventListener("click",()=>{
+  const s=getState();
+  const inp={ client:$("clientName").value, clientAddr:$("clientAddress").value, scope:$("projScope").value,
+    deposit:parseFloat($("depositPct").value)||0, terms:$("termsText").value, itemize:$("itemize").checked };
+  const html=buildProposal(s, inp);
+  const w=window.open("","_blank");
+  if(w){ w.document.write(html); w.document.close(); toast("Proposal opened — print to PDF"); }
+  else { downloadHTML(html, "proposal-"+slugify(inp.client||s.jobName)+"-"+new Date().toISOString().slice(0,10)+".html"); toast("Pop-up blocked — proposal downloaded"); }
+});
+
+/* ---------------- ARCHIVE BACKUP ---------------- */
+$("archSearch").addEventListener("input",e=>{ ARCH_Q=(e.target.value||"").toLowerCase().trim(); renderArchive(); });
+$("exportArch").addEventListener("click",()=>{
+  const data=JSON.stringify({exported:new Date().toISOString(), archive:getArchive(), profile:getProfile()},null,2);
+  downloadHTML.length; const blob=new Blob([data],{type:"application/json"}), url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download="estimate-analyzer-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast("Backup downloaded");
+});
+$("importArch").addEventListener("click",()=>$("importArchInput").click());
+$("importArchInput").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const d=JSON.parse(rd.result); const inc=Array.isArray(d)?d:(d.archive||[]);
+    if(!Array.isArray(inc)) throw 0;
+    if(!confirm("Restore "+inc.length+" estimate(s)? This replaces your current archive on this device.")) return;
+    setArchive(inc.slice(0,20));
+    if(d.profile && confirm("Also restore the company profile from this backup?")){ PROFILE=d.profile; localStorage.setItem(LS_PROFILE,JSON.stringify(PROFILE)); loadProfileIntoForm(); }
+    renderArchive(); toast("Restored "+Math.min(inc.length,20)+" estimate(s)");
+  }catch(err){ toast("That file isn't a valid backup"); } };
+  rd.readAsText(f); e.target.value="";
+});
+
+/* ---------------- NAV / VIEWS ---------------- */
+function showView(name){
+  ["calc","archive","settings","proposal"].forEach(v=>{ const el=$(v+"View"); if(el) el.classList.toggle("on", v===name); });
+  $("navCalc").classList.toggle("active", name==="calc"||name==="proposal");
+  $("navArchive").classList.toggle("active", name==="archive");
+  $("navSettings").classList.toggle("active", name==="settings");
+  if(name==="archive") renderArchive();
+  window.scrollTo(0,0);
+}
+$("navCalc").addEventListener("click",()=>showView("calc"));
+$("navArchive").addEventListener("click",()=>showView("archive"));
+$("navSettings").addEventListener("click",()=>showView("settings"));
+
+/* ---------------- APPLY STATE / AUTOSAVE / INIT ---------------- */
 const _render=render, _setMode=setMode;
 function applyState(s){
   if(!s) return;
   _setMode(s.mode==="cost"?"cost":"analyze");
-  $("jobName").value=s.jobName||"";
-  if(s.clientType) $("clientType").value=s.clientType;
+  $("jobName").value=s.jobName||""; if(s.clientType) $("clientType").value=s.clientType;
   if(s.benchCat){ $("benchCat").value=s.benchCat; syncQtyLabel(); }
-  $("benchQty").value=s.benchQty||"";
-  if(s.margin) $("margin").value=s.margin;
+  $("benchQty").value=s.benchQty||""; if(s.margin) $("margin").value=s.margin;
   if(s.contingency!=null) $("contingency").value=s.contingency;
-  if(s.overhead!=null) $("overhead").value=s.overhead;
-  if(s.tax!=null) $("tax").value=s.tax;
+  if(s.overhead!=null) $("overhead").value=s.overhead; if(s.tax!=null) $("tax").value=s.tax;
   $("proposed").value=s.proposed||"";
   if(s.rows&&s.rows.length) rows=s.rows.map(r=>({item:r.item||"",desc:r.desc||"",qty:+r.qty||0,unit:+r.unit||0}));
-  _render();
-  persist();
+  _render(); persist();
 }
-
-// autosave hooks
 render=function(){ _render(); persist(); };
 setMode=function(m){ _setMode(m); persist(); };
 document.addEventListener("input", persist);
 document.addEventListener("change", persist);
 
-// wiring
-$("tabCalc").addEventListener("click",()=>showTab("calc"));
-$("tabArchive").addEventListener("click",()=>showTab("archive"));
 $("saveArch").addEventListener("click",saveToArchive);
 $("dlCurrent").addEventListener("click",()=>downloadSummary(getState()));
-$("dlLast").addEventListener("click",()=>{ let s; try{ s=JSON.parse(localStorage.getItem(LS_STATE)); }catch(e){} downloadSummary(s&&s.rows?s:getState()); });
-$("clearArch").addEventListener("click",()=>{ if(confirm("Clear all saved estimates? This can't be undone.")){ setArchive([]); renderArchive(); } });
+$("dlLast").addEventListener("click",()=>{ let s; try{ s=JSON.parse(localStorage.getItem(LS_STATE)); }catch(e){} downloadSummary(s&&s.rows?s:getState()); toast("Summary downloaded"); });
+$("clearArch").addEventListener("click",()=>{ if(confirm("Clear all saved estimates? This can't be undone.")){ setArchive([]); renderArchive(); toast("Archive cleared"); } });
 
-// restore previous session if present (crash recovery)
-try{ const saved=JSON.parse(localStorage.getItem(LS_STATE)); if(saved&&saved.rows) applyState(saved); }catch(e){}
+// boot
+PROFILE=getProfile();
+defaultRows(); render(); syncQtyLabel();
+loadProfileIntoForm();
+let hadState=false;
+try{ const saved=JSON.parse(localStorage.getItem(LS_STATE)); if(saved&&saved.rows){ applyState(saved); hadState=true; } }catch(e){}
+if(!hadState){
+  // seed defaults from profile for a fresh estimate
+  if(PROFILE.defOverhead!=null&&PROFILE.defOverhead!=="") $("overhead").value=PROFILE.defOverhead;
+  if(PROFILE.defContingency!=null&&PROFILE.defContingency!=="") $("contingency").value=PROFILE.defContingency;
+  if(PROFILE.defTax!=null&&PROFILE.defTax!=="") $("tax").value=PROFILE.defTax;
+  setMode("analyze");
+}
 renderArchive();
 </script>
 </body>
