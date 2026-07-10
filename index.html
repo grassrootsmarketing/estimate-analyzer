@@ -144,6 +144,12 @@
   .installhint{background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:14px;margin:14px 0 0;font-size:13.5px;color:var(--ink);line-height:1.45}
   .installhint .ih-btns{display:flex;gap:8px;margin-top:11px}
   .installhint .btn{min-height:44px}
+  .sigoverlay{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+  .sigcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;width:100%;max-width:560px}
+  .sightitle{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent2)}
+  .sigcanvas{width:100%;height:220px;background:#fff;border-radius:12px;touch-action:none;display:block;margin-top:10px;cursor:crosshair}
+  .sigbtns{display:flex;gap:8px;margin-top:12px}
+  .sigbtns .btn{min-height:46px}
   @media(min-width:720px){
     .app{max-width:720px}
     .recbox .v{font-size:44px}
@@ -351,11 +357,29 @@
         <div class="switch" style="align-self:end;padding-bottom:12px"><span class="lbl" style="margin:0">Itemize line prices</span><input id="itemize" type="checkbox" checked></div>
       </div>
       <div class="field"><span class="lbl">Terms</span><textarea id="termsText"></textarea></div>
-      <div class="btns"><button class="btn primary wide" id="genProposal">Preview / download proposal</button></div>
-      <p class="muted" style="font-size:11.5px;margin-top:8px">Opens a print-ready page — use your browser's <b>Share → Print → Save as PDF</b> to send it. If a pop-up is blocked, it downloads instead.</p>
+      <div id="sigStatus" class="bench" style="margin-top:0"></div>
+      <div class="btns"><button class="btn wide" id="openSign">✍️ Client signs here</button></div>
+      <div class="btns">
+        <button class="btn primary" id="shareProposal">📤 Send proposal</button>
+        <button class="btn" id="genProposal">🖨 Preview / print</button>
+      </div>
+      <p class="muted" style="font-size:11.5px;margin-top:8px"><b>Send</b> opens your phone's share sheet with the proposal attached. <b>Preview</b> opens a print-ready page (Share → Print → Save as PDF). Your cost &amp; margin never appear on it.</p>
     </div>
   </section>
 
+</div>
+
+<div id="sigOverlay" class="sigoverlay" style="display:none">
+  <div class="sigcard">
+    <div class="sightitle">Client signature</div>
+    <canvas id="sigCanvas" class="sigcanvas"></canvas>
+    <p class="muted" style="font-size:11.5px;margin:8px 0 0">Sign with your finger. This is stored on this device and shown on the proposal only.</p>
+    <div class="sigbtns">
+      <button class="btn ghost" id="sigClear">Clear</button>
+      <button class="btn ghost" id="sigCancel">Cancel</button>
+      <button class="btn primary" id="sigConfirm">Confirm</button>
+    </div>
+  </div>
 </div>
 
 <nav class="nav">
@@ -710,7 +734,8 @@ function renderArchive(){
       ? "Price <b>"+fmt(r.price)+"</b> · cost "+fmt(r.trueCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net)
       : "Bid <b>"+fmt(r.price)+"</b> · implied cost "+fmt(r.impliedCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net);
     const div=document.createElement("div"); div.className="arch-entry";
-    div.innerHTML='<div class="arch-meta">'+when+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span></div><div class="arch-nums">'+nums+'</div>'+
+    const signedTag=(s.proposal&&s.proposal.signature)?'<span class="tag">✍ signed</span>':'';
+    div.innerHTML='<div class="arch-meta">'+when+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
       '<div class="arch-row"><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
     div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); showView("calc"); toast("Loaded into calculator"); };
     div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; const arr=getArchive(); arr.unshift({id:"e"+st.ts,state:st,results:compute(st)}); setArchive(arr); renderArchive(); toast("Duplicated"); };
@@ -807,25 +832,65 @@ function buildProposal(s, inp){
     "<div class=tot><span>Total</span><span>"+fmt(total)+"</span></div>"+
     (dep>0?"<div class=pay><b>Deposit ("+dep+"%):</b> "+fmt(depAmt)+" &nbsp;·&nbsp; <b>Balance on completion:</b> "+fmt(bal)+"</div>":"")+
     terms+
-    "<div class=sig><div>Client signature &amp; date</div><div>"+esc(p.name||"Contractor")+" &amp; date</div></div>"+
+    "<div class=sig><div>"+(inp.signature?"<img src='"+inp.signature+"' style='max-height:64px;display:block;margin-bottom:2px'>":"")+"Client signature"+(inp.signedAt?" — <b>signed on device</b> "+esc(new Date(inp.signedAt).toLocaleString()):" &amp; date")+"</div><div>"+esc(p.name||"Contractor")+" &amp; date</div></div>"+
     "</body></html>";
 }
 $("openProposal").addEventListener("click",()=>{
   if(!PROFILE.name){ toast("Add your company name in Settings first"); showView("settings"); return; }
   if(!$("termsText").value){ $("termsText").value="This proposal is valid for 30 days. Price covers the scope described above; unforeseen conditions discovered during work (hidden damage, code upgrades) may require a written change order. Permits not included unless stated."; }
   $("propTotal").textContent=$("recPrice").textContent;
+  updateSigStatus();
   showView("proposal");
 });
 $("proposalBack").addEventListener("click",()=>showView("calc"));
-$("genProposal").addEventListener("click",()=>{
-  const s=getState();
-  const inp={ client:$("clientName").value, clientAddr:$("clientAddress").value, scope:$("projScope").value,
-    deposit:parseFloat($("depositPct").value)||0, terms:$("termsText").value, itemize:$("itemize").checked };
-  const html=buildProposal(s, inp);
-  const w=window.open("","_blank");
-  if(w){ w.document.write(html); w.document.close(); toast("Proposal opened — print to PDF"); }
-  else { downloadHTML(html, "proposal-"+slugify(inp.client||s.jobName)+"-"+new Date().toISOString().slice(0,10)+".html"); toast("Pop-up blocked — proposal downloaded"); }
+
+/* ---- signature (P2) ---- */
+let SIGNATURE=null, SIGNED_AT=null, _sigCtx=null, _sigDrawing=false, _sigInk=false;
+function proposalInputs(){ return { client:$("clientName").value, clientAddr:$("clientAddress").value, scope:$("projScope").value,
+  deposit:parseFloat($("depositPct").value)||0, terms:$("termsText").value, itemize:$("itemize").checked, signature:SIGNATURE, signedAt:SIGNED_AT }; }
+function openProposalWindow(html){ const w=window.open("","_blank"); if(w){ w.document.write(html); w.document.close(); toast("Proposal opened — print to PDF"); } else { downloadHTML(html, "proposal-"+new Date().toISOString().slice(0,10)+".html"); toast("Pop-up blocked — proposal downloaded"); } }
+$("genProposal").addEventListener("click",()=>{ const s=getState(); openProposalWindow(buildProposal(s, proposalInputs())); });
+async function shareProposal(){
+  const s=getState(), inp=proposalInputs(), html=buildProposal(s, inp);
+  const fname="proposal-"+slugify(inp.client||s.jobName||"estimate")+".html";
+  try{
+    const file=new File([html], fname, {type:"text/html"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:"Proposal", text:"Proposal"+(PROFILE.name?" from "+PROFILE.name:"")});
+      return;
+    }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  openProposalWindow(html); // fallback: print pipeline
+}
+$("shareProposal").addEventListener("click",shareProposal);
+function updateSigStatus(){ $("sigStatus").innerHTML = SIGNATURE ? ("✍️ <b>Signed on device</b> "+esc(new Date(SIGNED_AT).toLocaleString())+" — appears on the proposal.") : ""; }
+function openSignature(){
+  const c=$("sigCanvas"); $("sigOverlay").style.display="flex";
+  const r=c.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  c.width=Math.round((r.width||320)*dpr); c.height=Math.round((r.height||220)*dpr);
+  _sigCtx=c.getContext("2d"); _sigCtx.setTransform(dpr,0,0,dpr,0,0);
+  _sigCtx.lineWidth=2.4; _sigCtx.lineCap="round"; _sigCtx.lineJoin="round"; _sigCtx.strokeStyle="#101820";
+  _sigCtx.clearRect(0,0,c.width,c.height); _sigInk=false;
+}
+function _sigPos(e){ const r=$("sigCanvas").getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+(function(){ const c=$("sigCanvas");
+  c.addEventListener("pointerdown",e=>{ e.preventDefault(); _sigDrawing=true; _sigInk=true; const p=_sigPos(e); _sigCtx.beginPath(); _sigCtx.moveTo(p.x,p.y); try{c.setPointerCapture(e.pointerId);}catch(_){} });
+  c.addEventListener("pointermove",e=>{ if(!_sigDrawing||!_sigCtx) return; e.preventDefault(); const p=_sigPos(e); _sigCtx.lineTo(p.x,p.y); _sigCtx.stroke(); });
+  c.addEventListener("pointerup",()=>{ _sigDrawing=false; }); c.addEventListener("pointercancel",()=>{ _sigDrawing=false; });
+})();
+$("openSign").addEventListener("click",()=>{ if(!PROFILE.name){ toast("Add your company name in Settings first"); showView("settings"); return; } openSignature(); });
+$("sigClear").addEventListener("click",()=>{ if(_sigCtx){ const c=$("sigCanvas"); _sigCtx.clearRect(0,0,c.width,c.height); _sigInk=false; } });
+$("sigCancel").addEventListener("click",()=>{ $("sigOverlay").style.display="none"; });
+$("sigConfirm").addEventListener("click",()=>{
+  if(!_sigInk){ toast("Draw a signature first"); return; }
+  SIGNATURE=$("sigCanvas").toDataURL("image/png"); SIGNED_AT=Date.now();
+  $("sigOverlay").style.display="none"; updateSigStatus();
+  saveSigned(); toast("Signed & saved to archive");
 });
+function saveSigned(){
+  const st=getState(); st.proposal=proposalInputs();
+  const a=getArchive(); a.unshift({id:"e"+st.ts, state:st, results:compute(st)}); setArchive(a); renderArchive();
+}
 
 /* ---------------- ARCHIVE BACKUP ---------------- */
 $("archSearch").addEventListener("input",e=>{ ARCH_Q=(e.target.value||"").toLowerCase().trim(); renderArchive(); });
@@ -874,6 +939,12 @@ function applyState(s){
   if(s.overhead!=null) $("overhead").value=s.overhead; if(s.tax!=null) $("tax").value=s.tax;
   $("proposed").value=s.proposed||"";
   if(s.rows&&s.rows.length) rows=s.rows.map(r=>({item:r.item||"",desc:r.desc||"",qty:+r.qty||0,unit:+r.unit||0}));
+  if(s.proposal){ const pr=s.proposal;
+    $("clientName").value=pr.client||""; $("clientAddress").value=pr.clientAddr||""; $("projScope").value=pr.scope||"";
+    if(pr.deposit!=null) $("depositPct").value=pr.deposit; $("termsText").value=pr.terms||""; $("itemize").checked=pr.itemize!==false;
+    SIGNATURE=pr.signature||null; SIGNED_AT=pr.signedAt||null;
+  } else { SIGNATURE=null; SIGNED_AT=null; }
+  if(typeof updateSigStatus==="function") updateSigStatus();
   _render(); persist();
 }
 render=function(){ _render(); persist(); };
