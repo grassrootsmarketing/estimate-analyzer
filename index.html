@@ -150,6 +150,10 @@
   .sigcanvas{width:100%;height:220px;background:#fff;border-radius:12px;touch-action:none;display:block;margin-top:10px;cursor:crosshair}
   .sigbtns{display:flex;gap:8px;margin-top:12px}
   .sigbtns .btn{min-height:46px}
+  .benchrow{border-top:1px solid var(--line);padding:10px 0}
+  .benchrow .bn{font-size:13px;font-weight:600;margin-bottom:6px}
+  .benchrow .bfields{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+  .benchrow .bunit{color:var(--muted);font-size:12px;padding-bottom:13px}
   @media(min-width:720px){
     .app{max-width:720px}
     .recbox .v{font-size:44px}
@@ -341,6 +345,13 @@
       </div>
       <div class="btns"><button class="btn primary wide" id="saveSettings">Save profile &amp; defaults</button></div>
     </div>
+    <div class="card">
+      <h2>Benchmarks (over/under check)</h2>
+      <p class="sub">The market ranges used to flag over/under-pricing. Edit them as your market shifts — the date shows on every flag.</p>
+      <div class="field"><span class="lbl">Last updated (label shown on flags)</span><input id="benchUpdated" placeholder="Jan 2026" /></div>
+      <div id="benchList"></div>
+      <div class="btns"><button class="btn primary" id="saveBench">Save benchmarks</button><button class="btn ghost" id="resetBench">Reset to LA 2026</button></div>
+    </div>
   </section>
 
   <!-- ============ PROPOSAL ============ -->
@@ -406,8 +417,9 @@ function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("sho
   const a=document.createElement("link"); a.rel="apple-touch-icon"; a.href=icon; document.head.appendChild(a);
 })();
 
-// LA 2026 benchmark ranges.
-const BENCH = {
+// LA 2026 benchmark ranges (seed — editable in Settings, persisted as ea_bench).
+const SEED_UPDATED="Jan 2026";
+const SEED_BENCH = {
   "— none / skip check —": null,
   "Interior painting (per sf)":           {unit:"sf", low:3.00, high:6.50, note:"2-coat standard prep; older homes +$0.50–0.75/sf."},
   "Drywall hang & finish (per sf)":       {unit:"sf", low:2.00, high:5.00, note:"Labor $1–3/sf; +5–10% for structural/seismic."},
@@ -419,6 +431,8 @@ const BENCH = {
   "Remodel — kitchen (per sf)":           {unit:"sf", low:135, high:450, note:"Budget $135/sf → mid $400+/sf."},
   "MEP service labor (per hour)":         {unit:"hr", low:95, high:200, note:"What customers pay; sub cost ~$60–110/hr."},
 };
+let BENCH = JSON.parse(JSON.stringify(SEED_BENCH));
+let BENCH_UPDATED = SEED_UPDATED;
 
 let rows = [];
 function defaultRows(){ rows=[{item:"Subcontractor",desc:"",qty:1,unit:0},{item:"Materials",desc:"",qty:1,unit:0},{item:"Permits / fees",desc:"",qty:1,unit:0}]; }
@@ -525,15 +539,15 @@ function benchmarkCheck(rec){
   if(!b){ noteEl.textContent=""; return; }
   if(qty<=0){ noteEl.textContent=b.note+"  Enter project size to compare."; return; }
   const implied=rec/qty;
-  noteEl.innerHTML="Your price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs LA market <b>$"+b.low+"–$"+b.high+"/"+b.unit+"</b>. <span class='muted'>"+b.note+"</span>";
+  noteEl.innerHTML="Your price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs your benchmark <b>$"+b.low+"–$"+b.high+"/"+b.unit+"</b> <span class='muted'>(updated "+esc(BENCH_UPDATED)+")</span>. <span class='muted'>"+b.note+"</span>";
 }
 function quoteCheck(trueCost, be, oh, rec){
   const box=$("quoteFlags"); box.innerHTML=""; const flags=[];
   const b=currentBench(), qty=parseFloat($("benchQty").value)||0;
   if(b && qty>0 && isFinite(rec)){
     const implied=rec/qty;
-    if(implied > b.high*1.12) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — above the LA market top of <b>$"+b.high+"/"+b.unit+"</b>. Possibly <b>over-priced</b>; expect pushback unless scope justifies it."]);
-    else if(implied < b.low*0.9) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — below the LA market floor of <b>$"+b.low+"/"+b.unit+"</b>. Possibly <b>under-priced</b>; check you captured all costs."]);
+    if(implied > b.high*1.12) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — above your benchmark top of <b>$"+b.high+"/"+b.unit+"</b> (updated "+esc(BENCH_UPDATED)+"). Possibly <b>over-priced</b>; expect pushback unless scope justifies it."]);
+    else if(implied < b.low*0.9) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — below your benchmark floor of <b>$"+b.low+"/"+b.unit+"</b> (updated "+esc(BENCH_UPDATED)+"). Possibly <b>under-priced</b>; check you captured all costs."]);
   }
   const p=parseFloat($("proposed").value);
   if(!isNaN(p) && p>0){
@@ -799,6 +813,36 @@ $("saveSettings").addEventListener("click",()=>{
   applyBrand(); toast("Profile saved"); showView("calc");
 });
 
+/* ---- editable benchmarks (P3) ---- */
+function renderBenchSettings(){
+  const wrap=$("benchList"); if(!wrap) return; wrap.innerHTML="";
+  Object.keys(BENCH).forEach(k=>{ const b=BENCH[k]; if(!b) return;
+    const row=document.createElement("div"); row.className="benchrow";
+    row.innerHTML='<div class="bn">'+esc(k)+'</div><div class="bfields">'+
+      '<label class="fld"><span>Low $</span><input type="number" inputmode="decimal" step="any" data-k="'+esc(k)+'" data-f="low" value="'+b.low+'"></label>'+
+      '<label class="fld"><span>High $</span><input type="number" inputmode="decimal" step="any" data-k="'+esc(k)+'" data-f="high" value="'+b.high+'"></label>'+
+      '<div class="bunit">/'+esc(b.unit)+'</div></div>';
+    wrap.appendChild(row);
+  });
+  $("benchUpdated").value=BENCH_UPDATED;
+}
+function saveBench(){
+  $("benchList").querySelectorAll("input[data-k]").forEach(inp=>{
+    const k=inp.dataset.k, f=inp.dataset.f, v=parseFloat(inp.value);
+    if(BENCH[k] && isFinite(v)) BENCH[k][f]=v;
+  });
+  BENCH_UPDATED=(($("benchUpdated").value||"").trim())||BENCH_UPDATED;
+  saveKey("ea_bench",{updated:BENCH_UPDATED,data:BENCH});
+  toast("Benchmarks saved"); calc();
+}
+function resetBench(){
+  BENCH=JSON.parse(JSON.stringify(SEED_BENCH)); BENCH_UPDATED=SEED_UPDATED;
+  saveKey("ea_bench",{updated:BENCH_UPDATED,data:BENCH});
+  renderBenchSettings(); calc(); toast("Reset to LA 2026 defaults");
+}
+$("saveBench").addEventListener("click",saveBench);
+$("resetBench").addEventListener("click",resetBench);
+
 /* ---------------- CLIENT PROPOSAL ---------------- */
 function proposalLines(s){
   const r=compute(s), total=r.price;
@@ -895,7 +939,7 @@ function saveSigned(){
 /* ---------------- ARCHIVE BACKUP ---------------- */
 $("archSearch").addEventListener("input",e=>{ ARCH_Q=(e.target.value||"").toLowerCase().trim(); renderArchive(); });
 $("exportArch").addEventListener("click",()=>{
-  const data=JSON.stringify({exported:new Date().toISOString(), archive:getArchive(), profile:getProfile()},null,2);
+  const data=JSON.stringify({exported:new Date().toISOString(), archive:getArchive(), profile:getProfile(), benchmarks:{updated:BENCH_UPDATED,data:BENCH}},null,2);
   downloadHTML.length; const blob=new Blob([data],{type:"application/json"}), url=URL.createObjectURL(blob), a=document.createElement("a");
   a.href=url; a.download="estimate-analyzer-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
   toast("Backup downloaded");
@@ -909,6 +953,7 @@ $("importArchInput").addEventListener("change",e=>{
     if(!confirm("Restore "+inc.length+" estimate(s)? This replaces your current archive on this device.")) return;
     setArchive(inc.slice(0,500));
     if(d.profile && confirm("Also restore the company profile from this backup?")){ PROFILE=d.profile; saveKey(LS_PROFILE,PROFILE); loadProfileIntoForm(); }
+    if(d.benchmarks && d.benchmarks.data){ BENCH=d.benchmarks.data; BENCH_UPDATED=d.benchmarks.updated||BENCH_UPDATED; saveKey("ea_bench",d.benchmarks); calc(); }
     renderArchive(); toast("Restored "+Math.min(inc.length,500)+" estimate(s)");
   }catch(err){ toast("That file isn't a valid backup"); } };
   rd.readAsText(f); e.target.value="";
@@ -921,6 +966,7 @@ function showView(name){
   $("navArchive").classList.toggle("active", name==="archive");
   $("navSettings").classList.toggle("active", name==="settings");
   if(name==="archive") renderArchive();
+  if(name==="settings") renderBenchSettings();
   window.scrollTo(0,0);
 }
 $("navCalc").addEventListener("click",()=>showView("calc"));
@@ -1000,6 +1046,8 @@ async function maybeInstallHint(){
   await migrate();
   PROFILE = (IDB_OK? await idbGet(LS_PROFILE):null) || readLS(LS_PROFILE) || {};
   ARCH_CACHE = (IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
+  const sb = (IDB_OK? await idbGet("ea_bench"):null) || readLS("ea_bench");
+  if(sb && sb.data){ const merged=JSON.parse(JSON.stringify(SEED_BENCH)); Object.keys(sb.data).forEach(k=>{ if(merged[k]&&sb.data[k]) merged[k]=sb.data[k]; }); BENCH=merged; BENCH_UPDATED=sb.updated||BENCH_UPDATED; }
   const saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null;
   STATE_CACHE = saved;
   defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm();
