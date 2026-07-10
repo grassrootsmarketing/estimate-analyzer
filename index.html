@@ -154,6 +154,14 @@
   .benchrow .bn{font-size:13px;font-weight:600;margin-bottom:6px}
   .benchrow .bfields{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
   .benchrow .bunit{color:var(--muted);font-size:12px;padding-bottom:13px}
+  .oc{border:1px solid var(--line);border-radius:20px;padding:8px 13px;font-size:12px;font-weight:800;cursor:pointer;text-transform:capitalize}
+  .oc-pend{color:var(--muted)}
+  .oc-won{background:#143026;border-color:#1f5a40;color:#9ff0c8}
+  .oc-lost{background:#3a1c17;border-color:#7a342a;color:#ffb3a6}
+  .simlist{margin-top:6px}
+  .simrow{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+  .hrow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  .hrow:first-child{border-top:none}
   @media(min-width:720px){
     .app{max-width:720px}
     .recbox .v{font-size:44px}
@@ -187,6 +195,11 @@
       <button id="modeCost">🧮 Build from cost</button>
     </div>
 
+    <div id="outcomePrompt" class="installhint" style="display:none">
+      <div id="outcomePromptText"></div>
+      <div class="ih-btns"><button id="ocWon" class="btn primary">Won</button><button id="ocLost" class="btn">Lost</button><button id="ocLater" class="btn ghost">Later</button></div>
+    </div>
+
     <div class="card result">
       <div class="marg-head">
         <span class="t" id="marginTitle">Baked-in margin</span>
@@ -215,6 +228,8 @@
       </div>
       <div class="savednote" id="savedNote"></div>
     </div>
+
+    <div id="similarCard" class="card" style="display:none;padding:12px 14px"></div>
 
     <div class="card">
       <h2>📄 Import — PDF or photo</h2>
@@ -308,8 +323,9 @@
         <input id="importArchInput" type="file" accept="application/json,.json" hidden>
       </div>
     </div>
+    <div class="card"><h2>📊 Your history</h2><div id="historyBox"></div></div>
     <div id="archiveList"></div>
-    <p class="muted" style="font-size:12px">Your last 20 saved estimates live on this device and auto-save (crash-safe). Use <b>Backup</b> to export a file you can restore on another device.</p>
+    <p class="muted" style="font-size:12px">Your saved estimates live on this device and auto-save (crash-safe). Use <b>Backup</b> to export a file you can restore on another device.</p>
   </section>
 
   <!-- ============ SETTINGS ============ -->
@@ -378,6 +394,10 @@
     </div>
   </section>
 
+</div>
+
+<div id="previewOverlay" class="sigoverlay" style="display:none">
+  <div class="sigcard"><div id="previewBody"></div><div class="sigbtns"><button class="btn primary" id="previewClose">Close</button></div></div>
 </div>
 
 <div id="sigOverlay" class="sigoverlay" style="display:none">
@@ -531,23 +551,24 @@ function calc(){
     benchmarkCheck(price); $("quoteFlags").innerHTML="";
   }
   if($("propTotal")) $("propTotal").textContent=$("recPrice").textContent;
+  if(typeof renderSimilar==="function") renderSimilar();
 }
 
 function currentBench(){ return BENCH[$("benchCat").value]; }
 function benchmarkCheck(rec){
-  const b=currentBench(), noteEl=$("benchNote"), qty=parseFloat($("benchQty").value)||0;
+  const b=activeBench(), noteEl=$("benchNote"), qty=parseFloat($("benchQty").value)||0;
   if(!b){ noteEl.textContent=""; return; }
   if(qty<=0){ noteEl.textContent=b.note+"  Enter project size to compare."; return; }
   const implied=rec/qty;
-  noteEl.innerHTML="Your price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs your benchmark <b>$"+b.low+"–$"+b.high+"/"+b.unit+"</b> <span class='muted'>(updated "+esc(BENCH_UPDATED)+")</span>. <span class='muted'>"+b.note+"</span>";
+  noteEl.innerHTML="Your price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs "+esc(b.src)+" <b>$"+bnum(b.low)+"–$"+bnum(b.high)+"/"+b.unit+"</b>. <span class='muted'>"+b.note+"</span>";
 }
 function quoteCheck(trueCost, be, oh, rec){
   const box=$("quoteFlags"); box.innerHTML=""; const flags=[];
-  const b=currentBench(), qty=parseFloat($("benchQty").value)||0;
+  const b=activeBench(), qty=parseFloat($("benchQty").value)||0;
   if(b && qty>0 && isFinite(rec)){
     const implied=rec/qty;
-    if(implied > b.high*1.12) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — above your benchmark top of <b>$"+b.high+"/"+b.unit+"</b> (updated "+esc(BENCH_UPDATED)+"). Possibly <b>over-priced</b>; expect pushback unless scope justifies it."]);
-    else if(implied < b.low*0.9) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — below your benchmark floor of <b>$"+b.low+"/"+b.unit+"</b> (updated "+esc(BENCH_UPDATED)+"). Possibly <b>under-priced</b>; check you captured all costs."]);
+    if(implied > b.high*1.12) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — above the top of <b>$"+bnum(b.high)+"/"+b.unit+"</b> from "+esc(b.src)+". Possibly <b>over-priced</b>; expect pushback unless scope justifies it."]);
+    else if(implied < b.low*0.9) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — below the floor of <b>$"+bnum(b.low)+"/"+b.unit+"</b> from "+esc(b.src)+". Possibly <b>under-priced</b>; check you captured all costs."]);
   }
   const p=parseFloat($("proposed").value);
   if(!isNaN(p) && p>0){
@@ -725,9 +746,38 @@ function persist(){ const st=getState(); STATE_CACHE=st; saveKey(LS_STATE, st); 
 function getArchive(){ return ARCH_CACHE; }
 function setArchive(a){ ARCH_CACHE=a; saveKey(LS_ARCH, a); }
 
+/* ---- past-job memory (P4) ---- */
+function deriveMeta(s){
+  let trade="", size=null; const bc=(s&&s.benchCat)||"";
+  if(bc && bc.indexOf("—")!==0) trade=bc.replace(/\s*\(per\s+\w+\)\s*$/i,"").trim();
+  const b=BENCH[bc], q=parseFloat(s&&s.benchQty)||0;
+  if(b && q>0) size={n:q, unit:b.unit};
+  if(!trade){ const cnt={}; ((s&&s.rows)||[]).forEach(r=>{ const it=(r.item||"").trim(); if(it) cnt[it]=(cnt[it]||0)+1; }); trade=Object.keys(cnt).sort((x,y)=>cnt[y]-cnt[x])[0]||""; }
+  return {trade, size};
+}
+function entryMeta(e){ const d=deriveMeta(e.state||{}); return { trade:e.trade||d.trade||"", size:e.size||d.size||null, outcome:e.outcome||"pending", actualCost:(e.actualCost!=null?e.actualCost:null) }; }
+function newEntry(st){ const m=deriveMeta(st); return {id:"e"+st.ts, state:st, results:compute(st), trade:m.trade, size:m.size, outcome:"pending", actualCost:null}; }
+function median(a){ if(!a.length) return 0; const s=a.slice().sort((x,y)=>x-y), n=s.length, m=Math.floor(n/2); return n%2?s[m]:(s[m-1]+s[m])/2; }
+function entryPrice(e){ return (e.results&&e.results.price)||compute(e.state).price||0; }
+// personal benchmark: >=3 WON jobs, same trade & unit → real min/median/max $ per unit
+function personalBench(trade, unit){
+  if(!trade||!unit) return null; const pts=[];
+  getArchive().forEach(e=>{ const m=entryMeta(e); if(m.outcome!=="won"||m.trade!==trade) return;
+    if(!m.size||m.size.unit!==unit||!(m.size.n>0)) return; const p=entryPrice(e); if(p>0) pts.push(p/m.size.n); });
+  if(pts.length<3) return null;
+  return {low:Math.min.apply(null,pts), high:Math.max.apply(null,pts), median:median(pts), n:pts.length, unit};
+}
+// which benchmark drives the over/under flag — personal won-jobs FIRST, else static table (never blended)
+function activeBench(){
+  const bc=$("benchCat").value, st=BENCH[bc]; if(!st) return null;
+  const trade=deriveMeta(getState()).trade, pb=personalBench(trade, st.unit);
+  if(pb) return {unit:st.unit, low:pb.low, high:pb.high, note:"Median "+fmt2(pb.median)+"/"+st.unit+" across your won "+esc(trade)+" jobs.", src:"your won jobs ("+pb.n+")", personal:true};
+  return {unit:st.unit, low:st.low, high:st.high, note:st.note, src:"your benchmarks, updated "+esc(BENCH_UPDATED), personal:false};
+}
+function bnum(v){ return Number.isInteger(v)?v:(Math.round(v*100)/100); }
+
 function saveToArchive(){
-  const st=getState(); const entry={id:"e"+st.ts, state:st, results:compute(st)};
-  const a=getArchive(); a.unshift(entry); setArchive(a);
+  const st=getState(); const a=getArchive(); a.unshift(newEntry(st)); setArchive(a);
   toast("✓ Saved ("+a.length+")");
   if(a.length===200) toast("You have 200 saved estimates — consider clearing old ones.");
   renderArchive();
@@ -740,25 +790,94 @@ function renderArchive(){
   if(!a.length){ list.innerHTML='<div class="arch-empty">No estimates match “'+esc(ARCH_Q)+'”.</div>'; return; }
   list.innerHTML="";
   a.forEach(e=>{
-    const s=e.state, r=e.results||compute(s);
+    const s=e.state, r=e.results||compute(s), m=entryMeta(e);
     const when=new Date(s.ts).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
     const name=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const tag=r.mode==="cost"?"Build from cost":"Priced estimate";
     const nums=r.mode==="cost"
       ? "Price <b>"+fmt(r.price)+"</b> · cost "+fmt(r.trueCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net)
       : "Bid <b>"+fmt(r.price)+"</b> · implied cost "+fmt(r.impliedCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net);
-    const div=document.createElement("div"); div.className="arch-entry";
     const signedTag=(s.proposal&&s.proposal.signature)?'<span class="tag">✍ signed</span>':'';
-    div.innerHTML='<div class="arch-meta">'+when+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
-      '<div class="arch-row"><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
-    div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); showView("calc"); toast("Loaded into calculator"); };
-    div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; const arr=getArchive(); arr.unshift({id:"e"+st.ts,state:st,results:compute(st)}); setArchive(arr); renderArchive(); toast("Duplicated"); };
+    const ocls={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome]||"oc-pend";
+    const acLabel=m.actualCost!=null?("actual "+fmt(m.actualCost)):"+ actual $";
+    const meta=when+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"");
+    const div=document.createElement("div"); div.className="arch-entry";
+    div.innerHTML='<div class="arch-meta">'+meta+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
+      '<div class="arch-row"><button class="oc '+ocls+'" data-a="oc">'+m.outcome+'</button><button data-a="ac">'+acLabel+'</button><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
+    function persistMeta(){ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.trade=m.trade; t.size=m.size; t.outcome=m.outcome; t.actualCost=m.actualCost; setArchive(arr); } }
+    div.querySelector('[data-a=oc]').onclick=()=>{ m.outcome=m.outcome==="pending"?"won":(m.outcome==="won"?"lost":"pending"); persistMeta(); renderArchive(); renderHistory(); };
+    div.querySelector('[data-a=ac]').onclick=()=>{ const v=prompt("Actual final cost for this job ($):", m.actualCost!=null?m.actualCost:""); if(v==null) return; const n=parseFloat(v); m.actualCost=(v.trim()===""?null:(isFinite(n)?n:null)); persistMeta(); renderArchive(); renderHistory(); };
+    div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); showView("calc"); toast("Loaded into calculator"); maybeOutcomePrompt(e); };
+    div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; const arr=getArchive(); arr.unshift(newEntry(st)); setArchive(arr); renderArchive(); toast("Duplicated"); };
     div.querySelector('[data-a=rename]').onclick=()=>{ const nn=prompt("Rename estimate:", s.jobName||""); if(nn==null) return; const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.state.jobName=nn; setArchive(arr); renderArchive(); } };
     div.querySelector('[data-a=dl]').onclick=()=>downloadSummary(s);
-    div.querySelector('[data-a=del]').onclick=()=>{ if(confirm("Delete this estimate?")){ setArchive(getArchive().filter(x=>x.id!==e.id)); renderArchive(); } };
+    div.querySelector('[data-a=del]').onclick=()=>{ if(confirm("Delete this estimate?")){ setArchive(getArchive().filter(x=>x.id!==e.id)); renderArchive(); renderHistory(); } };
     list.appendChild(div);
   });
+  renderHistory();
 }
+
+/* "Your history" stats (computed on the fly) */
+function renderHistory(){
+  const wrap=$("historyBox"); if(!wrap) return;
+  const arr=getArchive();
+  const decided=arr.filter(e=>{ const o=entryMeta(e).outcome; return o==="won"||o==="lost"; });
+  if(!decided.length){ wrap.innerHTML='<p class="muted" style="font-size:12.5px;margin:0">Mark jobs won or lost (tap the outcome chip on an entry) to build your win-rate and pricing history here.</p>'; return; }
+  let rows="";
+  [["Under 20%",0,20],["20–35%",20,35],["Over 35%",35,1e9]].forEach(band=>{
+    const inB=decided.filter(e=>{ const mp=(e.results&&e.results.marginPct)||0; return mp>=band[1] && mp<band[2]; });
+    const won=inB.filter(e=>entryMeta(e).outcome==="won").length;
+    rows+="<div class='hrow'><span>"+band[0]+" margin</span><span>"+(inB.length?Math.round(won/inB.length*100)+"% won ("+won+"/"+inB.length+")":"—")+"</span></div>";
+  });
+  const mk=o=>{ const v=arr.filter(e=>entryMeta(e).outcome===o && e.results && e.results.mode==="cost" && e.results.markupPct!=null).map(e=>e.results.markupPct); return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null; };
+  const w=mk("won"), l=mk("lost");
+  rows+="<div class='hrow'><span>Avg markup — won vs lost</span><span>"+(w!=null?w+"%":"—")+" vs "+(l!=null?l+"%":"—")+"</span></div>";
+  const varr=arr.filter(e=>entryMeta(e).actualCost!=null && e.results && e.results.trueCost>0).map(e=>((entryMeta(e).actualCost - e.results.trueCost)/e.results.trueCost)*100);
+  if(varr.length){ const av=Math.round(varr.reduce((a,b)=>a+b,0)/varr.length); rows+="<div class='hrow'><span>Actual vs estimated cost</span><span>"+(av>=0?"+":"")+av+"% over "+varr.length+" job"+(varr.length>1?"s":"")+"</span></div>"; }
+  wrap.innerHTML=rows;
+}
+/* stale-pending prompt on load */
+let _promptEntryId=null;
+function maybeOutcomePrompt(e){
+  const m=entryMeta(e); if(m.outcome!=="pending") return;
+  if((Date.now()-(e.state.ts||Date.now()))/864e5 < 14) return;
+  _promptEntryId=e.id; $("outcomePromptText").innerHTML="Did you win <b>"+esc(e.state.jobName||"this job")+"</b>?"; $("outcomePrompt").style.display="";
+}
+function setPromptOutcome(o){
+  const arr=getArchive(), t=arr.find(x=>x.id===_promptEntryId);
+  if(t){ const m=entryMeta(t); t.trade=m.trade; t.size=m.size; t.actualCost=m.actualCost; t.outcome=o; setArchive(arr); renderHistory(); renderSimilar(); toast("Marked "+o); }
+  $("outcomePrompt").style.display="none"; _promptEntryId=null;
+}
+$("ocWon").addEventListener("click",()=>setPromptOutcome("won"));
+$("ocLost").addEventListener("click",()=>setPromptOutcome("lost"));
+$("ocLater").addEventListener("click",()=>{ $("outcomePrompt").style.display="none"; _promptEntryId=null; });
+
+/* "past jobs like this" — below the result card, matched by trade + size ±40% */
+function renderSimilar(){
+  const card=$("similarCard"); if(!card) return;
+  const cur=deriveMeta(getState());
+  if(!cur.trade || !cur.size || !(cur.size.n>0)){ card.style.display="none"; return; }
+  const ms=getArchive().filter(e=>{ const m=entryMeta(e); if(m.trade!==cur.trade || !m.size || m.size.unit!==cur.size.unit) return false; const ratio=m.size.n/cur.size.n; return ratio>=0.6 && ratio<=1.4; }).slice(0,3);
+  if(!ms.length){ card.style.display="none"; return; }
+  let html='<details><summary>📁 '+ms.length+' past job'+(ms.length>1?'s':'')+' like this</summary><div class="simlist">';
+  ms.forEach(e=>{ const m=entryMeta(e), r=e.results||compute(e.state), oc={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome];
+    html+='<div class="simrow" data-id="'+esc(e.id)+'"><div><b>'+esc(e.state.jobName||"Estimate")+'</b><div class="arch-meta">'+new Date(e.state.ts).toLocaleDateString()+(m.size?" · "+m.size.n+" "+m.size.unit:"")+'</div></div><div style="text-align:right">'+fmt(r.price)+'<div class="arch-meta">'+r.marginPct.toFixed(0)+'% · <span class="oc '+oc+'" style="padding:1px 7px">'+m.outcome+'</span></div></div></div>';
+  });
+  card.innerHTML=html+'</div></details>'; card.style.display="";
+  card.querySelectorAll(".simrow").forEach(row=>{ row.onclick=()=>{ const e=getArchive().find(x=>x.id===row.dataset.id); if(e) previewEntry(e); }; });
+}
+function previewEntry(e){
+  const s=e.state, r=e.results||compute(s), m=entryMeta(e), oc={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome];
+  const rowsH=(s.rows||[]).filter(x=>((+x.qty||0)*(+x.unit||0))>0).map(x=>"<div class='hrow'><span>"+esc(x.desc||x.item)+"</span><span>"+fmt((+x.qty||0)*(+x.unit||0))+"</span></div>").join("");
+  $("previewBody").innerHTML="<div class='sightitle'>"+esc(s.jobName||"Estimate")+"</div><p class='muted' style='font-size:12px;margin:4px 0 10px'>"+new Date(s.ts).toLocaleString()+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"")+" · <span class='oc "+oc+"' style='padding:1px 7px'>"+m.outcome+"</span></p>"+
+    "<div class='hrow'><span>"+(r.mode==="cost"?"Price":"Bid")+"</span><span><b>"+fmt(r.price)+"</b></span></div>"+
+    "<div class='hrow'><span>"+(r.mode==="cost"?"True cost":"Implied cost")+"</span><span>"+fmt(r.mode==="cost"?r.trueCost:r.impliedCost)+"</span></div>"+
+    "<div class='hrow'><span>Margin</span><span>"+r.marginPct.toFixed(0)+"%</span></div><div class='hrow'><span>Net</span><span>"+fmt(r.net)+"</span></div>"+
+    (m.actualCost!=null?"<div class='hrow'><span>Actual cost</span><span>"+fmt(m.actualCost)+"</span></div>":"")+
+    (rowsH?"<div style='margin-top:8px'>"+rowsH+"</div>":"");
+  $("previewOverlay").style.display="flex";
+}
+$("previewClose").addEventListener("click",()=>{ $("previewOverlay").style.display="none"; });
 
 /* ---------------- SUMMARY DOWNLOAD ---------------- */
 function buildSummary(s){
@@ -933,7 +1052,7 @@ $("sigConfirm").addEventListener("click",()=>{
 });
 function saveSigned(){
   const st=getState(); st.proposal=proposalInputs();
-  const a=getArchive(); a.unshift({id:"e"+st.ts, state:st, results:compute(st)}); setArchive(a); renderArchive();
+  const a=getArchive(); a.unshift(newEntry(st)); setArchive(a); renderArchive();
 }
 
 /* ---------------- ARCHIVE BACKUP ---------------- */
@@ -967,6 +1086,7 @@ function showView(name){
   $("navSettings").classList.toggle("active", name==="settings");
   if(name==="archive") renderArchive();
   if(name==="settings") renderBenchSettings();
+  if(name==="calc" && typeof renderSimilar==="function") renderSimilar();
   window.scrollTo(0,0);
 }
 $("navCalc").addEventListener("click",()=>showView("calc"));
