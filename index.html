@@ -86,6 +86,10 @@
   .bench{font-size:12.5px;color:var(--muted);margin-top:8px}
   /* line items */
   .litem{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:11px;margin-bottom:9px}
+  .litem.review{border-color:#8a6d1f;box-shadow:inset 0 0 0 1px #6b561a}
+  .reviewbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:9px;background:#352c12;border:1px solid #6b561a;border-radius:10px;padding:7px 10px}
+  .revbadge{font-size:12px;color:#ffe39a;font-weight:700;line-height:1.2}
+  .revok{background:var(--accent);color:#1a1108;border:none;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;cursor:pointer;min-height:38px;white-space:nowrap}
   .litem-r1{display:flex;gap:8px;align-items:center}
   .litem-item{flex:1}
   .litem-desc{margin-top:8px}
@@ -230,6 +234,19 @@
     </div>
 
     <div id="similarCard" class="card" style="display:none;padding:12px 14px"></div>
+
+    <div class="card" id="voiceCard">
+      <h2>🎤 Describe the job</h2>
+      <p class="sub">Talk it out — e.g. "two bathrooms, demo and retile, 120 square feet, materials about eighteen hundred, two guys three days at 65 an hour." It fills in cost lines for you to review. Nothing is invented; anything unclear is flagged.</p>
+      <div class="btns">
+        <button class="btn primary wide" id="micBtn">🎤 Start talking</button>
+      </div>
+      <textarea id="transcript" placeholder="…or type / paste the job description here" style="display:none;width:100%;min-height:88px;margin-top:10px;box-sizing:border-box;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--card2,#141a22);color:var(--ink);font-size:15px;line-height:1.4"></textarea>
+      <div class="btns" id="voiceSubmitRow" style="display:none;margin-top:10px">
+        <button class="btn primary wide" id="structureBtn">Turn into line items →</button>
+      </div>
+      <div class="bench" id="voiceMsg" style="margin-top:8px"></div>
+    </div>
 
     <div class="card">
       <h2>📄 Import — PDF or photo</h2>
@@ -461,7 +478,7 @@ function isTaxable(it){ return /material/i.test(it); }
 function render(){
   const tb=$("rows"); tb.innerHTML="";
   rows.forEach((r,i)=>{
-    const d=document.createElement("div"); d.className="litem";
+    const d=document.createElement("div"); d.className="litem"+(r.review?" review":"");
     d.innerHTML=`
       <div class="litem-r1">
         <input class="litem-item" list="catlist" value="${esc(r.item)}" placeholder="Item / trade" oninput="upd(${i},'item',this.value)">
@@ -472,15 +489,76 @@ function render(){
         <label class="fld"><span>Qty</span><input type="number" inputmode="decimal" step="any" value="${r.qty}" oninput="upd(${i},'qty',this.value)"></label>
         <label class="fld"><span>Unit $</span><input type="number" inputmode="decimal" step="any" value="${r.unit}" oninput="upd(${i},'unit',this.value)"></label>
         <div class="litem-cost"><span>Line</span><b>${fmt(r.qty*r.unit)}</b></div>
-      </div>`;
+      </div>
+      ${r.review?`<div class="reviewbar"><span class="revbadge">${r.flag?("⚠ "+esc(r.flag||"needs a number")):"Review — from voice"}</span><button class="revok" onclick="confirmRow(${i})">✓ Looks right</button></div>`:""}`;
     tb.appendChild(d);
   });
   calc();
 }
-function upd(i,k,v){ if(k==='qty'||k==='unit'){ rows[i][k]=parseFloat(v)||0; render(); } else { rows[i][k]=v; calc(); } }
+function upd(i,k,v){ if(k==='qty'||k==='unit'){ rows[i][k]=parseFloat(v)||0; rows[i].review=false; rows[i].flag=null; render(); } else { rows[i][k]=v; calc(); } }
+function confirmRow(i){ if(rows[i]){ rows[i].review=false; rows[i].flag=null; render(); } }
 function addRow(){ rows.push({item:"",desc:"",qty:1,unit:0}); render(); }
 function quickAdd(){ const v=$("quickAdd").value; if(!v) return; rows.push({item:v,desc:"",qty:1,unit:0}); $("quickAdd").value=""; render(); }
 function delRow(i){ rows.splice(i,1); render(); }
+
+/* ---------- P5: voice-to-estimate ---------- */
+const VOICE_CATS=["Subcontractor","Materials","Equipment / rental","Permits / fees","Dump / disposal","Owner labor"];
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let _rec=null, _recActive=false, _finalT="";
+function initVoiceUI(){
+  const mic=$("micBtn"), sub=$("structureBtn");
+  if(!mic) return;
+  if(!SR) mic.textContent="⌨️ Type the job description";
+  mic.addEventListener("click", ()=>{
+    if(!SR){ $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("transcript").focus(); return; }
+    if(_recActive){ stopRec(); } else { startRec(); }
+  });
+  if(sub) sub.addEventListener("click", structureVoice);
+  $("transcript").addEventListener("input", ()=>{ if($("transcript").value.trim()) $("voiceSubmitRow").style.display=""; });
+}
+function startRec(){
+  try{
+    _rec=new SR(); _rec.lang="en-US"; _rec.continuous=true; _rec.interimResults=true;
+    _finalT=($("transcript").value||"");
+    $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Listening… tap Stop when done.";
+    _rec.onresult=e=>{ let interim=""; for(let i=e.resultIndex;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal) _finalT+=t+" "; else interim+=t; } $("transcript").value=(_finalT+interim).replace(/\s+/g," ").trim(); };
+    _rec.onend=()=>{ _recActive=false; $("micBtn").textContent="🎤 Start talking"; if($("voiceMsg").textContent==="Listening… tap Stop when done.") $("voiceMsg").textContent=""; };
+    _rec.onerror=ev=>{ _recActive=false; $("micBtn").textContent="🎤 Start talking"; $("voiceMsg").textContent = ev && ev.error==="not-allowed" ? "Mic blocked — you can type the description instead." : ""; $("transcript").style.display=""; };
+    _rec.start(); _recActive=true; $("micBtn").textContent="⏹ Stop";
+  }catch(e){ _recActive=false; $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Couldn't start the mic — type it instead."; }
+}
+function stopRec(){ if(_rec){ try{_rec.stop();}catch(e){} } _recActive=false; $("micBtn").textContent="🎤 Start talking"; }
+function voiceLine(l){
+  let cat = VOICE_CATS.indexOf(l.category)>=0 ? l.category : categorize((l.description||"")+" "+(l.category||""));
+  if(VOICE_CATS.indexOf(cat)<0) cat="Materials";
+  const qty = (typeof l.qty==="number" && isFinite(l.qty) && l.qty>0) ? l.qty : 1;
+  let unit=0, flag=null;
+  const noNums = l.flagged || (l.unit==null && l.cost==null);
+  if(noNums){ unit=0; flag=l.flagReason||"needs a number"; }
+  else if(typeof l.unit==="number" && isFinite(l.unit)) unit=l.unit;
+  else if(typeof l.cost==="number" && isFinite(l.cost)) unit = qty ? l.cost/qty : l.cost;
+  return { item:cat, desc:(l.description||"").slice(0,80), qty:qty, unit:Math.round(unit*100)/100, review:true, flag:flag };
+}
+async function structureVoice(){
+  const t=($("transcript").value||"").trim();
+  if(!t){ $("voiceMsg").textContent="Say or type the job first."; return; }
+  if(_recActive) stopRec();
+  const btn=$("structureBtn"); btn.disabled=true; const old=btn.textContent; btn.textContent="Thinking…"; $("voiceMsg").textContent="Turning it into line items…";
+  try{
+    const res=await fetch("/api/structure",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({transcript:t.slice(0,4000)}) });
+    let data=null; try{ data=await res.json(); }catch(e){ data=null; }
+    if(!res.ok){ throw new Error((data&&data.error) || ("HTTP "+res.status)); }
+    if(!data || !Array.isArray(data.lines) || !data.lines.length){ $("voiceMsg").textContent="Couldn't pull line items from that — add amounts and try again, or enter lines manually."; return; }
+    const built = data.lines.slice(0,40).map(voiceLine);
+    if(!built.length){ $("voiceMsg").textContent="Nothing to add — try again or enter lines manually."; return; }
+    setMode("cost"); rows=built; render(); showView("calc");
+    const flagged=built.filter(r=>r.flag).length;
+    toast(built.length+" line"+(built.length>1?"s":"")+" added — review the amber ones"+(flagged?" ("+flagged+" need a number)":""));
+    $("voiceMsg").textContent=""; $("transcript").value=""; $("transcript").style.display="none"; $("voiceSubmitRow").style.display="none";
+  }catch(err){
+    $("voiceMsg").textContent="Couldn't reach the parser ("+(err.message||"error")+"). Your text is saved above — try again or enter lines manually.";
+  }finally{ btn.disabled=false; btn.textContent=old; }
+}
 
 let MODE="analyze";
 function roundUp(v,step){ return isFinite(v)? Math.ceil(v/step)*step : v; }
@@ -1170,7 +1248,7 @@ async function maybeInstallHint(){
   if(sb && sb.data){ const merged=JSON.parse(JSON.stringify(SEED_BENCH)); Object.keys(sb.data).forEach(k=>{ if(merged[k]&&sb.data[k]) merged[k]=sb.data[k]; }); BENCH=merged; BENCH_UPDATED=sb.updated||BENCH_UPDATED; }
   const saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null;
   STATE_CACHE = saved;
-  defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm();
+  defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI();
   let hadState=false;
   if(saved && saved.rows){ applyState(saved); hadState=true; }
   if(!hadState){
