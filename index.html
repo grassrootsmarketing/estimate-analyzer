@@ -352,7 +352,6 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const fmt = n => (n<0?"-$":"$") + Math.abs(Math.round(n)).toLocaleString();
 const fmt2 = n => "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -562,6 +561,15 @@ function parseEstimateLines(lines){
   items.splice(0,items.length, ...items.filter((it,i,a)=> !(i>0 && it.unit===a[i-1].unit && it.desc==="Line item")));
   return {items, totals};
 }
+let _tessPromise=null;
+function loadTesseract(){
+  if(window.Tesseract) return Promise.resolve(true);
+  if(_tessPromise) return _tessPromise;
+  _tessPromise=new Promise((res,rej)=>{ const s=document.createElement("script");
+    s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+    s.onload=()=>res(true); s.onerror=()=>rej(new Error("OCR load failed")); document.head.appendChild(s); });
+  return _tessPromise;
+}
 function ocrToLines(t){ return (t||"").split(/\r?\n+/).map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean); }
 async function ocrImageSrc(src,label){ const r=await Tesseract.recognize(src,"eng",{logger:m=>{ if(m.status==="recognizing text") setMsg((label||"Reading")+" — OCR "+Math.round((m.progress||0)*100)+"%"); }}); return r.data.text; }
 async function ocrPdf(file){
@@ -583,12 +591,14 @@ async function handleFile(file){
       if(!window.pdfjsLib){ setMsg("PDF reader didn't load — check your connection.","bad"); return; }
       lines=await extractLines(file);
       if(lines.join("").replace(/\s/g,"").length<20){
-        if(!window.Tesseract){ setMsg("This PDF is a scan and the OCR engine didn't load — check your connection, then retry.","bad"); return; }
-        setMsg("No text layer — running OCR on the scan (this can take a moment)…");
+        setMsg("No text layer — loading OCR…");
+        try{ await loadTesseract(); }catch(e){ setMsg("Couldn't load the OCR engine — check your connection, then retry.","bad"); return; }
+        setMsg("Running OCR on the scan (this can take a moment)…");
         lines=ocrToLines(await ocrPdf(file)); usedOcr=true;
       }
     } else {
-      if(!window.Tesseract){ setMsg("OCR engine didn't load — check your connection, then retry.","bad"); return; }
+      setMsg("Loading OCR…");
+      try{ await loadTesseract(); }catch(e){ setMsg("Couldn't load the OCR engine — check your connection, then retry.","bad"); return; }
       setMsg("Running OCR on the image (this can take a moment)…");
       lines=ocrToLines(await ocrImageSrc(file,"Reading image")); usedOcr=true;
     }
