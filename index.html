@@ -72,11 +72,33 @@
   /* buttons */
   .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .btn{flex:1;min-width:120px;background:var(--chip);border:1px solid var(--line);color:var(--ink);
-    border-radius:12px;padding:13px 10px;font-weight:800;font-size:14px;cursor:pointer;min-height:48px}
+    border-radius:12px;padding:13px 10px;font-weight:800;font-size:14px;cursor:pointer;min-height:48px;
+    transition:transform .13s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease,filter .16s ease}
   .btn.primary{background:var(--accent);color:#1a1108;border-color:var(--accent)}
   .btn.ghost{background:transparent}
-  .btn:active{transform:translateY(1px)}
+  .btn:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 4px 14px rgba(0,0,0,.28)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn:active{transform:translateY(1px);box-shadow:none;filter:none}
   .btn.wide{flex-basis:100%}
+  /* shared hover motion */
+  .seg button{transition:background .16s ease,color .16s ease,transform .12s ease}
+  .seg button:hover:not(.active){color:var(--ink);background:rgba(255,255,255,.05)}
+  .seg button:active{transform:scale(.97)}
+  .nav button{transition:color .16s ease,transform .12s ease}
+  .nav button .ic{transition:transform .16s ease}
+  .nav button:hover{color:var(--ink)}
+  .nav button:hover .ic{transform:translateY(-2px) scale(1.08)}
+  .nav button:active{transform:scale(.94)}
+  .revok{transition:filter .16s ease,transform .12s ease}
+  .revok:hover{filter:brightness(1.08)}
+  .revok:active{transform:scale(.94)}
+  .oc{transition:border-color .16s ease,background .16s ease,transform .12s ease}
+  .oc:hover{border-color:var(--accent2);transform:translateY(-1px)}
+  .oc:active{transform:scale(.95)}
+  .drop{transition:border-color .16s ease,background .16s ease,color .16s ease,transform .12s ease}
+  .drop:hover{border-color:var(--accent);color:var(--ink);transform:translateY(-1px)}
+  .link{transition:color .16s ease}
+  .link:hover{color:var(--accent)}
   .savednote{font-size:12px;color:var(--good);margin-top:8px;min-height:15px}
   /* import */
   .drop{border:1.6px dashed #4a5b6b;border-radius:14px;padding:22px 14px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
