@@ -101,7 +101,8 @@
   .del{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;width:44px;height:44px;font-size:22px;line-height:1;cursor:pointer;flex:0 0 auto}
   .del:active{color:var(--bad)}
   .addsel{display:flex;gap:8px;margin-top:6px}
-  .addsel .btn{min-width:0}
+  .addsel .btn{flex:1 1 0;min-width:0;white-space:nowrap}
+  .addsel select{flex:1 1 0;min-width:0}
   /* totlines / flags */
   .totline{display:flex;justify-content:space-between;padding:8px 0;border-top:1px dashed var(--line);font-variant-numeric:tabular-nums;font-size:14px}
   .totline.big{font-size:16px;font-weight:800;border-top:1px solid var(--line)}
