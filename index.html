@@ -98,8 +98,16 @@
   .litem-cost{text-align:right;padding-bottom:11px;min-width:78px}
   .litem-cost span{font-size:10.5px;color:var(--muted);display:block}
   .litem-cost b{font-size:16px;font-variant-numeric:tabular-nums}
-  .del{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;width:44px;height:44px;font-size:22px;line-height:1;cursor:pointer;flex:0 0 auto}
-  .del:active{color:var(--bad)}
+  .del{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;width:44px;height:44px;font-size:22px;line-height:1;cursor:pointer;flex:0 0 auto;transition:color .16s ease,border-color .16s ease,background .16s ease,transform .12s ease}
+  .del:hover{color:var(--bad);border-color:var(--bad);background:rgba(255,77,79,.10)}
+  .del:active{color:var(--bad);border-color:var(--bad);transform:scale(.88)}
+  .cardhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .cardhead h2{margin:0}
+  .iconbtn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;transition:color .16s ease,border-color .16s ease,background .16s ease,transform .12s ease}
+  .iconbtn svg{display:block;transition:transform .16s ease}
+  .iconbtn.trash:hover{color:var(--bad);border-color:var(--bad);background:rgba(255,77,79,.10)}
+  .iconbtn.trash:hover svg{transform:rotate(-8deg) scale(1.08)}
+  .iconbtn:active{transform:scale(.9)}
   .addsel{display:flex;gap:8px;margin-top:6px}
   .addsel .btn{flex:1 1 0;min-width:0;white-space:nowrap}
   .addsel select{flex:1 1 0;min-width:0}
@@ -277,7 +285,12 @@
     </div>
 
     <div class="card">
-      <h2 id="costsTitle">Estimate line items (priced)</h2>
+      <div class="cardhead">
+        <h2 id="costsTitle">Estimate line items (priced)</h2>
+        <button class="iconbtn trash" id="clearRows" onclick="clearAllRows()" aria-label="Clear all line items" title="Clear all line items">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </button>
+      </div>
       <p class="sub" id="costsSub">These are the prices from the estimate — margin already baked in.</p>
       <div id="rows"></div>
       <datalist id="catlist">
@@ -501,6 +514,7 @@ function confirmRow(i){ if(rows[i]){ rows[i].review=false; rows[i].flag=null; re
 function addRow(){ rows.push({item:"",desc:"",qty:1,unit:0}); render(); }
 function quickAdd(){ const v=$("quickAdd").value; if(!v) return; rows.push({item:v,desc:"",qty:1,unit:0}); $("quickAdd").value=""; render(); }
 function delRow(i){ rows.splice(i,1); render(); }
+function clearAllRows(){ if(!rows.length){ toast("No line items to clear"); return; } if(confirm("Clear all "+rows.length+" line item"+(rows.length>1?"s":"")+"?")){ rows=[]; render(); toast("Line items cleared"); } }
 
 /* ---------- P5: voice-to-estimate ---------- */
 const VOICE_CATS=["Subcontractor","Materials","Equipment / rental","Permits / fees","Dump / disposal","Owner labor"];
