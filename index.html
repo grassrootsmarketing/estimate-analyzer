@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#0f1419" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Estimator" />
 <title>Estimate Analyzer — LA Contractor Pricing</title>
 <style>
   :root{
@@ -137,6 +141,9 @@
   .backbtn{background:transparent;border:none;color:var(--accent2);font-size:14px;font-weight:700;cursor:pointer;padding:0;margin-bottom:8px}
   .switch{display:flex;align-items:center;gap:10px;justify-content:space-between}
   .switch input{width:auto;min-height:auto}
+  .installhint{background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:14px;margin:14px 0 0;font-size:13.5px;color:var(--ink);line-height:1.45}
+  .installhint .ih-btns{display:flex;gap:8px;margin-top:11px}
+  .installhint .btn{min-height:44px}
   @media(min-width:720px){
     .app{max-width:720px}
     .recbox .v{font-size:44px}
@@ -154,6 +161,14 @@
 </header>
 
 <div class="app">
+
+  <div id="installHint" class="installhint" style="display:none">
+    <div id="installHintText"></div>
+    <div class="ih-btns">
+      <button id="installNow" class="btn primary" style="display:none">Install</button>
+      <button id="installDismiss" class="btn ghost">Got it</button>
+    </div>
+  </div>
 
   <!-- ============ CALCULATOR ============ -->
   <section class="view on" id="calcView">
@@ -358,6 +373,14 @@ const fmt2 = n => "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimu
 const $ = id => document.getElementById(id);
 function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
+
+/* PWA: inject manifest + icons as data URIs so the app stays a single file */
+(function(){
+  const icon="data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='#ff8c42'/><text x='256' y='372' font-size='340' font-family='Arial,sans-serif' font-weight='bold' text-anchor='middle' fill='#1a1108'>$</text></svg>");
+  const manifest={name:"Estimate Analyzer",short_name:"Estimator",start_url:"/",scope:"/",display:"standalone",background_color:"#0f1419",theme_color:"#0f1419",icons:[{src:icon,sizes:"any",type:"image/svg+xml",purpose:"any maskable"}]};
+  const l=document.createElement("link"); l.rel="manifest"; l.href="data:application/manifest+json,"+encodeURIComponent(JSON.stringify(manifest)); document.head.appendChild(l);
+  const a=document.createElement("link"); a.rel="apple-touch-icon"; a.href=icon; document.head.appendChild(a);
+})();
 
 // LA 2026 benchmark ranges.
 const BENCH = {
@@ -628,8 +651,18 @@ $("pdfInput").addEventListener("change",e=>handleFile(e.target.files[0]));
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
 drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; handleFile(f); });
 
-/* ---------------- STATE / PERSISTENCE ---------------- */
+/* ---------------- STATE / PERSISTENCE (IndexedDB + in-memory cache, localStorage fallback) ---------------- */
 const LS_STATE="ea_state", LS_ARCH="ea_archive", LS_PROFILE="ea_profile";
+const DB_NAME="ea_db", DB_STORE="kv";
+let _db=null, IDB_OK=false, ARCH_CACHE=[], STATE_CACHE=null;
+function idbOpen(){ return new Promise(res=>{ try{ const rq=indexedDB.open(DB_NAME,1);
+  rq.onupgradeneeded=()=>rq.result.createObjectStore(DB_STORE);
+  rq.onsuccess=()=>{ _db=rq.result; IDB_OK=true; res(true); };
+  rq.onerror=()=>res(false); }catch(e){ res(false); } }); }
+function idbGet(k){ return new Promise(res=>{ if(!_db){res(undefined);return;} try{ const rq=_db.transaction(DB_STORE,"readonly").objectStore(DB_STORE).get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>res(undefined); }catch(e){ res(undefined); } }); }
+function idbSet(k,v){ return new Promise(res=>{ if(!_db){res(false);return;} try{ const tx=_db.transaction(DB_STORE,"readwrite"); tx.objectStore(DB_STORE).put(v,k); tx.oncomplete=()=>res(true); tx.onerror=()=>res(false); }catch(e){ res(false); } }); }
+function readLS(k){ try{ const r=localStorage.getItem(k); return r==null?null:JSON.parse(r); }catch(e){ return null; } }
+function saveKey(k,v){ if(IDB_OK){ idbSet(k,v); } else { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } }
 function getState(){
   return { ts:Date.now(), mode:MODE, jobName:$("jobName").value, clientType:$("clientType").value,
     benchCat:$("benchCat").value, benchQty:$("benchQty").value, margin:$("margin").value,
@@ -650,18 +683,20 @@ function compute(s){
   const price=direct, impliedCost=price*(1-m), grossProfit=price*m, net=grossProfit-price*oh;
   return {mode:"analyze",direct,price,impliedCost,grossProfit,net,marginPct:m*100,assumed:m*100};
 }
-function persist(){ try{ localStorage.setItem(LS_STATE, JSON.stringify(getState())); }catch(e){} }
-function getArchive(){ try{ return JSON.parse(localStorage.getItem(LS_ARCH))||[]; }catch(e){ return []; } }
-function setArchive(a){ try{ localStorage.setItem(LS_ARCH, JSON.stringify(a)); }catch(e){} }
+function persist(){ const st=getState(); STATE_CACHE=st; saveKey(LS_STATE, st); }
+function getArchive(){ return ARCH_CACHE; }
+function setArchive(a){ ARCH_CACHE=a; saveKey(LS_ARCH, a); }
 
 function saveToArchive(){
   const st=getState(); const entry={id:"e"+st.ts, state:st, results:compute(st)};
-  const a=getArchive(); a.unshift(entry); if(a.length>20) a.length=20; setArchive(a);
-  toast("✓ Saved to archive ("+a.length+"/20)"); renderArchive();
+  const a=getArchive(); a.unshift(entry); setArchive(a);
+  toast("✓ Saved ("+a.length+")");
+  if(a.length===200) toast("You have 200 saved estimates — consider clearing old ones.");
+  renderArchive();
 }
 let ARCH_Q="";
 function renderArchive(){
-  const all=getArchive(), list=$("archiveList"); $("archCount").textContent="("+all.length+"/20)";
+  const all=getArchive(), list=$("archiveList"); $("archCount").textContent="("+all.length+")";
   const a=ARCH_Q ? all.filter(e=>((e.state.jobName||"")+"").toLowerCase().includes(ARCH_Q)) : all;
   if(!all.length){ list.innerHTML='<div class="arch-empty">No saved estimates yet. On the Calculator, tap <b>💾 Save</b> to log one.</div>'; return; }
   if(!a.length){ list.innerHTML='<div class="arch-empty">No estimates match “'+esc(ARCH_Q)+'”.</div>'; return; }
@@ -678,7 +713,7 @@ function renderArchive(){
     div.innerHTML='<div class="arch-meta">'+when+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span></div><div class="arch-nums">'+nums+'</div>'+
       '<div class="arch-row"><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
     div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); showView("calc"); toast("Loaded into calculator"); };
-    div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; const arr=getArchive(); arr.unshift({id:"e"+st.ts,state:st,results:compute(st)}); if(arr.length>20)arr.length=20; setArchive(arr); renderArchive(); toast("Duplicated"); };
+    div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; const arr=getArchive(); arr.unshift({id:"e"+st.ts,state:st,results:compute(st)}); setArchive(arr); renderArchive(); toast("Duplicated"); };
     div.querySelector('[data-a=rename]').onclick=()=>{ const nn=prompt("Rename estimate:", s.jobName||""); if(nn==null) return; const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.state.jobName=nn; setArchive(arr); renderArchive(); } };
     div.querySelector('[data-a=dl]').onclick=()=>downloadSummary(s);
     div.querySelector('[data-a=del]').onclick=()=>{ if(confirm("Delete this estimate?")){ setArchive(getArchive().filter(x=>x.id!==e.id)); renderArchive(); } };
@@ -710,7 +745,7 @@ function downloadSummary(s){ downloadHTML(buildSummary(s), "estimate-"+slugify(s
 
 /* ---------------- COMPANY PROFILE ---------------- */
 let PROFILE={};
-function getProfile(){ try{ return JSON.parse(localStorage.getItem(LS_PROFILE))||{}; }catch(e){ return {}; } }
+function getProfile(){ return PROFILE||{}; }
 function loadProfileIntoForm(){
   const p=PROFILE;
   $("coName").value=p.name||""; $("coLicense").value=p.license||""; $("coPhone").value=p.phone||"";
@@ -735,7 +770,7 @@ $("saveSettings").addEventListener("click",()=>{
   PROFILE.name=$("coName").value.trim(); PROFILE.license=$("coLicense").value.trim(); PROFILE.phone=$("coPhone").value.trim();
   PROFILE.email=$("coEmail").value.trim(); PROFILE.address=$("coAddress").value.trim();
   PROFILE.defMarkup=$("defMarkup").value; PROFILE.defOverhead=$("defOverhead").value; PROFILE.defContingency=$("defContingency").value; PROFILE.defTax=$("defTax").value;
-  try{ localStorage.setItem(LS_PROFILE, JSON.stringify(PROFILE)); }catch(e){}
+  saveKey(LS_PROFILE, PROFILE);
   applyBrand(); toast("Profile saved"); showView("calc");
 });
 
@@ -807,9 +842,9 @@ $("importArchInput").addEventListener("change",e=>{
     const d=JSON.parse(rd.result); const inc=Array.isArray(d)?d:(d.archive||[]);
     if(!Array.isArray(inc)) throw 0;
     if(!confirm("Restore "+inc.length+" estimate(s)? This replaces your current archive on this device.")) return;
-    setArchive(inc.slice(0,20));
-    if(d.profile && confirm("Also restore the company profile from this backup?")){ PROFILE=d.profile; localStorage.setItem(LS_PROFILE,JSON.stringify(PROFILE)); loadProfileIntoForm(); }
-    renderArchive(); toast("Restored "+Math.min(inc.length,20)+" estimate(s)");
+    setArchive(inc.slice(0,500));
+    if(d.profile && confirm("Also restore the company profile from this backup?")){ PROFILE=d.profile; saveKey(LS_PROFILE,PROFILE); loadProfileIntoForm(); }
+    renderArchive(); toast("Restored "+Math.min(inc.length,500)+" estimate(s)");
   }catch(err){ toast("That file isn't a valid backup"); } };
   rd.readAsText(f); e.target.value="";
 });
@@ -848,23 +883,67 @@ document.addEventListener("change", persist);
 
 $("saveArch").addEventListener("click",saveToArchive);
 $("dlCurrent").addEventListener("click",()=>downloadSummary(getState()));
-$("dlLast").addEventListener("click",()=>{ let s; try{ s=JSON.parse(localStorage.getItem(LS_STATE)); }catch(e){} downloadSummary(s&&s.rows?s:getState()); toast("Summary downloaded"); });
+$("dlLast").addEventListener("click",()=>{ const s=STATE_CACHE; downloadSummary(s&&s.rows?s:getState()); toast("Summary downloaded"); });
 $("clearArch").addEventListener("click",()=>{ if(confirm("Clear all saved estimates? This can't be undone.")){ setArchive([]); renderArchive(); toast("Archive cleared"); } });
 
-// boot
-PROFILE=getProfile();
-defaultRows(); render(); syncQtyLabel();
-loadProfileIntoForm();
-let hadState=false;
-try{ const saved=JSON.parse(localStorage.getItem(LS_STATE)); if(saved&&saved.rows){ applyState(saved); hadState=true; } }catch(e){}
-if(!hadState){
-  // seed defaults from profile for a fresh estimate
-  if(PROFILE.defOverhead!=null&&PROFILE.defOverhead!=="") $("overhead").value=PROFILE.defOverhead;
-  if(PROFILE.defContingency!=null&&PROFILE.defContingency!=="") $("contingency").value=PROFILE.defContingency;
-  if(PROFILE.defTax!=null&&PROFILE.defTax!=="") $("tax").value=PROFILE.defTax;
-  setMode("analyze");
+/* one-time migration: copy any existing localStorage data into IndexedDB, verify, then clear LS. On any failure, leave LS untouched. */
+async function migrate(){
+  if(!IDB_OK) return;
+  try{
+    if(await idbGet("__migrated")) return;
+    let allOK=true, wroteAny=false;
+    for(const k of [LS_STATE,LS_ARCH,LS_PROFILE]){
+      const raw=localStorage.getItem(k); if(raw==null) continue;
+      let v; try{ v=JSON.parse(raw); }catch(e){ v=raw; }
+      const ok=await idbSet(k,v); const back=await idbGet(k);
+      wroteAny=true; if(!ok||back===undefined) allOK=false;
+    }
+    if(allOK){ await idbSet("__migrated",true); if(wroteAny){ [LS_STATE,LS_ARCH,LS_PROFILE].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} }); } }
+  }catch(e){}
 }
-renderArchive();
+function registerSW(){ if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch(e){} } }
+
+/* Add-to-Home-Screen hint (shown once on the 3rd visit, platform-aware) */
+let _deferredPrompt=null;
+window.addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); _deferredPrompt=e; if($("installNow")) $("installNow").style.display=""; });
+$("installDismiss").addEventListener("click",()=>{ $("installHint").style.display="none"; saveKey("ea_ihDismissed",1); });
+$("installNow").addEventListener("click",async()=>{ if(_deferredPrompt){ _deferredPrompt.prompt(); try{ await _deferredPrompt.userChoice; }catch(e){} _deferredPrompt=null; } $("installHint").style.display="none"; saveKey("ea_ihDismissed",1); });
+async function maybeInstallHint(){
+  try{
+    const standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone;
+    const dismissed=IDB_OK? await idbGet("ea_ihDismissed") : readLS("ea_ihDismissed");
+    let v=((IDB_OK? await idbGet("ea_visits") : readLS("ea_visits"))||0)+1; saveKey("ea_visits",v);
+    if(standalone||dismissed||v<3) return;
+    const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    $("installHintText").innerHTML = ios
+      ? "📲 <b>Add to your Home Screen</b> so it opens like an app and your saved estimates stay safe: tap the <b>Share</b> button, then <b>Add to Home Screen</b>."
+      : "📲 <b>Install this app</b> so it opens full-screen and your saved estimates stay safe — tap Install, or use your browser menu → <b>Install app</b>.";
+    $("installNow").style.display=(!ios && _deferredPrompt)?"":"none";
+    $("installHint").style.display="";
+  }catch(e){}
+}
+
+// boot (async: open DB → migrate → load caches → init UI)
+(async function boot(){
+  await idbOpen();
+  await migrate();
+  PROFILE = (IDB_OK? await idbGet(LS_PROFILE):null) || readLS(LS_PROFILE) || {};
+  ARCH_CACHE = (IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
+  const saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null;
+  STATE_CACHE = saved;
+  defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm();
+  let hadState=false;
+  if(saved && saved.rows){ applyState(saved); hadState=true; }
+  if(!hadState){
+    if(PROFILE.defOverhead!=null&&PROFILE.defOverhead!=="") $("overhead").value=PROFILE.defOverhead;
+    if(PROFILE.defContingency!=null&&PROFILE.defContingency!=="") $("contingency").value=PROFILE.defContingency;
+    if(PROFILE.defTax!=null&&PROFILE.defTax!=="") $("tax").value=PROFILE.defTax;
+    setMode("analyze");
+  }
+  renderArchive();
+  registerSW();
+  maybeInstallHint();
+})();
 </script>
 </body>
 </html>
