@@ -459,6 +459,7 @@
         <div><span class="lbl">Material tax %</span><input id="defTax" type="number" inputmode="decimal" value="9.5" min="0" step="0.1" /></div>
       </div>
       <div class="btns"><button class="btn primary wide" id="saveSettings">Save profile &amp; defaults</button></div>
+      <div id="storageMeter" class="muted" style="font-size:12px;margin-top:10px"></div>
     </div>
     <div class="card">
       <h2>Benchmarks (over/under check)</h2>
@@ -969,7 +970,7 @@ function activeBench(){
 }
 function bnum(v){ return Number.isInteger(v)?v:(Math.round(v*100)/100); }
 
-let _savedSig=null;
+let _savedSig=null, _warned100=false, _warned200=false;
 function stateSig(s){ s=s||getState(); return JSON.stringify({m:s.mode,j:s.jobName,ct:s.clientType,cn:s.contactName,cp:s.contactPhone,ce:s.contactEmail,bc:s.benchCat,bq:s.benchQty,mg:s.margin,co:s.contingency,oh:s.overhead,tx:s.tax,ph:(s.photos||[]).length,rows:s.rows}); }
 function hasContent(){ const s=getState(); return !!(s.jobName&&s.jobName.trim()) || (s.rows||[]).some(r=>(+r.qty||0)*(+r.unit||0)>0); }
 function updateSaveStatus(){ const el=$("savedNote"); if(!el) return;
@@ -984,7 +985,8 @@ function saveToArchive(){
   const st=getState(); const a=getArchive(); a.unshift(newEntry(st)); setArchive(a);
   _savedSig=stateSig(st); updateSaveStatus();
   toast("✓ Saved ("+a.length+")");
-  if(a.length===200) toast("You have 200 saved estimates — consider clearing old ones.");
+  if(a.length>=100 && !_warned100){ _warned100=true; toast("100 saved estimates. Good time to back up from the Archive tab."); }
+  if(a.length>=200 && !_warned200){ _warned200=true; toast("200 saved estimates. Back up and clear old ones to save space."); }
   renderArchive();
 }
 let ARCH_Q="";
@@ -1346,7 +1348,7 @@ function showView(name){
   $("navArchive").classList.toggle("active", name==="archive");
   $("navSettings").classList.toggle("active", name==="settings");
   if(name==="archive") renderArchive();
-  if(name==="settings") renderBenchSettings();
+  if(name==="settings"){ renderBenchSettings(); updateStorageMeter(); }
   if(name==="calc" && typeof renderSimilar==="function") renderSimilar();
   window.scrollTo(0,0);
 }
@@ -1398,6 +1400,17 @@ async function migrate(){
     if(allOK){ await idbSet("__migrated",true); if(wroteAny){ [LS_STATE,LS_ARCH,LS_PROFILE].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} }); } }
   }catch(e){}
 }
+function updateStorageMeter(){
+  const el=$("storageMeter"); if(!el) return;
+  if(!(navigator.storage && navigator.storage.estimate)){ el.textContent=""; return; }
+  navigator.storage.estimate().then(est=>{
+    const usedMB=(est.usage||0)/1048576, quotaMB=(est.quota||0)/1048576;
+    if(!quotaMB){ el.textContent=""; return; }
+    let msg="Storage: "+usedMB.toFixed(1)+" MB used of ~"+quotaMB.toFixed(1)+" MB.";
+    if(usedMB/quotaMB > 0.6) msg+=" Getting full. Back up from the Archive tab.";
+    el.textContent=msg;
+  }).catch(()=>{ el.textContent=""; });
+}
 function registerSW(){ if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch(e){} } }
 
 /* Add-to-Home-Screen hint (shown once on the 3rd visit, platform-aware) */
@@ -1422,13 +1435,17 @@ async function maybeInstallHint(){
 
 // boot (async: open DB → migrate → load caches → init UI)
 (async function boot(){
-  await idbOpen();
-  await migrate();
-  PROFILE = (IDB_OK? await idbGet(LS_PROFILE):null) || readLS(LS_PROFILE) || {};
-  ARCH_CACHE = (IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
-  const sb = (IDB_OK? await idbGet("ea_bench"):null) || readLS("ea_bench");
-  if(sb && sb.data){ const merged=JSON.parse(JSON.stringify(SEED_BENCH)); Object.keys(sb.data).forEach(k=>{ if(merged[k]&&sb.data[k]) merged[k]=sb.data[k]; }); BENCH=merged; BENCH_UPDATED=sb.updated||BENCH_UPDATED; }
-  const saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null;
+  registerSW();   // does not depend on storage; run first so a storage error cannot skip it
+  try{ await idbOpen(); }catch(e){}
+  try{ await migrate(); }catch(e){}
+  // Each storage load is isolated: one failure falls back to the empty default and boot continues.
+  try{ PROFILE = (IDB_OK? await idbGet(LS_PROFILE):null) || readLS(LS_PROFILE) || {}; }catch(e){ PROFILE={}; }
+  try{ ARCH_CACHE = (IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || []; }catch(e){ ARCH_CACHE=[]; }
+  try{ const sb = (IDB_OK? await idbGet("ea_bench"):null) || readLS("ea_bench");
+    if(sb && sb.data){ const merged=JSON.parse(JSON.stringify(SEED_BENCH)); Object.keys(sb.data).forEach(k=>{ if(merged[k]&&sb.data[k]) merged[k]=sb.data[k]; }); BENCH=merged; BENCH_UPDATED=sb.updated||BENCH_UPDATED; }
+  }catch(e){}
+  let saved=null;
+  try{ saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null; }catch(e){ saved=null; }
   STATE_CACHE = saved;
   defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI(); renderPhotos();
   let hadState=false;
@@ -1446,7 +1463,6 @@ async function maybeInstallHint(){
   _savedSig = (hadState && getArchive().some(e=>stateSig(e.state)===stateSig())) ? stateSig() : null;
   updateSaveStatus();
   renderArchive();
-  registerSW();
   maybeInstallHint();
 })();
 </script>
