@@ -130,9 +130,16 @@
   .drop-alt{text-align:center;color:var(--muted);font-size:12.5px;margin-top:9px}
   /* Analyze mode: the imported estimate is the main action, so float the upload card to the top and emphasize it. */
   #calcView.on{display:flex;flex-direction:column}
-  #calcView.on > .seg, #calcView.on > .modehint, #calcView.on > #outcomePrompt{order:-3}
-  #calcView.mode-analyze > #importCard{order:-2}
+  .col{display:flex;flex-direction:column;min-width:0}
+  #calcView.mode-analyze .col-main #importCard{order:-1}   /* analyze: float upload to the top of the inputs */
   #calcView.mode-analyze #drop{border-color:var(--accent);background:rgba(255,140,66,.11)}
+  /* Desktop: two columns, inputs left, price/summary pinned on the right so they stay visible while you edit. */
+  @media(min-width:900px){
+    .app{max-width:1080px}
+    #calcView.on{display:grid;grid-template-columns:minmax(0,1fr) 384px;gap:0 20px;align-items:start}
+    #calcView.on > .seg, #calcView.on > .modehint, #calcView.on > #outcomePrompt{grid-column:1 / -1}
+    .col-side{position:sticky;top:14px}
+  }
   .drop b{color:var(--accent2)}
   .link{color:var(--accent2);text-decoration:underline;cursor:pointer}
   .bench{font-size:12.5px;color:var(--muted);margin-top:8px}
@@ -283,6 +290,7 @@
       <div class="ih-btns"><button id="ocWon" class="btn primary">Won</button><button id="ocLost" class="btn">Lost</button><button id="ocLater" class="btn ghost">Later</button></div>
     </div>
 
+    <div class="col col-main">
     <div class="card">
       <h2>Job details</h2>
       <div class="field"><span class="lbl">Job name</span><input id="jobName" placeholder="e.g. Marisol Ave unit turnover" /></div>
@@ -379,7 +387,9 @@
         <div><span class="lbl">Mat. tax %</span><input id="tax" type="number" inputmode="decimal" value="0" min="0" step="0.1" /></div>
       </div>
     </div>
+    </div><!-- /col-main -->
 
+    <div class="col col-side">
     <div class="card">
       <h2>Cost summary</h2>
       <div class="totline"><span class="muted">Direct</span><span id="sDirect">$0</span></div>
@@ -430,6 +440,7 @@
     </div>
 
     <div id="similarCard" class="card" style="display:none;padding:12px 14px"></div>
+    </div><!-- /col-side -->
   </section>
 
   <!-- ============ ARCHIVE ============ -->
