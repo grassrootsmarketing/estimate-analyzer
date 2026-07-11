@@ -322,7 +322,18 @@
       </div>
       <div class="row g2">
         <div><span class="lbl">Benchmark check</span><select id="benchCat"></select></div>
-        <div><span class="lbl" id="qtyLbl">Project size</span><input id="benchQty" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1200" /></div>
+        <div><span class="lbl" id="qtyLbl">Project size</span>
+          <select id="benchQty">
+            <option value="">Select size…</option>
+            <option value="1000">1,000+</option>
+            <option value="5000">5,000+</option>
+            <option value="10000">10,000+</option>
+            <option value="15000">15,000+</option>
+            <option value="25000">25,000+</option>
+            <option value="50000">50,000+</option>
+            <option value="100000">100,000+</option>
+          </select>
+        </div>
       </div>
       <input id="benchRange" style="display:none" disabled />
       <div class="bench" id="benchNote"></div>
