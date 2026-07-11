@@ -657,7 +657,7 @@ async function structureVoice(){
   }finally{ btn.disabled=false; btn.textContent=old; }
 }
 
-let MODE="analyze";
+let MODE="cost";
 function roundUp(v,step){ return isFinite(v)? Math.ceil(v/step)*step : v; }
 function setActive(m){ document.querySelectorAll(".sc").forEach(el=>el.classList.toggle("active", Math.abs(+el.dataset.m - m*100)<0.5)); }
 function pickMargin(v){ const s=$("margin"); if(s){ s.value=v; calc(); } }
@@ -877,6 +877,7 @@ async function handleFile(file){
     }
     const {items, totals}=parseEstimateLines(lines);
     if(!items.length){ setMsg(usedOcr?"OCR couldn't find priced line items — try a sharper, straight-on photo, or enter costs manually.":"Couldn't read line items from this PDF. Enter costs manually.","bad"); return; }
+    setMode("analyze");   // an imported estimate is a priced bid — switch to Analyze mode
     rows=items; render();
     let total=0; const strong=totals.find(t=>t.strong);
     if(strong) total=strong.amt; else if(totals.length) total=Math.max.apply(null,totals.map(t=>t.amt));
@@ -1415,13 +1416,18 @@ async function maybeInstallHint(){
   STATE_CACHE = saved;
   defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI(); renderPhotos();
   let hadState=false;
-  if(saved && saved.rows){ applyState(saved); hadState=true; _savedSig = getArchive().some(e=>stateSig(e.state)===stateSig()) ? stateSig() : null; }
+  if(saved && saved.rows){ applyState(saved); hadState=true; }
   if(!hadState){
     if(PROFILE.defOverhead!=null&&PROFILE.defOverhead!=="") $("overhead").value=PROFILE.defOverhead;
     if(PROFILE.defContingency!=null&&PROFILE.defContingency!=="") $("contingency").value=PROFILE.defContingency;
     if(PROFILE.defTax!=null&&PROFILE.defTax!=="") $("tax").value=PROFILE.defTax;
-    setMode("cost");
   }
+  // Always open in Build-from-cost (analyze is a deliberate choice / the PDF-import path). Preserve restored numbers.
+  const _savedMargin = hadState && saved && saved.margin;
+  setMode("cost");
+  if(_savedMargin) $("margin").value=saved.margin;
+  calc();
+  _savedSig = (hadState && getArchive().some(e=>stateSig(e.state)===stateSig())) ? stateSig() : null;
   updateSaveStatus();
   renderArchive();
   registerSW();
