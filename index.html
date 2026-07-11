@@ -84,6 +84,10 @@
   .seg button{transition:background .16s ease,color .16s ease,transform .12s ease}
   .seg button:hover:not(.active){color:var(--ink);background:rgba(255,255,255,.05)}
   .seg button:active{transform:scale(.97)}
+  .sc{cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .12s ease,box-shadow .16s ease}
+  .sc:hover{border-color:var(--accent2);transform:translateY(-2px);box-shadow:0 5px 16px rgba(0,0,0,.28)}
+  .sc:active{transform:translateY(0) scale(.97)}
+  .sc.active{transform:none}
   .nav button{transition:color .16s ease,transform .12s ease}
   .nav button .ic{transition:transform .16s ease}
   .nav button:hover{color:var(--ink)}
@@ -243,9 +247,9 @@
       <div class="lbl" id="margLbl" style="margin-bottom:2px">Margin already in the estimate</div>
       <input class="slider" id="margin" type="range" min="10" max="120" value="45" step="1" />
       <div class="scenarios">
-        <div class="sc" data-m="40"><div class="m">40%</div><div class="p" id="p40">—</div></div>
-        <div class="sc active" data-m="45"><div class="m">45%</div><div class="p" id="p45">—</div></div>
-        <div class="sc" data-m="50"><div class="m">50%</div><div class="p" id="p50">—</div></div>
+        <div class="sc" data-m="40" role="button" tabindex="0" onclick="pickMargin(40)"><div class="m">40%</div><div class="p" id="p40">—</div></div>
+        <div class="sc active" data-m="45" role="button" tabindex="0" onclick="pickMargin(45)"><div class="m">45%</div><div class="p" id="p45">—</div></div>
+        <div class="sc" data-m="50" role="button" tabindex="0" onclick="pickMargin(50)"><div class="m">50%</div><div class="p" id="p50">—</div></div>
       </div>
       <div class="recbox">
         <div class="l" id="recLbl">Bid price (total)</div>
@@ -600,6 +604,7 @@ async function structureVoice(){
 let MODE="analyze";
 function roundUp(v,step){ return isFinite(v)? Math.ceil(v/step)*step : v; }
 function setActive(m){ document.querySelectorAll(".sc").forEach(el=>el.classList.toggle("active", Math.abs(+el.dataset.m - m*100)<0.5)); }
+function pickMargin(v){ const s=$("margin"); if(s){ s.value=v; calc(); } }
 
 function setMode(mode){
   MODE=mode;
