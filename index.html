@@ -194,6 +194,8 @@
   input[type=number]{-moz-appearance:textfield;appearance:textfield}
   .modehint{font-size:12.5px;color:var(--muted);background:var(--panel2);border-left:3px solid var(--accent);border-radius:9px;padding:9px 12px;margin:-6px 0 14px;line-height:1.45}
   .modehint b{color:var(--ink)}
+  .testprice{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+  .testprice input{margin-bottom:2px}
   .photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 10px}
   .photogrid:empty{display:none}
   .pthumb{position:relative;aspect-ratio:1/1;border-radius:11px;overflow:hidden;border:1px solid var(--line);background:#0e141b;cursor:pointer;transition:transform .12s ease}
@@ -388,6 +390,11 @@
         <div class="stat"><div class="l"><span id="beLbl">Break-even cost</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">costs above this = you lose money</div></div>
         <div class="stat"><div class="l">Net profit<span class="tip" id="tipNet" tabindex="0" role="button" aria-label="What is this?" data-tip="What you keep after your overhead % is covered. Green = profit, red = losing money.">i</span></div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
       </div>
+      <div class="testprice">
+        <span class="lbl" style="display:block;margin-bottom:5px">🧪 Test a different price — check its margin vs break-even</span>
+        <input id="proposed" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 9500" />
+        <div id="quoteFlags"></div>
+      </div>
       <div class="btns">
         <button class="btn primary" id="saveArch">💾 Save</button>
         <button class="btn" id="dlCurrent">⬇ Summary</button>
@@ -397,13 +404,6 @@
     </div>
 
     <div id="similarCard" class="card" style="display:none;padding:12px 14px"></div>
-
-    <div class="card">
-      <h2>Test a quote</h2>
-      <p class="sub">Enter a price you're considering to check its margin.</p>
-      <input id="proposed" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 9500" />
-      <div id="quoteFlags"></div>
-    </div>
   </section>
 
   <!-- ============ ARCHIVE ============ -->
@@ -730,7 +730,9 @@ function calc(){
     $("netProfit").textContent=fmt(net); $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
     $("sDirect").textContent=fmt(price); $("sTax").textContent="—"; $("sCont").textContent="—";
     $("sTrueLbl").textContent="Break-even cost"; $("sTrue").textContent=fmt(breakEven); $("sMarkup").textContent=(m*100).toFixed(0)+"% margin assumed";
-    benchmarkCheck(price); $("quoteFlags").innerHTML="";
+    benchmarkCheck(price);
+    const qCost=price*(1-m), qBe=oh<1?qCost/(1-oh):Infinity;   // implied cost basis for "test a quote"
+    quoteCheck(qCost, qBe, oh, price);
   }
   if($("propTotal")) $("propTotal").textContent=$("recPrice").textContent;
   if(typeof renderSimilar==="function") renderSimilar();
@@ -754,12 +756,16 @@ function quoteCheck(trueCost, be, oh, rec){
   }
   const p=parseFloat($("proposed").value);
   if(!isNaN(p) && p>0){
-    const mm=(p-trueCost)/p*100, net=(p-trueCost)-p*oh;
-    if(p < trueCost) flags.push(["bad","<b>Below cost.</b> Doesn't cover your true job cost of <b>"+fmt(trueCost)+"</b>. You'd lose <b>"+fmt(trueCost-p)+"</b>."]);
-    else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+mm.toFixed(0)+"% — covers direct cost but not overhead. Net loss <b>"+fmt(-net)+"</b>."]);
-    else if(mm < 40) flags.push(["warn","Margin <b>"+mm.toFixed(0)+"%</b> — profitable (net "+fmt(net)+") but thin. Little room for change orders."]);
-    else if(mm <= 50) flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b> — in the 40–50% band. Net <b>"+fmt(net)+"</b>. 👍"]);
-    else flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b> — above target (net "+fmt(net)+")."]);
+    if(!(trueCost>0)){
+      flags.push(["warn","Enter the job's line items above first — then I'll show what margin <b>"+fmt(p)+"</b> gives you."]);
+    } else {
+      const mm=(p-trueCost)/p*100, net=(p-trueCost)-p*oh;
+      if(p < trueCost) flags.push(["bad","<b>Below cost.</b> Doesn't cover your job cost of <b>"+fmt(trueCost)+"</b>. You'd lose <b>"+fmt(trueCost-p)+"</b>."]);
+      else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+mm.toFixed(0)+"% — covers direct cost but not overhead. Net loss <b>"+fmt(-net)+"</b>."]);
+      else if(mm < 40) flags.push(["warn","Margin <b>"+mm.toFixed(0)+"%</b> — profitable (net "+fmt(net)+") but thin. Little room for change orders."]);
+      else if(mm <= 50) flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b> — in the 40–50% band. Net <b>"+fmt(net)+"</b>. 👍"]);
+      else flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b> — above target (net "+fmt(net)+")."]);
+    }
   }
   flags.forEach(f=>{ const d=document.createElement("div"); d.className="flag "+f[0]; d.innerHTML=f[1]; box.appendChild(d); });
 }
