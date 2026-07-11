@@ -110,7 +110,9 @@
   .tip::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);background:#0d141b;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:12px;font-weight:500;line-height:1.38;width:190px;max-width:62vw;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .16s ease,transform .16s ease;z-index:40;white-space:normal}
   .tip:hover::after,.tip:focus::after{opacity:1;transform:translateX(-50%) translateY(0)}
   .tip:focus{outline:none}
-  .savednote{font-size:12px;color:var(--good);margin-top:8px;min-height:15px}
+  .savednote{font-size:12.5px;color:var(--good);margin-top:10px;min-height:15px;line-height:1.4}
+  .savednote.unsaved{color:#ffcf8f;background:#352c12;border:1px solid #6b561a;border-radius:9px;padding:8px 11px}
+  .savednote.saved{color:var(--good)}
   /* import */
   .drop{border:1.6px dashed #4a5b6b;border-radius:14px;padding:22px 14px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
   .drop.over{border-color:var(--accent);background:#21303c;color:var(--ink)}
@@ -252,10 +254,10 @@
   <!-- ============ CALCULATOR ============ -->
   <section class="view on" id="calcView">
     <div class="seg">
-      <button id="modeAnalyze" class="active">📋 Analyze a bid</button>
-      <button id="modeCost">🧮 Build from cost</button>
+      <button id="modeAnalyze">📋 Analyze a bid</button>
+      <button id="modeCost" class="active">🧮 Build from cost</button>
     </div>
-    <div class="modehint" id="modeHint">You have a <b>priced bid</b> — enter the line items below. I'll show the margin, profit &amp; break-even at the bottom.</div>
+    <div class="modehint" id="modeHint">You have your <b>costs</b> — enter what the job costs you below. I'll add your markup and show the price, break-even &amp; profit at the bottom.</div>
 
     <div id="outcomePrompt" class="installhint" style="display:none">
       <div id="outcomePromptText"></div>
@@ -349,9 +351,9 @@
     <div class="card">
       <h2>Rates</h2>
       <div class="row g3">
-        <div><span class="lbl">Contingency %</span><input id="contingency" type="number" inputmode="decimal" value="10" min="0" step="0.5" /></div>
-        <div><span class="lbl">Overhead %</span><input id="overhead" type="number" inputmode="decimal" value="12" min="0" step="0.5" /></div>
-        <div><span class="lbl">Mat. tax %</span><input id="tax" type="number" inputmode="decimal" value="9.5" min="0" step="0.1" /></div>
+        <div><span class="lbl">Contingency %</span><input id="contingency" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
+        <div><span class="lbl">Overhead %</span><input id="overhead" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
+        <div><span class="lbl">Mat. tax %</span><input id="tax" type="number" inputmode="decimal" value="0" min="0" step="0.1" /></div>
       </div>
     </div>
 
@@ -736,6 +738,7 @@ function calc(){
   }
   if($("propTotal")) $("propTotal").textContent=$("recPrice").textContent;
   if(typeof renderSimilar==="function") renderSimilar();
+  if(typeof updateSaveStatus==="function") updateSaveStatus();
 }
 
 function currentBench(){ return BENCH[$("benchCat").value]; }
@@ -966,8 +969,18 @@ function activeBench(){
 }
 function bnum(v){ return Number.isInteger(v)?v:(Math.round(v*100)/100); }
 
+let _savedSig=null;
+function stateSig(s){ s=s||getState(); return JSON.stringify({m:s.mode,j:s.jobName,ct:s.clientType,cn:s.contactName,cp:s.contactPhone,ce:s.contactEmail,bc:s.benchCat,bq:s.benchQty,mg:s.margin,co:s.contingency,oh:s.overhead,tx:s.tax,ph:(s.photos||[]).length,rows:s.rows}); }
+function hasContent(){ const s=getState(); return !!(s.jobName&&s.jobName.trim()) || (s.rows||[]).some(r=>(+r.qty||0)*(+r.unit||0)>0); }
+function updateSaveStatus(){ const el=$("savedNote"); if(!el) return;
+  if(!hasContent()){ el.textContent=""; el.className="savednote"; return; }
+  if(_savedSig===null){ el.innerHTML="● <b>Not saved to your jobs yet</b> — tap 💾 Save to keep it. (Your work is auto-held on this device so you won't lose it if you leave.)"; el.className="savednote unsaved"; }
+  else if(_savedSig!==stateSig()){ el.innerHTML="● <b>Unsaved changes</b> since your last save — tap 💾 Save."; el.className="savednote unsaved"; }
+  else { el.innerHTML="✓ Saved to your jobs."; el.className="savednote saved"; }
+}
 function saveToArchive(){
   const st=getState(); const a=getArchive(); a.unshift(newEntry(st)); setArchive(a);
+  _savedSig=stateSig(st); updateSaveStatus();
   toast("✓ Saved ("+a.length+")");
   if(a.length===200) toast("You have 200 saved estimates — consider clearing old ones.");
   renderArchive();
@@ -998,7 +1011,7 @@ function renderArchive(){
     function persistMeta(){ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.trade=m.trade; t.size=m.size; t.outcome=m.outcome; t.actualCost=m.actualCost; setArchive(arr); } }
     div.querySelector('[data-a=oc]').onclick=()=>{ m.outcome=m.outcome==="pending"?"won":(m.outcome==="won"?"lost":"pending"); persistMeta(); renderArchive(); renderHistory(); };
     div.querySelector('[data-a=ac]').onclick=()=>{ const v=prompt("Actual final cost for this job ($):", m.actualCost!=null?m.actualCost:""); if(v==null) return; const n=parseFloat(v); m.actualCost=(v.trim()===""?null:(isFinite(n)?n:null)); persistMeta(); renderArchive(); renderHistory(); };
-    div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); showView("calc"); toast("Loaded into calculator"); maybeOutcomePrompt(e); };
+    div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded into calculator"); maybeOutcomePrompt(e); };
     div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; const arr=getArchive(); arr.unshift(newEntry(st)); setArchive(arr); renderArchive(); toast("Duplicated"); };
     div.querySelector('[data-a=rename]').onclick=()=>{ const nn=prompt("Rename estimate:", s.jobName||""); if(nn==null) return; const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.state.jobName=nn; setArchive(arr); renderArchive(); } };
     div.querySelector('[data-a=dl]').onclick=()=>downloadSummary(s);
@@ -1402,13 +1415,14 @@ async function maybeInstallHint(){
   STATE_CACHE = saved;
   defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI(); renderPhotos();
   let hadState=false;
-  if(saved && saved.rows){ applyState(saved); hadState=true; }
+  if(saved && saved.rows){ applyState(saved); hadState=true; _savedSig = getArchive().some(e=>stateSig(e.state)===stateSig()) ? stateSig() : null; }
   if(!hadState){
     if(PROFILE.defOverhead!=null&&PROFILE.defOverhead!=="") $("overhead").value=PROFILE.defOverhead;
     if(PROFILE.defContingency!=null&&PROFILE.defContingency!=="") $("contingency").value=PROFILE.defContingency;
     if(PROFILE.defTax!=null&&PROFILE.defTax!=="") $("tax").value=PROFILE.defTax;
-    setMode("analyze");
+    setMode("cost");
   }
+  updateSaveStatus();
   renderArchive();
   registerSW();
   maybeInstallHint();
