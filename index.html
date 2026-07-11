@@ -754,11 +754,13 @@ function quoteCheck(trueCost, be, oh, rec){
       flags.push(["warn","Enter the job's line items above first — then I'll show what margin <b>"+fmt(p)+"</b> gives you."]);
     } else {
       const mm=(p-trueCost)/p*100, net=(p-trueCost)-p*oh;
+      const tMk=(PROFILE.defMarkup!=null && PROFILE.defMarkup!=="" && isFinite(parseFloat(PROFILE.defMarkup))) ? parseFloat(PROFILE.defMarkup)/100 : 0.40;
+      const targetMargin=tMk/(1+tMk)*100;   // your markup target, expressed as a margin
       if(p < trueCost) flags.push(["bad","<b>Below cost.</b> Doesn't cover your job cost of <b>"+fmt(trueCost)+"</b>. You'd lose <b>"+fmt(trueCost-p)+"</b>."]);
       else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+mm.toFixed(0)+"% — covers direct cost but not overhead. Net loss <b>"+fmt(-net)+"</b>."]);
-      else if(mm < 40) flags.push(["warn","Margin <b>"+mm.toFixed(0)+"%</b> — profitable (net "+fmt(net)+") but thin. Little room for change orders."]);
-      else if(mm <= 50) flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b> — in the 40–50% band. Net <b>"+fmt(net)+"</b>. 👍"]);
-      else flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b> — above target (net "+fmt(net)+")."]);
+      else if(mm < targetMargin-5) flags.push(["warn","Margin <b>"+mm.toFixed(0)+"%</b>: profitable (net "+fmt(net)+") but below your "+targetMargin.toFixed(0)+"% target."]);
+      else if(mm <= targetMargin+8) flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b>: on your "+targetMargin.toFixed(0)+"% target. Net <b>"+fmt(net)+"</b>. 👍"]);
+      else flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b>: above your "+targetMargin.toFixed(0)+"% target (net "+fmt(net)+")."]);
     }
   }
   flags.forEach(f=>{ const d=document.createElement("div"); d.className="flag "+f[0]; d.innerHTML=f[1]; box.appendChild(d); });
