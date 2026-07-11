@@ -190,6 +190,15 @@
   .installhint{background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:14px;margin:14px 0 0;font-size:13.5px;color:var(--ink);line-height:1.45}
   .installhint .ih-btns{display:flex;gap:8px;margin-top:11px}
   .installhint .btn{min-height:44px}
+  .photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 10px}
+  .photogrid:empty{display:none}
+  .pthumb{position:relative;aspect-ratio:1/1;border-radius:11px;overflow:hidden;border:1px solid var(--line);background:#0e141b;cursor:pointer;transition:transform .12s ease}
+  .pthumb:active{transform:scale(.97)}
+  .pthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .pthumb .prm{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.62);color:#fff;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .16s ease}
+  .pthumb .prm:hover{background:var(--bad)}
+  .ppreview{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+  .ppreview img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:9px;cursor:pointer;border:1px solid var(--line)}
   .sigoverlay{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px}
   .sigcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;width:100%;max-width:560px}
   .sightitle{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent2)}
@@ -262,6 +271,17 @@
       </div>
       <input id="benchRange" style="display:none" disabled />
       <div class="bench" id="benchNote"></div>
+    </div>
+
+    <div class="card" id="photosCard">
+      <h2>📷 Job photos</h2>
+      <p class="sub">Attach site photos to this job — they're saved with it in your archive for reference later.</p>
+      <div id="photoGrid" class="photogrid"></div>
+      <div class="btns">
+        <label class="btn primary wide" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📷 Add photos
+          <input id="photoInput" type="file" accept="image/*" multiple hidden onchange="addPhotoFiles(this.files); this.value='';">
+        </label>
+      </div>
     </div>
 
     <div class="card" id="voiceCard">
@@ -462,6 +482,13 @@
 
 <div id="previewOverlay" class="sigoverlay" style="display:none">
   <div class="sigcard"><div id="previewBody"></div><div class="sigbtns"><button class="btn primary" id="previewClose">Close</button></div></div>
+</div>
+
+<div id="photoOverlay" class="sigoverlay" style="display:none">
+  <div class="sigcard" style="max-width:640px">
+    <img id="photoBig" alt="Job photo" style="width:100%;border-radius:12px;display:block;max-height:74vh;object-fit:contain;background:#0e141b" />
+    <div class="sigbtns"><button class="btn primary" id="photoClose">Close</button></div>
+  </div>
 </div>
 
 <div id="sigOverlay" class="sigoverlay" style="display:none">
@@ -859,6 +886,7 @@ function getState(){
   return { ts:Date.now(), mode:MODE, jobName:$("jobName").value, clientType:$("clientType").value,
     benchCat:$("benchCat").value, benchQty:$("benchQty").value, margin:$("margin").value,
     contingency:$("contingency").value, overhead:$("overhead").value, tax:$("tax").value, proposed:$("proposed").value,
+    photos: PHOTOS.slice(),
     rows: rows.map(r=>({item:r.item,desc:r.desc,qty:r.qty,unit:r.unit})) };
 }
 function compute(s){
@@ -933,7 +961,8 @@ function renderArchive(){
     const signedTag=(s.proposal&&s.proposal.signature)?'<span class="tag">✍ signed</span>':'';
     const ocls={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome]||"oc-pend";
     const acLabel=m.actualCost!=null?("actual "+fmt(m.actualCost)):"+ actual $";
-    const meta=when+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"");
+    const nphoto=(s.photos&&s.photos.length)||0;
+    const meta=when+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"")+(nphoto?" · 📷 "+nphoto:"");
     const div=document.createElement("div"); div.className="arch-entry";
     div.innerHTML='<div class="arch-meta">'+meta+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
       '<div class="arch-row"><button class="oc '+ocls+'" data-a="oc">'+m.outcome+'</button><button data-a="ac">'+acLabel+'</button><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
@@ -1007,10 +1036,45 @@ function previewEntry(e){
     "<div class='hrow'><span>"+(r.mode==="cost"?"True cost":"Break-even cost")+"</span><span>"+fmt(r.mode==="cost"?r.trueCost:(r.breakeven!=null?r.breakeven:r.impliedCost))+"</span></div>"+
     "<div class='hrow'><span>Margin</span><span>"+r.marginPct.toFixed(0)+"%</span></div><div class='hrow'><span>Net</span><span>"+fmt(r.net)+"</span></div>"+
     (m.actualCost!=null?"<div class='hrow'><span>Actual cost</span><span>"+fmt(m.actualCost)+"</span></div>":"")+
-    (rowsH?"<div style='margin-top:8px'>"+rowsH+"</div>":"");
+    (rowsH?"<div style='margin-top:8px'>"+rowsH+"</div>":"")+
+    ((s.photos&&s.photos.length)?"<div class='ppreview'>"+s.photos.map(src=>"<img src='"+src+"'>").join("")+"</div>":"");
+  Array.prototype.forEach.call($("previewBody").querySelectorAll(".ppreview img"),img=>{ img.onclick=()=>viewPhoto(img.src); });
   $("previewOverlay").style.display="flex";
 }
 $("previewClose").addEventListener("click",()=>{ $("previewOverlay").style.display="none"; });
+
+/* ---------------- JOB PHOTOS ---------------- */
+let PHOTOS=[];
+function resizeImage(file){ return new Promise(function(res){
+  const rd=new FileReader();
+  rd.onload=function(){ const img=new Image();
+    img.onload=function(){ let w=img.width,h=img.height; const MAX=1280;
+      if(w>=h && w>MAX){ h=Math.round(h*MAX/w); w=MAX; } else if(h>w && h>MAX){ w=Math.round(w*MAX/h); h=MAX; } else if(w>MAX){ h=Math.round(h*MAX/w); w=MAX; }
+      try{ const c=document.createElement("canvas"); c.width=w; c.height=h; c.getContext("2d").drawImage(img,0,0,w,h); res(c.toDataURL("image/jpeg",0.72)); }
+      catch(e){ res(rd.result); } };
+    img.onerror=function(){ res(null); }; img.src=rd.result; };
+  rd.onerror=function(){ res(null); }; rd.readAsDataURL(file);
+}); }
+async function addPhotoFiles(files){
+  if(!files||!files.length) return;
+  const list=[].slice.call(files).filter(f=>/^image\//.test(f.type));
+  if(!list.length){ toast("Please choose image files"); return; }
+  if(PHOTOS.length>=12){ toast("Max 12 photos per job"); return; }
+  toast("Adding photo"+(list.length>1?"s":"")+"…");
+  for(let i=0;i<list.length && PHOTOS.length<12;i++){ const d=await resizeImage(list[i]); if(d) PHOTOS.push(d); }
+  renderPhotos(); persist();
+  toast(PHOTOS.length+" photo"+(PHOTOS.length!==1?"s":"")+" on this job");
+}
+function removePhoto(i){ if(!confirm("Remove this photo?")) return; PHOTOS.splice(i,1); renderPhotos(); persist(); }
+function renderPhotos(){ const g=$("photoGrid"); if(!g) return; g.innerHTML="";
+  PHOTOS.forEach(function(src,i){ const d=document.createElement("div"); d.className="pthumb";
+    const im=document.createElement("img"); im.src=src; im.onclick=function(){ viewPhoto(src); };
+    const b=document.createElement("button"); b.className="prm"; b.type="button"; b.textContent="×"; b.setAttribute("aria-label","remove photo");
+    b.onclick=function(ev){ ev.stopPropagation(); removePhoto(i); };
+    d.appendChild(im); d.appendChild(b); g.appendChild(d); }); }
+function viewPhoto(src){ if(!src) return; $("photoBig").src=src; $("photoOverlay").style.display="flex"; }
+$("photoClose").addEventListener("click",()=>{ $("photoOverlay").style.display="none"; });
+$("photoOverlay").addEventListener("click",e=>{ if(e.target.id==="photoOverlay") $("photoOverlay").style.display="none"; });
 
 /* ---------------- SUMMARY DOWNLOAD ---------------- */
 function buildSummary(s){
@@ -1238,6 +1302,7 @@ function applyState(s){
   if(s.overhead!=null) $("overhead").value=s.overhead; if(s.tax!=null) $("tax").value=s.tax;
   $("proposed").value=s.proposed||"";
   if(s.rows&&s.rows.length) rows=s.rows.map(r=>({item:r.item||"",desc:r.desc||"",qty:+r.qty||0,unit:+r.unit||0}));
+  PHOTOS = Array.isArray(s.photos) ? s.photos.slice() : []; if(typeof renderPhotos==="function") renderPhotos();
   if(s.proposal){ const pr=s.proposal;
     $("clientName").value=pr.client||""; $("clientAddress").value=pr.clientAddr||""; $("projScope").value=pr.scope||"";
     if(pr.deposit!=null) $("depositPct").value=pr.deposit; $("termsText").value=pr.terms||""; $("itemize").checked=pr.itemize!==false;
@@ -1303,7 +1368,7 @@ async function maybeInstallHint(){
   if(sb && sb.data){ const merged=JSON.parse(JSON.stringify(SEED_BENCH)); Object.keys(sb.data).forEach(k=>{ if(merged[k]&&sb.data[k]) merged[k]=sb.data[k]; }); BENCH=merged; BENCH_UPDATED=sb.updated||BENCH_UPDATED; }
   const saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null;
   STATE_CACHE = saved;
-  defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI();
+  defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI(); renderPhotos();
   let hadState=false;
   if(saved && saved.rows){ applyState(saved); hadState=true; }
   if(!hadState){
