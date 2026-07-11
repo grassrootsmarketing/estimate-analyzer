@@ -1305,16 +1305,34 @@ $("exportArch").addEventListener("click",()=>{
   toast("Backup downloaded");
 });
 $("importArch").addEventListener("click",()=>$("importArchInput").click());
+// Restore is the one path where untrusted data enters. Photo/signature data URLs get
+// injected into img src, so validate them. Keep only real image data URLs, cap photos, coerce rows.
+function sanitizePhotos(arr){ return Array.isArray(arr) ? arr.filter(p=>typeof p==="string" && p.indexOf("data:image/")===0).slice(0,12) : []; }
+function sanitizeRows(arr){ return Array.isArray(arr) ? arr.map(r=>({ item:String((r&&r.item)||""), desc:String((r&&r.desc)||""), qty:+(r&&r.qty)||0, unit:+(r&&r.unit)||0 })) : []; }
+function sanitizeEntry(e){
+  if(!e || typeof e!=="object" || !e.state || typeof e.state!=="object") return null;
+  const s=e.state;
+  s.photos = sanitizePhotos(s.photos);
+  if(s.rows) s.rows = sanitizeRows(s.rows);
+  if(s.proposal && typeof s.proposal==="object"){
+    const sig=s.proposal.signature;
+    if(!(typeof sig==="string" && sig.indexOf("data:image/")===0)) s.proposal.signature=null;
+  }
+  return e;
+}
 $("importArchInput").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
   rd.onload=()=>{ try{
-    const d=JSON.parse(rd.result); const inc=Array.isArray(d)?d:(d.archive||[]);
-    if(!Array.isArray(inc)) throw 0;
+    const d=JSON.parse(rd.result); const raw=Array.isArray(d)?d:(d.archive||[]);
+    if(!Array.isArray(raw)) throw 0;
+    let skipped=0; const inc=[];
+    raw.forEach(en=>{ const c=sanitizeEntry(en); if(c) inc.push(c); else skipped++; });
     if(!confirm("Restore "+inc.length+" estimate(s)? This replaces your current archive on this device.")) return;
     setArchive(inc.slice(0,500));
     if(d.profile && confirm("Also restore the company profile from this backup?")){ PROFILE=d.profile; saveKey(LS_PROFILE,PROFILE); loadProfileIntoForm(); }
     if(d.benchmarks && d.benchmarks.data){ BENCH=d.benchmarks.data; BENCH_UPDATED=d.benchmarks.updated||BENCH_UPDATED; saveKey("ea_bench",d.benchmarks); calc(); }
-    renderArchive(); toast("Restored "+Math.min(inc.length,500)+" estimate(s)");
+    renderArchive();
+    toast("Restored "+Math.min(inc.length,500)+" estimate(s)"+(skipped?", skipped "+skipped+" invalid item"+(skipped===1?"":"s"):"")+".");
   }catch(err){ toast("That file isn't a valid backup"); } };
   rd.readAsText(f); e.target.value="";
 });
@@ -1346,7 +1364,7 @@ function applyState(s){
   if(s.overhead!=null) $("overhead").value=s.overhead; if(s.tax!=null) $("tax").value=s.tax;
   $("proposed").value=s.proposed||"";
   if(s.rows&&s.rows.length) rows=s.rows.map(r=>({item:r.item||"",desc:r.desc||"",qty:+r.qty||0,unit:+r.unit||0}));
-  PHOTOS = Array.isArray(s.photos) ? s.photos.slice() : []; if(typeof renderPhotos==="function") renderPhotos();
+  PHOTOS = sanitizePhotos(s.photos); if(typeof renderPhotos==="function") renderPhotos();
   if(s.proposal){ const pr=s.proposal;
     $("clientName").value=pr.client||""; $("clientAddress").value=pr.clientAddr||""; $("projScope").value=pr.scope||"";
     if(pr.deposit!=null) $("depositPct").value=pr.deposit; $("termsText").value=pr.terms||""; $("itemize").checked=pr.itemize!==false;
