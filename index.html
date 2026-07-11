@@ -582,6 +582,7 @@ function render(){
     tb.appendChild(d);
   });
   calc();
+  persist();
 }
 function upd(i,k,v){
   if(k==='qty'||k==='unit'){
@@ -694,51 +695,35 @@ function setMode(mode){
     $("margin").value=45;
   }
   calc();
+  persist();
 }
 
-function calc(){
-  let direct=0, taxable=0;
-  rows.forEach(r=>{ const c=r.qty*r.unit; direct+=c; if(isTaxable(r.item)) taxable+=c; });
-  const taxRate=(parseFloat($("tax").value)||0)/100;
-  const taxAmt=taxable*taxRate;
-  const cont=(parseFloat($("contingency").value)||0)/100;
-  const oh=(parseFloat($("overhead").value)||0)/100;
-  const m=(parseFloat($("margin").value)||0)/100;
-  $("margVal").textContent=Math.round(m*100)+"%";
-  setActive(m);
-
-  if(MODE==="cost"){
-    const baseCost=direct+taxAmt, contAmt=baseCost*cont, trueCost=baseCost+contAmt;
-    const rec=roundUp(trueCost*(1+m),50);
-    const grossProfit=rec-trueCost, net=grossProfit-rec*oh, realM=rec>0?grossProfit/rec*100:0;
-    const be=oh<1?trueCost/(1-oh):Infinity;
-    $("p25").textContent=fmt(roundUp(trueCost*1.25,50));
-    $("p35").textContent=fmt(roundUp(trueCost*1.35,50));
-    $("p45").textContent=fmt(roundUp(trueCost*1.45,50));
-    $("recPrice").textContent=fmt(rec);
-    $("recSub").textContent="+"+(m*100).toFixed(0)+"% markup · profit "+fmt(grossProfit)+" · "+realM.toFixed(0)+"% true margin";
-    $("bePrice").textContent=fmt(be);
-    $("netProfit").textContent=fmt(net);
-    $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
-    $("sDirect").textContent=fmt(direct); $("sTax").textContent=fmt(taxAmt); $("sCont").textContent=fmt(contAmt);
-    $("sTrueLbl").textContent="True job cost"; $("sTrue").textContent=fmt(trueCost); $("sMarkup").textContent=(m*100).toFixed(0)+"% on cost";
-    benchmarkCheck(rec); quoteCheck(trueCost, be, oh, rec);
+function calc(){ const s=getState(); const r=compute(s); paintResults(s, r); }
+// paintResults does ALL result-card DOM writes. It must never touch the #rows container (keeps input focus).
+function paintResults(s, r){
+  $("margVal").textContent=Math.round((parseFloat(s.margin)||0))+"%";
+  setActive((parseFloat(s.margin)||0)/100);
+  $("p25").textContent=fmt(r.sc25); $("p35").textContent=fmt(r.sc35); $("p45").textContent=fmt(r.sc45);
+  $("recPrice").textContent=fmt(r.price);
+  $("bePrice").textContent=fmt(r.breakeven);
+  $("netProfit").textContent=fmt(r.net); $("netProfit").style.color=r.net>=0?"var(--good)":"var(--bad)";
+  if(r.mode==="cost"){
+    $("recSub").textContent="+"+r.markupPct.toFixed(0)+"% markup · profit "+fmt(r.grossProfit)+" · "+r.marginPct.toFixed(0)+"% true margin";
+    $("sDirect").textContent=fmt(r.direct); $("sTax").textContent=fmt(r.taxAmt); $("sCont").textContent=fmt(r.contAmt);
+    $("sTrueLbl").textContent="True job cost"; $("sTrue").textContent=fmt(r.trueCost); $("sMarkup").textContent=r.markupPct.toFixed(0)+"% on cost";
+    benchmarkCheck(r.price); quoteCheck(r.trueCost, r.breakeven, r.oh, r.price);
   } else {
-    const price=direct, breakEven=price*(1-oh), grossProfit=price*m, net=grossProfit-price*oh;
-    $("p25").textContent=fmt(price*0.25); $("p35").textContent=fmt(price*0.35); $("p45").textContent=fmt(price*0.45);
-    $("recPrice").textContent=fmt(price);
-    $("recSub").textContent="Bid total · assuming "+(m*100).toFixed(0)+"% margin baked in → profit "+fmt(grossProfit);
-    $("bePrice").textContent=fmt(breakEven);
-    $("netProfit").textContent=fmt(net); $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
-    $("sDirect").textContent=fmt(price); $("sTax").textContent="—"; $("sCont").textContent="—";
-    $("sTrueLbl").textContent="Break-even cost"; $("sTrue").textContent=fmt(breakEven); $("sMarkup").textContent=(m*100).toFixed(0)+"% margin assumed";
-    benchmarkCheck(price);
-    const qCost=price*(1-m), qBe=oh<1?qCost/(1-oh):Infinity;   // implied cost basis for "test a quote"
-    quoteCheck(qCost, qBe, oh, price);
+    $("recSub").textContent="Bid total · assuming "+r.marginPct.toFixed(0)+"% margin baked in → profit "+fmt(r.grossProfit);
+    $("sDirect").textContent=fmt(r.price); $("sTax").textContent="-"; $("sCont").textContent="-";
+    $("sTrueLbl").textContent="Break-even cost"; $("sTrue").textContent=fmt(r.breakeven); $("sMarkup").textContent=r.marginPct.toFixed(0)+"% margin assumed";
+    benchmarkCheck(r.price);
+    const qBe=r.oh<1?r.impliedCost/(1-r.oh):Infinity;   // implied cost basis for "test a price"
+    quoteCheck(r.impliedCost, qBe, r.oh, r.price);
   }
   if($("propTotal")) $("propTotal").textContent=$("recPrice").textContent;
   if(typeof renderSimilar==="function") renderSimilar();
   if(typeof updateSaveStatus==="function") updateSaveStatus();
+  if(typeof updateFlagWarn==="function") updateFlagWarn();
 }
 
 function currentBench(){ return BENCH[$("benchCat").value]; }
@@ -935,10 +920,12 @@ function compute(s){
     const baseCost=direct+taxAmt, contAmt=baseCost*cont, trueCost=baseCost+contAmt;
     const rec=Math.ceil(trueCost*(1+m)/50)*50;
     const grossProfit=rec-trueCost, net=grossProfit-rec*oh, realM=rec>0?grossProfit/rec*100:0, be=oh<1?trueCost/(1-oh):Infinity;
-    return {mode:"cost",direct,taxAmt,contAmt,trueCost,price:rec,grossProfit,net,marginPct:realM,breakeven:be,markupPct:m*100};
+    return {mode:"cost",direct,taxAmt,contAmt,trueCost,price:rec,grossProfit,net,marginPct:realM,breakeven:be,markupPct:m*100,
+      oh:oh, sc25:roundUp(trueCost*1.25,50), sc35:roundUp(trueCost*1.35,50), sc45:roundUp(trueCost*1.45,50)};
   }
   const price=direct, impliedCost=price*(1-m), breakeven=price*(1-oh), grossProfit=price*m, net=grossProfit-price*oh;
-  return {mode:"analyze",direct,price,impliedCost,breakeven,grossProfit,net,marginPct:m*100,assumed:m*100};
+  return {mode:"analyze",direct,price,impliedCost,breakeven,grossProfit,net,marginPct:m*100,assumed:m*100,
+    oh:oh, sc25:price*0.25, sc35:price*0.35, sc45:price*0.45};
 }
 function persist(){ const st=getState(); STATE_CACHE=st; saveKey(LS_STATE, st); }
 function getArchive(){ return ARCH_CACHE; }
@@ -1340,10 +1327,9 @@ $("navArchive").addEventListener("click",()=>showView("archive"));
 $("navSettings").addEventListener("click",()=>showView("settings"));
 
 /* ---------------- APPLY STATE / AUTOSAVE / INIT ---------------- */
-const _render=render, _setMode=setMode;
 function applyState(s){
   if(!s) return;
-  _setMode(s.mode==="cost"?"cost":"analyze");
+  setMode(s.mode==="cost"?"cost":"analyze");
   $("jobName").value=s.jobName||""; if(s.clientType) $("clientType").value=s.clientType;
   $("contactName").value=s.contactName||""; $("contactPhone").value=s.contactPhone||""; $("contactEmail").value=s.contactEmail||"";
   if(s.benchCat){ $("benchCat").value=s.benchCat; syncQtyLabel(); }
@@ -1359,10 +1345,8 @@ function applyState(s){
     SIGNATURE=pr.signature||null; SIGNED_AT=pr.signedAt||null;
   } else { SIGNATURE=null; SIGNED_AT=null; }
   if(typeof updateSigStatus==="function") updateSigStatus();
-  _render(); persist();
+  render();
 }
-render=function(){ _render(); persist(); };
-setMode=function(m){ _setMode(m); persist(); };
 document.addEventListener("input", persist);
 document.addEventListener("change", persist);
 
