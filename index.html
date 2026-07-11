@@ -264,7 +264,7 @@
         <div class="s" id="recSub"></div>
       </div>
       <div class="duo">
-        <div class="stat"><div class="l"><span id="beLbl">Implied cost</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="The most your actual costs can be and still hit this margin (price × (1 − margin)). Come in under it and you're on target.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">cost the bid leaves room for</div></div>
+        <div class="stat"><div class="l"><span id="beLbl">Break-even cost</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">costs above this = you lose money</div></div>
         <div class="stat"><div class="l">Net profit<span class="tip" id="tipNet" tabindex="0" role="button" aria-label="What is this?" data-tip="What you keep after your overhead % is covered. Green = profit, red = losing money.">i</span></div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
       </div>
       <div class="btns">
@@ -366,7 +366,7 @@
       <div class="totline"><span class="muted">Direct</span><span id="sDirect">$0</span></div>
       <div class="totline"><span class="muted">+ Material tax</span><span id="sTax">$0</span></div>
       <div class="totline"><span class="muted">+ Contingency</span><span id="sCont">$0</span></div>
-      <div class="totline big"><span>True job cost</span><span id="sTrue">$0</span></div>
+      <div class="totline big"><span id="sTrueLbl">True job cost</span><span id="sTrue">$0</span></div>
       <div class="totline"><span class="muted">Markup</span><span id="sMarkup">—</span></div>
       <details><summary>How the math works</summary>
         <p><b>Markup</b> (Build-from-cost mode) adds % on top of your cost: $1,000 +10% = $1,100. <b>Margin</b> (Analyze mode) is profit as a % of the final price. <b>Break-even</b> covers true cost + overhead — quote below it and you lose money. LA 2026 benchmarks are built into the over/under check.</p>
@@ -635,11 +635,11 @@ function setMode(mode){
     $("marginTitle").textContent="Baked-in margin";
     $("margLbl").textContent="Margin already in the estimate";
     $("recLbl").textContent="Bid price (total)";
-    $("beLbl").textContent="Implied cost";
-    $("beSub").textContent="cost the bid leaves room for";
+    $("beLbl").textContent="Break-even cost";
+    $("beSub").textContent="costs above this = you lose money";
     $("tipMargin").dataset.tip="The profit margin already built into this bid — profit as a share of the price.";
     $("tipRec").dataset.tip="The bid's total price, with margin already included.";
-    $("tipBe").dataset.tip="The most your actual costs can be and still hit this margin (price × (1 − margin)). Come in under it and you're on target.";
+    $("tipBe").dataset.tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.";
     $("margin").value=45;
   }
   calc();
@@ -670,17 +670,17 @@ function calc(){
     $("netProfit").textContent=fmt(net);
     $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
     $("sDirect").textContent=fmt(direct); $("sTax").textContent=fmt(taxAmt); $("sCont").textContent=fmt(contAmt);
-    $("sTrue").textContent=fmt(trueCost); $("sMarkup").textContent=(m*100).toFixed(0)+"% on cost";
+    $("sTrueLbl").textContent="True job cost"; $("sTrue").textContent=fmt(trueCost); $("sMarkup").textContent=(m*100).toFixed(0)+"% on cost";
     benchmarkCheck(rec); quoteCheck(trueCost, be, oh, rec);
   } else {
-    const price=direct, impliedCost=price*(1-m), grossProfit=price*m, net=grossProfit-price*oh;
+    const price=direct, breakEven=price*(1-oh), grossProfit=price*m, net=grossProfit-price*oh;
     $("p25").textContent=fmt(price*0.25); $("p35").textContent=fmt(price*0.35); $("p45").textContent=fmt(price*0.45);
     $("recPrice").textContent=fmt(price);
     $("recSub").textContent="Bid total · assuming "+(m*100).toFixed(0)+"% margin baked in → profit "+fmt(grossProfit);
-    $("bePrice").textContent=fmt(impliedCost);
+    $("bePrice").textContent=fmt(breakEven);
     $("netProfit").textContent=fmt(net); $("netProfit").style.color=net>=0?"var(--good)":"var(--bad)";
     $("sDirect").textContent=fmt(price); $("sTax").textContent="—"; $("sCont").textContent="—";
-    $("sTrue").textContent=fmt(impliedCost); $("sMarkup").textContent=(m*100).toFixed(0)+"% margin assumed";
+    $("sTrueLbl").textContent="Break-even cost"; $("sTrue").textContent=fmt(breakEven); $("sMarkup").textContent=(m*100).toFixed(0)+"% margin assumed";
     benchmarkCheck(price); $("quoteFlags").innerHTML="";
   }
   if($("propTotal")) $("propTotal").textContent=$("recPrice").textContent;
@@ -872,8 +872,8 @@ function compute(s){
     const grossProfit=rec-trueCost, net=grossProfit-rec*oh, realM=rec>0?grossProfit/rec*100:0, be=oh<1?trueCost/(1-oh):Infinity;
     return {mode:"cost",direct,taxAmt,contAmt,trueCost,price:rec,grossProfit,net,marginPct:realM,breakeven:be,markupPct:m*100};
   }
-  const price=direct, impliedCost=price*(1-m), grossProfit=price*m, net=grossProfit-price*oh;
-  return {mode:"analyze",direct,price,impliedCost,grossProfit,net,marginPct:m*100,assumed:m*100};
+  const price=direct, impliedCost=price*(1-m), breakeven=price*(1-oh), grossProfit=price*m, net=grossProfit-price*oh;
+  return {mode:"analyze",direct,price,impliedCost,breakeven,grossProfit,net,marginPct:m*100,assumed:m*100};
 }
 function persist(){ const st=getState(); STATE_CACHE=st; saveKey(LS_STATE, st); }
 function getArchive(){ return ARCH_CACHE; }
@@ -929,7 +929,7 @@ function renderArchive(){
     const tag=r.mode==="cost"?"Build from cost":"Priced estimate";
     const nums=r.mode==="cost"
       ? "Price <b>"+fmt(r.price)+"</b> · cost "+fmt(r.trueCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net)
-      : "Bid <b>"+fmt(r.price)+"</b> · implied cost "+fmt(r.impliedCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net);
+      : "Bid <b>"+fmt(r.price)+"</b> · break-even "+fmt(r.breakeven!=null?r.breakeven:r.impliedCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net);
     const signedTag=(s.proposal&&s.proposal.signature)?'<span class="tag">✍ signed</span>':'';
     const ocls={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome]||"oc-pend";
     const acLabel=m.actualCost!=null?("actual "+fmt(m.actualCost)):"+ actual $";
@@ -1004,7 +1004,7 @@ function previewEntry(e){
   const rowsH=(s.rows||[]).filter(x=>((+x.qty||0)*(+x.unit||0))>0).map(x=>"<div class='hrow'><span>"+esc(x.desc||x.item)+"</span><span>"+fmt((+x.qty||0)*(+x.unit||0))+"</span></div>").join("");
   $("previewBody").innerHTML="<div class='sightitle'>"+esc(s.jobName||"Estimate")+"</div><p class='muted' style='font-size:12px;margin:4px 0 10px'>"+new Date(s.ts).toLocaleString()+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"")+" · <span class='oc "+oc+"' style='padding:1px 7px'>"+m.outcome+"</span></p>"+
     "<div class='hrow'><span>"+(r.mode==="cost"?"Price":"Bid")+"</span><span><b>"+fmt(r.price)+"</b></span></div>"+
-    "<div class='hrow'><span>"+(r.mode==="cost"?"True cost":"Implied cost")+"</span><span>"+fmt(r.mode==="cost"?r.trueCost:r.impliedCost)+"</span></div>"+
+    "<div class='hrow'><span>"+(r.mode==="cost"?"True cost":"Break-even cost")+"</span><span>"+fmt(r.mode==="cost"?r.trueCost:(r.breakeven!=null?r.breakeven:r.impliedCost))+"</span></div>"+
     "<div class='hrow'><span>Margin</span><span>"+r.marginPct.toFixed(0)+"%</span></div><div class='hrow'><span>Net</span><span>"+fmt(r.net)+"</span></div>"+
     (m.actualCost!=null?"<div class='hrow'><span>Actual cost</span><span>"+fmt(m.actualCost)+"</span></div>":"")+
     (rowsH?"<div style='margin-top:8px'>"+rowsH+"</div>":"");
@@ -1023,7 +1023,7 @@ function buildSummary(s){
   if(r.mode==="cost"){
     res="<tr><td>True job cost</td><td class=r>"+fmt(r.trueCost)+"</td></tr><tr><td>Recommended price (+"+(r.markupPct||0).toFixed(0)+"% markup)</td><td class=r><b>"+fmt(r.price)+"</b></td></tr><tr><td>True gross margin</td><td class=r>"+r.marginPct.toFixed(1)+"%</td></tr><tr><td>Net profit (after overhead)</td><td class=r>"+fmt(r.net)+"</td></tr><tr><td>Break-even</td><td class=r>"+fmt(r.breakeven)+"</td></tr>";
   } else {
-    res="<tr><td>Bid total</td><td class=r><b>"+fmt(r.price)+"</b></td></tr><tr><td>Assumed baked-in margin</td><td class=r>"+r.assumed.toFixed(0)+"%</td></tr><tr><td>Implied cost</td><td class=r>"+fmt(r.impliedCost)+"</td></tr><tr><td>Gross profit</td><td class=r>"+fmt(r.grossProfit)+"</td></tr><tr><td>Net profit</td><td class=r>"+fmt(r.net)+"</td></tr>";
+    res="<tr><td>Bid total</td><td class=r><b>"+fmt(r.price)+"</b></td></tr><tr><td>Assumed baked-in margin</td><td class=r>"+r.assumed.toFixed(0)+"%</td></tr><tr><td>Break-even cost</td><td class=r>"+fmt(r.breakeven!=null?r.breakeven:r.impliedCost)+"</td></tr><tr><td>Gross profit</td><td class=r>"+fmt(r.grossProfit)+"</td></tr><tr><td>Net profit</td><td class=r>"+fmt(r.net)+"</td></tr>";
   }
   return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(name)+" — Summary</title><style>body{font:14px Arial,sans-serif;color:#1a2330;max-width:740px;margin:26px auto;padding:0 18px}h1{font-size:20px;margin:0}.s{color:#667;font-size:12px;margin:2px 0 16px}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}.r{text-align:right}th{text-align:left;background:#f3f5f8}h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9a4a11;margin:16px 0 4px}.f{color:#889;font-size:11px;border-top:1px solid #dde;padding-top:10px;margin-top:22px}</style></head><body><h1>Estimate — internal summary</h1><div class=s>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+"</div><h2>Line items</h2><table><tr><th>Item</th><th>Description</th><th class=r>Qty</th><th class=r>Unit</th><th class=r>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr>"+(rowsHtml||"<tr><td colspan=5>(none)</td></tr>")+"</table><h2>Result</h2><table>"+res+"</table><div class=f>Internal worksheet — not for the client. estimate-analyzer-atb.vercel.app</div></body></html>";
 }
