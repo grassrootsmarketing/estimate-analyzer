@@ -190,6 +190,8 @@
   .installhint{background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:14px;margin:14px 0 0;font-size:13.5px;color:var(--ink);line-height:1.45}
   .installhint .ih-btns{display:flex;gap:8px;margin-top:11px}
   .installhint .btn{min-height:44px}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield;appearance:textfield}
   .modehint{font-size:12.5px;color:var(--muted);background:var(--panel2);border-left:3px solid var(--accent);border-radius:9px;padding:9px 12px;margin:-6px 0 14px;line-height:1.45}
   .modehint b{color:var(--ink)}
   .photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 10px}
@@ -364,6 +366,8 @@
     </div>
 
     <div class="card result">
+      <h2 style="margin:0 0 4px">💰 Your price &amp; profit</h2>
+      <p class="sub" style="margin:0 0 12px">Auto-calculated from everything above. Adjust the margin, then <b>Save</b> to keep this job.</p>
       <div class="marg-head">
         <span class="t" id="marginTitle">Baked-in margin</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="The profit margin already built into this bid — profit as a share of the price.">i</span>
         <span class="big" id="margVal">45%</span>
@@ -577,7 +581,15 @@ function render(){
   });
   calc();
 }
-function upd(i,k,v){ if(k==='qty'||k==='unit'){ rows[i][k]=parseFloat(v)||0; rows[i].review=false; rows[i].flag=null; render(); } else { rows[i][k]=v; calc(); } }
+function upd(i,k,v){
+  if(k==='qty'||k==='unit'){
+    rows[i][k]=parseFloat(v)||0;
+    const li=$("rows").children[i];
+    if(rows[i].review){ rows[i].review=false; rows[i].flag=null; if(li){ li.classList.remove('review'); const rb=li.querySelector('.reviewbar'); if(rb) rb.remove(); } }
+    if(li){ const b=li.querySelector('.litem-cost b'); if(b) b.textContent=fmt(rows[i].qty*rows[i].unit); }
+    calc();  // updates totals + result WITHOUT rebuilding the inputs (keeps your cursor)
+  } else { rows[i][k]=v; calc(); }
+}
 function confirmRow(i){ if(rows[i]){ rows[i].review=false; rows[i].flag=null; render(); } }
 function addRow(){ rows.push({item:"",desc:"",qty:1,unit:0}); render(); }
 function quickAdd(){ const v=$("quickAdd").value; if(!v) return; rows.push({item:v,desc:"",qty:1,unit:0}); $("quickAdd").value=""; render(); }
