@@ -8,7 +8,11 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Estimator" />
-<title>Estimate Analyzer — LA Contractor Pricing</title>
+<link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+<title>Estimate Analyzer, LA Contractor Pricing</title>
 <style>
   :root{
     --bg:#0f1419; --panel:#171e26; --panel2:#1d2731; --line:#2a3744;
@@ -114,8 +118,21 @@
   .savednote.unsaved{color:#ffcf8f;background:#352c12;border:1px solid #6b561a;border-radius:9px;padding:8px 11px}
   .savednote.saved{color:var(--good)}
   /* import */
-  .drop{border:1.6px dashed #4a5b6b;border-radius:14px;padding:22px 14px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
+  /* Upload box: prominent by default (reads as primary on mobile, no hover needed), intensifies on hover. */
+  .drop{border:2px dashed var(--accent2);border-radius:16px;padding:26px 16px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px;background:rgba(255,140,66,.06);display:flex;flex-direction:column;align-items:center;gap:7px;min-height:150px;justify-content:center}
+  .drop:hover{border-color:var(--accent);background:rgba(255,140,66,.13)}
+  .drop:active{transform:scale(.99)}
   .drop.over{border-color:var(--accent);background:#21303c;color:var(--ink)}
+  .drop-ico{color:var(--accent2);transition:color .16s ease,transform .16s ease}
+  .drop:hover .drop-ico{color:var(--accent);transform:translateY(-3px)}
+  .drop-main{font-size:16px;color:var(--ink)}
+  .drop-sub{font-size:13px}
+  .drop-alt{text-align:center;color:var(--muted);font-size:12.5px;margin-top:9px}
+  /* Analyze mode: the imported estimate is the main action, so float the upload card to the top and emphasize it. */
+  #calcView.on{display:flex;flex-direction:column}
+  #calcView.on > .seg, #calcView.on > .modehint, #calcView.on > #outcomePrompt{order:-3}
+  #calcView.mode-analyze > #importCard{order:-2}
+  #calcView.mode-analyze #drop{border-color:var(--accent);background:rgba(255,140,66,.11)}
   .drop b{color:var(--accent2)}
   .link{color:var(--accent2);text-decoration:underline;cursor:pointer}
   .bench{font-size:12.5px;color:var(--muted);margin-top:8px}
@@ -163,6 +180,8 @@
   .arch-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
   .arch-tools .btn{flex:0 1 auto;min-width:0;padding:10px 12px;font-size:12.5px;min-height:42px}
   .arch-entry{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+  .arch-entry.pinned{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+  .arch-row button.pin-on{background:var(--accent);color:#1a1108;border-color:var(--accent)}
   .arch-meta{font-size:11px;color:var(--muted)}
   .arch-title{font-size:15px;font-weight:800;margin:2px 0}
   .arch-nums{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.7}
@@ -257,7 +276,7 @@
       <button id="modeAnalyze">📋 Analyze a bid</button>
       <button id="modeCost" class="active">🧮 Build from cost</button>
     </div>
-    <div class="modehint" id="modeHint">You have your <b>costs</b> — enter what the job costs you below. I'll add your markup and show the price, break-even &amp; profit at the bottom.</div>
+    <div class="modehint" id="modeHint">You have your <b>costs</b>. Enter what the job costs you below. I'll add your markup and show the price, break-even &amp; profit at the bottom.</div>
 
     <div id="outcomePrompt" class="installhint" style="display:none">
       <div id="outcomePromptText"></div>
@@ -289,7 +308,7 @@
 
     <div class="card" id="photosCard">
       <h2>📷 Job photos</h2>
-      <p class="sub">Attach site photos to this job — they're saved with it in your archive for reference later.</p>
+      <p class="sub">Attach site photos to this job. They're saved with it in your archive for reference later.</p>
       <div id="photoGrid" class="photogrid"></div>
       <div class="btns">
         <label class="btn primary wide" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📷 Add photos
@@ -300,7 +319,7 @@
 
     <div class="card" id="voiceCard">
       <h2>🎤 Describe the job</h2>
-      <p class="sub">Talk it out — e.g. "two bathrooms, demo and retile, 120 square feet, materials about eighteen hundred, two guys three days at 65 an hour." It fills in cost lines for you to review. Nothing is invented; anything unclear is flagged.</p>
+      <p class="sub">Talk it out, e.g. "two bathrooms, demo and retile, 120 square feet, materials about eighteen hundred, two guys three days at 65 an hour." It fills in cost lines for you to review. Nothing is invented; anything unclear is flagged.</p>
       <div class="btns">
         <button class="btn primary wide" id="micBtn">🎤 Start talking</button>
       </div>
@@ -311,12 +330,16 @@
       <div class="bench" id="voiceMsg" style="margin-top:8px"></div>
     </div>
 
-    <div class="card">
-      <h2>📄 Import — PDF or photo</h2>
-      <p class="sub">Drop a PDF, scan, or phone photo (PNG/JPG) of an estimate. Scans &amp; images use OCR — always eyeball the numbers.</p>
-      <div id="drop" class="drop"><b>Tap to add a PDF or photo</b>, or <span class="link" id="browseLink">browse files</span>
+    <div class="card" id="importCard">
+      <h2>📄 Import a PDF or photo</h2>
+      <p class="sub">Drop a PDF, scan, or phone photo (PNG/JPG) of an estimate. Scans &amp; images use OCR, so always eyeball the numbers.</p>
+      <div id="drop" class="drop">
+        <svg class="drop-ico" viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 9 12 4 17 9"></polyline><line x1="12" y1="4" x2="12" y2="16"></line></svg>
+        <div class="drop-main"><b>Tap to upload a PDF or photo</b></div>
+        <div class="drop-sub">of an estimate, or <span class="link" id="browseLink">browse files</span></div>
         <input id="pdfInput" type="file" accept="application/pdf,image/*" hidden>
       </div>
+      <div class="drop-alt">or enter it manually below</div>
       <div id="importMsg" class="bench"></div>
     </div>
 
@@ -363,9 +386,9 @@
       <div class="totline"><span class="muted">+ Material tax</span><span id="sTax">$0</span></div>
       <div class="totline"><span class="muted">+ Contingency</span><span id="sCont">$0</span></div>
       <div class="totline big"><span id="sTrueLbl">True job cost</span><span id="sTrue">$0</span></div>
-      <div class="totline"><span class="muted">Markup</span><span id="sMarkup">—</span></div>
+      <div class="totline"><span class="muted">Markup</span><span id="sMarkup">-</span></div>
       <details><summary>How the math works</summary>
-        <p><b>Markup</b> (Build-from-cost mode) adds % on top of your cost: $1,000 +10% = $1,100. <b>Margin</b> (Analyze mode) is profit as a % of the final price. <b>Break-even</b> covers true cost + overhead — quote below it and you lose money. LA 2026 benchmarks are built into the over/under check.</p>
+        <p><b>Markup</b> (Build-from-cost mode) adds % on top of your cost: $1,000 +10% = $1,100. <b>Margin</b> (Analyze mode) is profit as a % of the final price. <b>Break-even</b> covers true cost + overhead. Quote below it and you lose money. LA 2026 benchmarks are built into the over/under check.</p>
       </details>
     </div>
 
@@ -373,15 +396,15 @@
       <h2 style="margin:0 0 4px">💰 Your price &amp; profit</h2>
       <p class="sub" style="margin:0 0 12px">Auto-calculated from everything above. Adjust the margin, then <b>Save</b> to keep this job.</p>
       <div class="marg-head">
-        <span class="t" id="marginTitle">Markup on cost</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="Your markup — the % added on top of your true cost to set the price.">i</span>
+        <span class="t" id="marginTitle">Markup on cost</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="Your markup: the % added on top of your true cost to set the price.">i</span>
         <span class="big" id="margVal">40%</span>
       </div>
       <div class="lbl" id="margLbl" style="margin-bottom:2px">% added on top of your cost</div>
       <input class="slider" id="margin" type="range" min="10" max="120" value="40" step="1" />
       <div class="scenarios">
-        <div class="sc" data-m="25" role="button" tabindex="0" onclick="pickMargin(25)"><div class="m">25%</div><div class="p" id="p25">—</div></div>
-        <div class="sc" data-m="35" role="button" tabindex="0" onclick="pickMargin(35)"><div class="m">35%</div><div class="p" id="p35">—</div></div>
-        <div class="sc active" data-m="45" role="button" tabindex="0" onclick="pickMargin(45)"><div class="m">45%</div><div class="p" id="p45">—</div></div>
+        <div class="sc" data-m="25" role="button" tabindex="0" onclick="pickMargin(25)"><div class="m">25%</div><div class="p" id="p25">-</div></div>
+        <div class="sc" data-m="35" role="button" tabindex="0" onclick="pickMargin(35)"><div class="m">35%</div><div class="p" id="p35">-</div></div>
+        <div class="sc active" data-m="45" role="button" tabindex="0" onclick="pickMargin(45)"><div class="m">45%</div><div class="p" id="p45">-</div></div>
       </div>
       <div class="recbox">
         <div class="l"><span id="recLbl">Recommended price (rounded up)</span><span class="tip" id="tipRec" tabindex="0" role="button" aria-label="What is this?" data-tip="Your suggested price: true cost plus markup, rounded up to a clean $50.">i</span></div>
@@ -389,11 +412,11 @@
         <div class="s" id="recSub"></div>
       </div>
       <div class="duo">
-        <div class="stat"><div class="l"><span id="beLbl">Break-even (floor)</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="Your break-even floor — true cost plus overhead. Price below this and you lose money.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">below this you lose money</div></div>
+        <div class="stat"><div class="l"><span id="beLbl">Break-even (floor)</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="Your break-even floor: true cost plus overhead. Price below this and you lose money.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">below this you lose money</div></div>
         <div class="stat"><div class="l">Net profit<span class="tip" id="tipNet" tabindex="0" role="button" aria-label="What is this?" data-tip="What you keep after your overhead % is covered. Green = profit, red = losing money.">i</span></div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
       </div>
       <div class="testprice">
-        <span class="lbl" style="display:block;margin-bottom:5px">🧪 Test a different price — check its margin vs break-even</span>
+        <span class="lbl" style="display:block;margin-bottom:5px">🧪 Test a different price: check its margin vs break-even</span>
         <input id="proposed" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 9500" />
         <div id="quoteFlags"></div>
       </div>
@@ -424,7 +447,7 @@
     </div>
     <div class="card"><h2>📊 Your history</h2><div id="historyBox"></div></div>
     <div id="archiveList"></div>
-    <p class="muted" style="font-size:12px">Your saved estimates live on this device and auto-save (crash-safe). Use <b>Backup</b> to export a file you can restore on another device.</p>
+    <p class="muted" style="font-size:12px">History keeps your newest 30 jobs; older ones roll off automatically. Tap <b>📌 Keep</b> on any job to pin it and keep it forever. Estimates live on this device; use <b>Backup</b> to export a file you can restore on another device.</p>
   </section>
 
   <!-- ============ SETTINGS ============ -->
@@ -463,7 +486,7 @@
     </div>
     <div class="card">
       <h2>Benchmarks (over/under check)</h2>
-      <p class="sub">The market ranges used to flag over/under-pricing. Edit them as your market shifts — the date shows on every flag.</p>
+      <p class="sub">The market ranges used to flag over/under-pricing. Edit them as your market shifts; the date shows on every flag.</p>
       <div class="field"><span class="lbl">Last updated (label shown on flags)</span><input id="benchUpdated" placeholder="Jan 2026" /></div>
       <div id="benchList"></div>
       <div class="btns"><button class="btn primary" id="saveBench">Save benchmarks</button><button class="btn ghost" id="resetBench">Reset to LA 2026</button></div>
@@ -536,15 +559,9 @@ const $ = id => document.getElementById(id);
 function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
 
-/* PWA: inject manifest + icons as data URIs so the app stays a single file */
-(function(){
-  const icon="data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='#ff8c42'/><text x='256' y='372' font-size='340' font-family='Arial,sans-serif' font-weight='bold' text-anchor='middle' fill='#1a1108'>$</text></svg>");
-  const manifest={name:"Estimate Analyzer",short_name:"Estimator",start_url:"/",scope:"/",display:"standalone",background_color:"#0f1419",theme_color:"#0f1419",icons:[{src:icon,sizes:"any",type:"image/svg+xml",purpose:"any maskable"}]};
-  const l=document.createElement("link"); l.rel="manifest"; l.href="data:application/manifest+json,"+encodeURIComponent(JSON.stringify(manifest)); document.head.appendChild(l);
-  const a=document.createElement("link"); a.rel="apple-touch-icon"; a.href=icon; document.head.appendChild(a);
-})();
+/* PWA manifest + icons are static files: /manifest.json and /icons/*.png (linked in <head>). */
 
-// LA 2026 benchmark ranges (seed — editable in Settings, persisted as ea_bench).
+// LA 2026 benchmark ranges (seed, editable in Settings, persisted as ea_bench).
 const SEED_UPDATED="Jan 2026";
 const SEED_BENCH = {
   "— none / skip check —": null,
@@ -580,7 +597,7 @@ function render(){
         <label class="fld"><span>Unit $</span><input type="number" inputmode="decimal" step="any" value="${r.unit}" oninput="upd(${i},'unit',this.value)"></label>
         <div class="litem-cost"><span>Line</span><b>${fmt(r.qty*r.unit)}</b></div>
       </div>
-      ${r.review?`<div class="reviewbar"><span class="revbadge">${r.flag?("⚠ "+esc(r.flag||"needs a number")):"Review — from voice"}</span><button class="revok" onclick="confirmRow(${i})">✓ Looks right</button></div>`:""}`;
+      ${r.review?`<div class="reviewbar"><span class="revbadge">${r.flag?("⚠ "+esc(r.flag||"needs a number")):"Review, from voice"}</span><button class="revok" onclick="confirmRow(${i})">✓ Looks right</button></div>`:""}`;
     tb.appendChild(d);
   });
   calc();
@@ -628,9 +645,9 @@ function startRec(){
     $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Listening… tap Stop when done.";
     _rec.onresult=e=>{ let interim=""; for(let i=e.resultIndex;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal) _finalT+=t+" "; else interim+=t; } $("transcript").value=(_finalT+interim).replace(/\s+/g," ").trim(); };
     _rec.onend=()=>{ _recActive=false; $("micBtn").textContent="🎤 Start talking"; if($("voiceMsg").textContent==="Listening… tap Stop when done.") $("voiceMsg").textContent=""; };
-    _rec.onerror=ev=>{ _recActive=false; $("micBtn").textContent="🎤 Start talking"; $("voiceMsg").textContent = ev && ev.error==="not-allowed" ? "Mic blocked — you can type the description instead." : ""; $("transcript").style.display=""; };
+    _rec.onerror=ev=>{ _recActive=false; $("micBtn").textContent="🎤 Start talking"; $("voiceMsg").textContent = ev && ev.error==="not-allowed" ? "Mic blocked. You can type the description instead." : ""; $("transcript").style.display=""; };
     _rec.start(); _recActive=true; $("micBtn").textContent="⏹ Stop";
-  }catch(e){ _recActive=false; $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Couldn't start the mic — type it instead."; }
+  }catch(e){ _recActive=false; $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Couldn't start the mic. Type it instead."; }
 }
 function stopRec(){ if(_rec){ try{_rec.stop();}catch(e){} } _recActive=false; $("micBtn").textContent="🎤 Start talking"; }
 function voiceLine(l){
@@ -653,15 +670,15 @@ async function structureVoice(){
     const res=await fetch("/api/structure",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({transcript:t.slice(0,4000)}) });
     let data=null; try{ data=await res.json(); }catch(e){ data=null; }
     if(!res.ok){ throw new Error((data&&data.error) || ("HTTP "+res.status)); }
-    if(!data || !Array.isArray(data.lines) || !data.lines.length){ $("voiceMsg").textContent="Couldn't pull line items from that — add amounts and try again, or enter lines manually."; return; }
+    if(!data || !Array.isArray(data.lines) || !data.lines.length){ $("voiceMsg").textContent="Couldn't pull line items from that. Add amounts and try again, or enter lines manually."; return; }
     const built = data.lines.slice(0,40).map(voiceLine);
-    if(!built.length){ $("voiceMsg").textContent="Nothing to add — try again or enter lines manually."; return; }
+    if(!built.length){ $("voiceMsg").textContent="Nothing to add. Try again or enter lines manually."; return; }
     setMode("cost"); rows=built; render(); showView("calc");
     const flagged=built.filter(r=>r.flag).length;
-    toast(built.length+" line"+(built.length>1?"s":"")+" added — review the amber ones"+(flagged?" ("+flagged+" need a number)":""));
+    toast(built.length+" line"+(built.length>1?"s":"")+" added. Review the amber ones"+(flagged?" ("+flagged+" need a number)":""));
     $("voiceMsg").textContent=""; $("transcript").value=""; $("transcript").style.display="none"; $("voiceSubmitRow").style.display="none";
   }catch(err){
-    $("voiceMsg").textContent="Couldn't reach the parser ("+(err.message||"error")+"). Your text is saved above — try again or enter lines manually.";
+    $("voiceMsg").textContent="Couldn't reach the parser ("+(err.message||"error")+"). Your text is saved above, so try again or enter lines manually.";
   }finally{ btn.disabled=false; btn.textContent=old; }
 }
 
@@ -674,6 +691,7 @@ function setMode(mode){
   MODE=mode;
   $("modeAnalyze").classList.toggle("active", mode==="analyze");
   $("modeCost").classList.toggle("active", mode==="cost");
+  $("calcView").classList.toggle("mode-analyze", mode==="analyze");
   if(mode==="cost"){
     $("costsTitle").textContent="Job costs";
     $("costsSub").textContent="Enter what the job actually costs you. Markup is added on top.";
@@ -682,23 +700,23 @@ function setMode(mode){
     $("recLbl").textContent="Recommended price (rounded up)";
     $("beLbl").textContent="Break-even (floor)";
     $("beSub").textContent="below this you lose money";
-    $("tipMargin").dataset.tip="Your markup — the % added on top of your true cost to set the price.";
+    $("tipMargin").dataset.tip="Your markup: the % added on top of your true cost to set the price.";
     $("tipRec").dataset.tip="Your suggested price: true cost plus markup, rounded up to a clean $50.";
-    $("tipBe").dataset.tip="Your break-even floor — true cost plus overhead. Price below this and you lose money.";
-    $("modeHint").innerHTML="You have your <b>costs</b> — enter what the job costs you below. I'll add your markup and show the price, break-even &amp; profit at the bottom.";
+    $("tipBe").dataset.tip="Your break-even floor: true cost plus overhead. Price below this and you lose money.";
+    $("modeHint").innerHTML="You have your <b>costs</b>. Enter what the job costs you below. I'll add your markup and show the price, break-even &amp; profit at the bottom.";
     $("margin").value = (PROFILE.defMarkup!=null && PROFILE.defMarkup!=="") ? PROFILE.defMarkup : 40;
   } else {
     $("costsTitle").textContent="Estimate line items (priced)";
-    $("costsSub").textContent="These are the prices from the estimate — margin already baked in.";
+    $("costsSub").textContent="These are the prices from the estimate, margin already baked in.";
     $("marginTitle").textContent="Baked-in margin";
     $("margLbl").textContent="Margin already in the estimate";
     $("recLbl").textContent="Bid price (total)";
     $("beLbl").textContent="Break-even cost";
     $("beSub").textContent="costs above this = you lose money";
-    $("tipMargin").dataset.tip="The profit margin already built into this bid — profit as a share of the price.";
+    $("tipMargin").dataset.tip="The profit margin already built into this bid: profit as a share of the price.";
     $("tipRec").dataset.tip="The bid's total price, with margin already included.";
     $("tipBe").dataset.tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.";
-    $("modeHint").innerHTML="You have a <b>priced bid</b> — enter the line items below. I'll show the margin, profit &amp; break-even at the bottom.";
+    $("modeHint").innerHTML="You have a <b>priced bid</b>. Enter the line items below. I'll show the margin, profit &amp; break-even at the bottom.";
     $("margin").value=45;
   }
   calc();
@@ -752,13 +770,13 @@ function quoteCheck(trueCost, be, oh, rec){
   const p=parseFloat($("proposed").value);
   if(!isNaN(p) && p>0){
     if(!(trueCost>0)){
-      flags.push(["warn","Enter the job's line items above first — then I'll show what margin <b>"+fmt(p)+"</b> gives you."]);
+      flags.push(["warn","Enter the job's line items above first, then I'll show what margin <b>"+fmt(p)+"</b> gives you."]);
     } else {
       const mm=(p-trueCost)/p*100, net=(p-trueCost)-p*oh;
       const tMk=(PROFILE.defMarkup!=null && PROFILE.defMarkup!=="" && isFinite(parseFloat(PROFILE.defMarkup))) ? parseFloat(PROFILE.defMarkup)/100 : 0.40;
       const targetMargin=tMk/(1+tMk)*100;   // your markup target, expressed as a margin
       if(p < trueCost) flags.push(["bad","<b>Below cost.</b> Doesn't cover your job cost of <b>"+fmt(trueCost)+"</b>. You'd lose <b>"+fmt(trueCost-p)+"</b>."]);
-      else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+mm.toFixed(0)+"% — covers direct cost but not overhead. Net loss <b>"+fmt(-net)+"</b>."]);
+      else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+mm.toFixed(0)+"%, covers direct cost but not overhead. Net loss <b>"+fmt(-net)+"</b>."]);
       else if(mm < targetMargin-5) flags.push(["warn","Margin <b>"+mm.toFixed(0)+"%</b>: profitable (net "+fmt(net)+") but below your "+targetMargin.toFixed(0)+"% target."]);
       else if(mm <= targetMargin+8) flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b>: on your "+targetMargin.toFixed(0)+"% target. Net <b>"+fmt(net)+"</b>. 👍"]);
       else flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b>: above your "+targetMargin.toFixed(0)+"% target (net "+fmt(net)+")."]);
@@ -838,7 +856,7 @@ function loadTesseract(){
   return _tessPromise;
 }
 function ocrToLines(t){ return (t||"").split(/\r?\n+/).map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean); }
-async function ocrImageSrc(src,label){ const r=await Tesseract.recognize(src,"eng",{logger:m=>{ if(m.status==="recognizing text") setMsg((label||"Reading")+" — OCR "+Math.round((m.progress||0)*100)+"%"); }}); return r.data.text; }
+async function ocrImageSrc(src,label){ const r=await Tesseract.recognize(src,"eng",{logger:m=>{ if(m.status==="recognizing text") setMsg((label||"Reading")+", OCR "+Math.round((m.progress||0)*100)+"%"); }}); return r.data.text; }
 async function ocrPdf(file){
   const buf=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:buf}).promise; const n=Math.min(pdf.numPages,8); let text="";
   for(let p=1;p<=n;p++){ const page=await pdf.getPage(p); const vp=page.getViewport({scale:2});
@@ -855,23 +873,23 @@ async function handleFile(file){
   try{
     let lines=[], usedOcr=false;
     if(isPdf){
-      if(!window.pdfjsLib){ setMsg("PDF reader didn't load — check your connection.","bad"); return; }
+      if(!window.pdfjsLib){ setMsg("PDF reader didn't load. Check your connection.","bad"); return; }
       lines=await extractLines(file);
       if(lines.join("").replace(/\s/g,"").length<20){
-        setMsg("No text layer — loading OCR…");
-        try{ await loadTesseract(); }catch(e){ setMsg("Couldn't load the OCR engine — check your connection, then retry.","bad"); return; }
+        setMsg("No text layer, loading OCR…");
+        try{ await loadTesseract(); }catch(e){ setMsg("Couldn't load the OCR engine. Check your connection, then retry.","bad"); return; }
         setMsg("Running OCR on the scan (this can take a moment)…");
         lines=ocrToLines(await ocrPdf(file)); usedOcr=true;
       }
     } else {
       setMsg("Loading OCR…");
-      try{ await loadTesseract(); }catch(e){ setMsg("Couldn't load the OCR engine — check your connection, then retry.","bad"); return; }
+      try{ await loadTesseract(); }catch(e){ setMsg("Couldn't load the OCR engine. Check your connection, then retry.","bad"); return; }
       setMsg("Running OCR on the image (this can take a moment)…");
       lines=ocrToLines(await ocrImageSrc(file,"Reading image")); usedOcr=true;
     }
     const {items, totals}=parseEstimateLines(lines);
-    if(!items.length){ setMsg(usedOcr?"OCR couldn't find priced line items — try a sharper, straight-on photo, or enter costs manually.":"Couldn't read line items from this PDF. Enter costs manually.","bad"); return; }
-    setMode("analyze");   // an imported estimate is a priced bid — switch to Analyze mode
+    if(!items.length){ setMsg(usedOcr?"OCR couldn't find priced line items. Try a sharper, straight-on photo, or enter costs manually.":"Couldn't read line items from this PDF. Enter costs manually.","bad"); return; }
+    setMode("analyze");   // an imported estimate is a priced bid, switch to Analyze mode
     rows=items; render();
     let total=0; const strong=totals.find(t=>t.strong);
     if(strong) total=strong.amt; else if(totals.length) total=Math.max.apply(null,totals.map(t=>t.amt));
@@ -882,9 +900,9 @@ async function handleFile(file){
     const direct=items.reduce((s,r)=>s+r.unit,0);
     const distinct=[...new Set(items.map(r=>r.unit))]; const packet=items.length>3 && distinct.length<items.length;
     const totMsg=totals.length?(" Totals seen: "+[...new Set(totals.map(t=>t.amt))].map(fmt).join(", ")+"."):"";
-    const priceMsg=loaded?" Loaded the price into Test-a-quote.":" <b>Set the price yourself</b> — multiple amounts, no single clear total.";
-    const ocrMsg=usedOcr?" <b>Read by OCR</b> — double-check every number.":"";
-    const warn=packet?" ⚠ Multi-page packet with repeated prices — check for duplicates.":" Review every line below.";
+    const priceMsg=loaded?" Loaded the price into Test-a-quote.":" <b>Set the price yourself</b> (multiple amounts, no single clear total).";
+    const ocrMsg=usedOcr?" <b>Read by OCR</b>, double-check every number.":"";
+    const warn=packet?" ⚠ Multi-page packet with repeated prices, check for duplicates.":" Review every line below.";
     setMsg("Imported <b>"+items.length+"</b> line"+(items.length>1?"s":"")+" summing <b>"+fmt(direct)+"</b>."+totMsg+priceMsg+ocrMsg+warn,"good");
   }catch(e){ setMsg("Couldn't read that file ("+(e&&e.message?e.message:"error")+"). Try a clearer file or enter manually.","bad"); }
 }
@@ -901,7 +919,7 @@ const LS_STATE="ea_state", LS_ARCH="ea_archive", LS_PROFILE="ea_profile";
 const DB_NAME="ea_db", DB_STORE="kv";
 let _db=null, IDB_OK=false, ARCH_CACHE=[], STATE_CACHE=null;
 function idbOpen(){ return new Promise(res=>{ let done=false; const finish=v=>{ if(done) return; done=true; res(v); };
-  const t=setTimeout(()=>finish(false), 2500);   // never let a blocked/slow DB hang boot — fall back to localStorage
+  const t=setTimeout(()=>finish(false), 2500);   // never let a blocked/slow DB hang boot; fall back to localStorage
   try{ const rq=indexedDB.open(DB_NAME,1);
     rq.onupgradeneeded=()=>{ try{ rq.result.createObjectStore(DB_STORE); }catch(e){} };
     rq.onsuccess=()=>{ _db=rq.result; IDB_OK=true; clearTimeout(t); finish(true); };
@@ -961,7 +979,7 @@ function personalBench(trade, unit){
   if(pts.length<3) return null;
   return {low:Math.min.apply(null,pts), high:Math.max.apply(null,pts), median:median(pts), n:pts.length, unit};
 }
-// which benchmark drives the over/under flag — personal won-jobs FIRST, else static table (never blended)
+// which benchmark drives the over/under flag: personal won-jobs FIRST, else static table (never blended)
 function activeBench(){
   const bc=$("benchCat").value, st=BENCH[bc]; if(!st) return null;
   const trade=deriveMeta(getState()).trade, pb=personalBench(trade, st.unit);
@@ -975,18 +993,20 @@ function stateSig(s){ s=s||getState(); return JSON.stringify({m:s.mode,j:s.jobNa
 function hasContent(){ const s=getState(); return !!(s.jobName&&s.jobName.trim()) || (s.rows||[]).some(r=>(+r.qty||0)*(+r.unit||0)>0); }
 function updateSaveStatus(){ const el=$("savedNote"); if(!el) return;
   if(!hasContent()){ el.textContent=""; el.className="savednote"; return; }
-  if(_savedSig===null){ el.innerHTML="● <b>Not saved to your jobs yet</b> — tap 💾 Save to keep it. (Your work is auto-held on this device so you won't lose it if you leave.)"; el.className="savednote unsaved"; }
-  else if(_savedSig!==stateSig()){ el.innerHTML="● <b>Unsaved changes</b> since your last save — tap 💾 Save."; el.className="savednote unsaved"; }
+  if(_savedSig===null){ el.innerHTML="● <b>Not saved to your jobs yet.</b> Tap 💾 Save to keep it. (Your work is auto-held on this device so you won't lose it if you leave.)"; el.className="savednote unsaved"; }
+  else if(_savedSig!==stateSig()){ el.innerHTML="● <b>Unsaved changes</b> since your last save. Tap 💾 Save."; el.className="savednote unsaved"; }
   else { el.innerHTML="✓ Saved to your jobs."; el.className="savednote saved"; }
 }
+// Rolling history: keep every pinned job plus the newest 30 unpinned; older unpinned roll off.
+const HISTORY_CAP=30;
+function pruneArchive(arr){ let unp=0, kept=[]; for(const e of (arr||[])){ if(e&&e.pinned){ kept.push(e); } else if(unp<HISTORY_CAP){ kept.push(e); unp++; } } return kept; }
 function saveToArchive(){
   const fc=flaggedCount();
   if(fc>0 && !confirm(fc+" line"+(fc===1?" is":"s are")+" still flagged for review. Save anyway?")) return;
-  const st=getState(); const a=getArchive(); a.unshift(newEntry(st)); setArchive(a);
+  const st=getState(); let a=getArchive(); a.unshift(newEntry(st)); a=pruneArchive(a); setArchive(a);
   _savedSig=stateSig(st); updateSaveStatus();
-  toast("✓ Saved ("+a.length+")");
-  if(a.length>=100 && !_warned100){ _warned100=true; toast("100 saved estimates. Good time to back up from the Archive tab."); }
-  if(a.length>=200 && !_warned200){ _warned200=true; toast("200 saved estimates. Back up and clear old ones to save space."); }
+  const unp=a.filter(e=>!(e&&e.pinned)).length;
+  toast("✓ Saved"+(unp>=HISTORY_CAP?" (history holds the newest "+HISTORY_CAP+"; pin to keep)":""));
   renderArchive();
 }
 let ARCH_Q="";
@@ -1009,14 +1029,15 @@ function renderArchive(){
     const acLabel=m.actualCost!=null?("actual "+fmt(m.actualCost)):"+ actual $";
     const nphoto=(s.photos&&s.photos.length)||0;
     const meta=when+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"")+(nphoto?" · 📷 "+nphoto:"");
-    const div=document.createElement("div"); div.className="arch-entry";
-    div.innerHTML='<div class="arch-meta">'+meta+'</div><div class="arch-title">'+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
-      '<div class="arch-row"><button class="oc '+ocls+'" data-a="oc">'+m.outcome+'</button><button data-a="ac">'+acLabel+'</button><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
+    const div=document.createElement("div"); div.className="arch-entry"+(e.pinned?" pinned":"");
+    div.innerHTML='<div class="arch-meta">'+meta+'</div><div class="arch-title">'+(e.pinned?'📌 ':'')+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
+      '<div class="arch-row"><button class="oc '+ocls+'" data-a="oc">'+m.outcome+'</button><button data-a="ac">'+acLabel+'</button><button class="'+(e.pinned?"pin-on":"")+'" data-a="pin">'+(e.pinned?"📌 Kept":"📌 Keep")+'</button><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
     function persistMeta(){ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.trade=m.trade; t.size=m.size; t.outcome=m.outcome; t.actualCost=m.actualCost; setArchive(arr); } }
     div.querySelector('[data-a=oc]').onclick=()=>{ m.outcome=m.outcome==="pending"?"won":(m.outcome==="won"?"lost":"pending"); persistMeta(); renderArchive(); renderHistory(); };
     div.querySelector('[data-a=ac]').onclick=()=>{ const v=prompt("Actual final cost for this job ($):", m.actualCost!=null?m.actualCost:""); if(v==null) return; const n=parseFloat(v); m.actualCost=(v.trim()===""?null:(isFinite(n)?n:null)); persistMeta(); renderArchive(); renderHistory(); };
+    div.querySelector('[data-a=pin]').onclick=()=>{ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.pinned=!t.pinned; e.pinned=t.pinned; setArchive(arr); renderArchive(); toast(t.pinned?"Pinned. Kept forever, exempt from the rolling history.":"Unpinned. Back in the rolling 30."); } };
     div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded into calculator"); maybeOutcomePrompt(e); };
-    div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; const arr=getArchive(); arr.unshift(newEntry(st)); setArchive(arr); renderArchive(); toast("Duplicated"); };
+    div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; let arr=getArchive(); arr.unshift(newEntry(st)); arr=pruneArchive(arr); setArchive(arr); renderArchive(); toast("Duplicated"); };
     div.querySelector('[data-a=rename]').onclick=()=>{ const nn=prompt("Rename estimate:", s.jobName||""); if(nn==null) return; const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.state.jobName=nn; setArchive(arr); renderArchive(); } };
     div.querySelector('[data-a=dl]').onclick=()=>downloadSummary(s);
     div.querySelector('[data-a=del]').onclick=()=>{ if(confirm("Delete this estimate?")){ setArchive(getArchive().filter(x=>x.id!==e.id)); renderArchive(); renderHistory(); } };
@@ -1035,11 +1056,11 @@ function renderHistory(){
   [["Under 20%",0,20],["20–35%",20,35],["Over 35%",35,1e9]].forEach(band=>{
     const inB=decided.filter(e=>{ const mp=(e.results&&e.results.marginPct)||0; return mp>=band[1] && mp<band[2]; });
     const won=inB.filter(e=>entryMeta(e).outcome==="won").length;
-    rows+="<div class='hrow'><span>"+band[0]+" margin</span><span>"+(inB.length?Math.round(won/inB.length*100)+"% won ("+won+"/"+inB.length+")":"—")+"</span></div>";
+    rows+="<div class='hrow'><span>"+band[0]+" margin</span><span>"+(inB.length?Math.round(won/inB.length*100)+"% won ("+won+"/"+inB.length+")":"-")+"</span></div>";
   });
   const mk=o=>{ const v=arr.filter(e=>entryMeta(e).outcome===o && e.results && e.results.mode==="cost" && e.results.markupPct!=null).map(e=>e.results.markupPct); return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null; };
   const w=mk("won"), l=mk("lost");
-  rows+="<div class='hrow'><span>Avg markup — won vs lost</span><span>"+(w!=null?w+"%":"—")+" vs "+(l!=null?l+"%":"—")+"</span></div>";
+  rows+="<div class='hrow'><span>Avg markup, won vs lost</span><span>"+(w!=null?w+"%":"-")+" vs "+(l!=null?l+"%":"-")+"</span></div>";
   const varr=arr.filter(e=>entryMeta(e).actualCost!=null && e.results && e.results.trueCost>0).map(e=>((entryMeta(e).actualCost - e.results.trueCost)/e.results.trueCost)*100);
   if(varr.length){ const av=Math.round(varr.reduce((a,b)=>a+b,0)/varr.length); rows+="<div class='hrow'><span>Actual vs estimated cost</span><span>"+(av>=0?"+":"")+av+"% over "+varr.length+" job"+(varr.length>1?"s":"")+"</span></div>"; }
   wrap.innerHTML=rows;
@@ -1060,7 +1081,7 @@ $("ocWon").addEventListener("click",()=>setPromptOutcome("won"));
 $("ocLost").addEventListener("click",()=>setPromptOutcome("lost"));
 $("ocLater").addEventListener("click",()=>{ $("outcomePrompt").style.display="none"; _promptEntryId=null; });
 
-/* "past jobs like this" — below the result card, matched by trade + size ±40% */
+/* "past jobs like this", below the result card, matched by trade + size ±40% */
 function renderSimilar(){
   const card=$("similarCard"); if(!card) return;
   const cur=deriveMeta(getState());
@@ -1136,7 +1157,7 @@ function buildSummary(s){
   } else {
     res="<tr><td>Bid total</td><td class=r><b>"+fmt(r.price)+"</b></td></tr><tr><td>Assumed baked-in margin</td><td class=r>"+r.assumed.toFixed(0)+"%</td></tr><tr><td>Break-even cost</td><td class=r>"+fmt(r.breakeven!=null?r.breakeven:r.impliedCost)+"</td></tr><tr><td>Gross profit</td><td class=r>"+fmt(r.grossProfit)+"</td></tr><tr><td>Net profit</td><td class=r>"+fmt(r.net)+"</td></tr>";
   }
-  return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(name)+" — Summary</title><style>body{font:14px Arial,sans-serif;color:#1a2330;max-width:740px;margin:26px auto;padding:0 18px}h1{font-size:20px;margin:0}.s{color:#667;font-size:12px;margin:2px 0 16px}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}.r{text-align:right}th{text-align:left;background:#f3f5f8}h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9a4a11;margin:16px 0 4px}.f{color:#889;font-size:11px;border-top:1px solid #dde;padding-top:10px;margin-top:22px}</style></head><body><h1>Estimate — internal summary</h1><div class=s>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+"</div><h2>Line items</h2><table><tr><th>Item</th><th>Description</th><th class=r>Qty</th><th class=r>Unit</th><th class=r>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr>"+(rowsHtml||"<tr><td colspan=5>(none)</td></tr>")+"</table><h2>Result</h2><table>"+res+"</table><div class=f>Internal worksheet — not for the client. estimate-analyzer-atb.vercel.app</div></body></html>";
+  return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(name)+" Summary</title><style>body{font:14px Arial,sans-serif;color:#1a2330;max-width:740px;margin:26px auto;padding:0 18px}h1{font-size:20px;margin:0}.s{color:#667;font-size:12px;margin:2px 0 16px}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}.r{text-align:right}th{text-align:left;background:#f3f5f8}h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9a4a11;margin:16px 0 4px}.f{color:#889;font-size:11px;border-top:1px solid #dde;padding-top:10px;margin-top:22px}</style></head><body><h1>Estimate, internal summary</h1><div class=s>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+"</div><h2>Line items</h2><table><tr><th>Item</th><th>Description</th><th class=r>Qty</th><th class=r>Unit</th><th class=r>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr>"+(rowsHtml||"<tr><td colspan=5>(none)</td></tr>")+"</table><h2>Result</h2><table>"+res+"</table><div class=f>Internal worksheet, not for the client. estimate-analyzer-atb.vercel.app</div></body></html>";
 }
 function downloadHTML(html, filename){
   const blob=new Blob([html],{type:"text/html"}), url=URL.createObjectURL(blob), a=document.createElement("a");
@@ -1164,7 +1185,7 @@ function applyBrand(){
 $("pickLogo").addEventListener("click",()=>$("coLogo").click());
 $("coLogo").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return;
-  if(f.size>1200000){ toast("Logo too big — use one under ~1 MB"); return; }
+  if(f.size>1200000){ toast("Logo too big. Use one under ~1 MB"); return; }
   const rd=new FileReader(); rd.onload=()=>{ PROFILE.logo=rd.result; $("coLogoPrev").style.backgroundImage="url("+rd.result+")"; }; rd.readAsDataURL(f);
 });
 $("clearLogo").addEventListener("click",()=>{ PROFILE.logo=""; $("coLogoPrev").style.backgroundImage=""; });
@@ -1229,7 +1250,7 @@ function buildProposal(s, inp){
   }
   const scope=inp.scope?("<h2>Scope of work</h2><p>"+esc(inp.scope).replace(/\n/g,"<br>")+"</p>"):"";
   const terms=inp.terms?("<h2>Terms</h2><p class=t>"+esc(inp.terms).replace(/\n/g,"<br>")+"</p>"):"";
-  return "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Proposal — "+esc(p.name||"")+"</title>"+
+  return "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Proposal, "+esc(p.name||"")+"</title>"+
     "<style>body{font:14px Arial,Helvetica,sans-serif;color:#1a2330;max-width:760px;margin:24px auto;padding:0 22px}.m{color:#667;font-size:12px;margin-top:2px}h1{font-size:15px;letter-spacing:2px;color:#9a4a11;margin:22px 0 4px}h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:#9a4a11;margin:20px 0 6px}p{margin:6px 0}.t{white-space:normal;color:#333}.top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a2330;padding-bottom:12px}.meta{text-align:right;font-size:12px;color:#667}table{width:100%;border-collapse:collapse;margin:6px 0}td{border-bottom:1px solid #e2e6ea;padding:8px;font-size:13.5px}.r{text-align:right;white-space:nowrap}.tot{display:flex;justify-content:space-between;font-size:18px;font-weight:800;border-top:2px solid #1a2330;padding-top:10px;margin-top:6px}.pay{background:#f5f7f9;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13.5px}.sig{display:flex;gap:40px;margin-top:34px}.sig div{flex:1;border-top:1px solid #99a;padding-top:6px;font-size:12px;color:#667}.print{position:fixed;top:10px;right:10px}@media print{.print{display:none}body{margin:0}}</style></head><body>"+
     "<button class=print onclick='window.print()' style='padding:8px 14px;font-size:13px'>🖨 Print / Save PDF</button>"+
     "<div class=top><div>"+head+"</div><div class=meta>PROPOSAL<br>"+new Date().toLocaleDateString()+"<br>#"+String(s.ts||Date.now()).slice(-6)+"</div></div>"+
@@ -1239,7 +1260,7 @@ function buildProposal(s, inp){
     "<div class=tot><span>Total</span><span>"+fmt(total)+"</span></div>"+
     (dep>0?"<div class=pay><b>Deposit ("+dep+"%):</b> "+fmt(depAmt)+" &nbsp;·&nbsp; <b>Balance on completion:</b> "+fmt(bal)+"</div>":"")+
     terms+
-    "<div class=sig><div>"+(safeImg(inp.signature)?"<img src='"+safeImg(inp.signature)+"' style='max-height:64px;display:block;margin-bottom:2px'>":"")+"Client signature"+(inp.signedAt?" — <b>signed on device</b> "+esc(new Date(inp.signedAt).toLocaleString()):" &amp; date")+"</div><div>"+esc(p.name||"Contractor")+" &amp; date</div></div>"+
+    "<div class=sig><div>"+(safeImg(inp.signature)?"<img src='"+safeImg(inp.signature)+"' style='max-height:64px;display:block;margin-bottom:2px'>":"")+"Client signature"+(inp.signedAt?", <b>signed on device</b> "+esc(new Date(inp.signedAt).toLocaleString()):" &amp; date")+"</div><div>"+esc(p.name||"Contractor")+" &amp; date</div></div>"+
     "</body></html>";
 }
 $("openProposal").addEventListener("click",()=>{
@@ -1256,7 +1277,7 @@ $("proposalBack").addEventListener("click",()=>showView("calc"));
 let SIGNATURE=null, SIGNED_AT=null, _sigCtx=null, _sigDrawing=false, _sigInk=false;
 function proposalInputs(){ return { client:$("clientName").value, clientAddr:$("clientAddress").value, scope:$("projScope").value,
   deposit:parseFloat($("depositPct").value)||0, terms:$("termsText").value, itemize:$("itemize").checked, signature:SIGNATURE, signedAt:SIGNED_AT }; }
-function openProposalWindow(html){ const w=window.open("","_blank"); if(w){ w.document.write(html); w.document.close(); toast("Proposal opened — print to PDF"); } else { downloadHTML(html, "proposal-"+new Date().toISOString().slice(0,10)+".html"); toast("Pop-up blocked — proposal downloaded"); } }
+function openProposalWindow(html){ const w=window.open("","_blank"); if(w){ w.document.write(html); w.document.close(); toast("Proposal opened, print to PDF"); } else { downloadHTML(html, "proposal-"+new Date().toISOString().slice(0,10)+".html"); toast("Pop-up blocked, proposal downloaded"); } }
 $("genProposal").addEventListener("click",()=>{ const s=getState(); openProposalWindow(buildProposal(s, proposalInputs())); });
 async function shareProposal(){
   const s=getState(), inp=proposalInputs(), html=buildProposal(s, inp);
@@ -1271,7 +1292,7 @@ async function shareProposal(){
   openProposalWindow(html); // fallback: print pipeline
 }
 $("shareProposal").addEventListener("click",shareProposal);
-function updateSigStatus(){ $("sigStatus").innerHTML = SIGNATURE ? ("✍️ <b>Signed on device</b> "+esc(new Date(SIGNED_AT).toLocaleString())+" — appears on the proposal.") : ""; }
+function updateSigStatus(){ $("sigStatus").innerHTML = SIGNATURE ? ("✍️ <b>Signed on device</b> "+esc(new Date(SIGNED_AT).toLocaleString())+", appears on the proposal.") : ""; }
 function openSignature(){
   const c=$("sigCanvas"); $("sigOverlay").style.display="flex";
   const r=c.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
@@ -1297,7 +1318,7 @@ $("sigConfirm").addEventListener("click",()=>{
 });
 function saveSigned(){
   const st=getState(); st.proposal=proposalInputs();
-  const a=getArchive(); a.unshift(newEntry(st)); setArchive(a); renderArchive();
+  let a=getArchive(); a.unshift(newEntry(st)); a=pruneArchive(a); setArchive(a); renderArchive();
 }
 
 /* ---------------- ARCHIVE BACKUP ---------------- */
@@ -1316,6 +1337,7 @@ function sanitizePhotos(arr){ return Array.isArray(arr) ? arr.filter(p=>typeof p
 function sanitizeRows(arr){ return Array.isArray(arr) ? arr.map(r=>({ item:String((r&&r.item)||""), desc:String((r&&r.desc)||""), qty:+(r&&r.qty)||0, unit:+(r&&r.unit)||0 })) : []; }
 function sanitizeEntry(e){
   if(!e || typeof e!=="object" || !e.state || typeof e.state!=="object") return null;
+  e.pinned=!!e.pinned;
   const s=e.state;
   s.photos = sanitizePhotos(s.photos);
   if(s.rows) s.rows = sanitizeRows(s.rows);
@@ -1428,7 +1450,7 @@ async function maybeInstallHint(){
     const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
     $("installHintText").innerHTML = ios
       ? "📲 <b>Add to your Home Screen</b> so it opens like an app and your saved estimates stay safe: tap the <b>Share</b> button, then <b>Add to Home Screen</b>."
-      : "📲 <b>Install this app</b> so it opens full-screen and your saved estimates stay safe — tap Install, or use your browser menu → <b>Install app</b>.";
+      : "📲 <b>Install this app</b> so it opens full-screen and your saved estimates stay safe. Tap Install, or use your browser menu, <b>Install app</b>.";
     $("installNow").style.display=(!ios && _deferredPrompt)?"":"none";
     $("installHint").style.display="";
   }catch(e){}
