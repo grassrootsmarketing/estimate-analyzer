@@ -739,15 +739,15 @@ function benchmarkCheck(rec){
   if(!b){ noteEl.textContent=""; return; }
   if(qty<=0){ noteEl.textContent=b.note+"  Enter project size to compare."; return; }
   const implied=rec/qty;
-  noteEl.innerHTML="Your price ≈ <b>"+fmt2(implied)+"/"+b.unit+"</b> vs "+esc(b.src)+" <b>$"+bnum(b.low)+"–$"+bnum(b.high)+"/"+b.unit+"</b>. <span class='muted'>"+b.note+"</span>";
+  noteEl.innerHTML="Your price ≈ <b>"+fmt2(implied)+"/"+esc(b.unit)+"</b> vs "+esc(b.src)+" <b>$"+bnum(b.low)+"–$"+bnum(b.high)+"/"+esc(b.unit)+"</b>. <span class='muted'>"+esc(b.note)+"</span>";
 }
 function quoteCheck(trueCost, be, oh, rec){
   const box=$("quoteFlags"); box.innerHTML=""; const flags=[];
   const b=activeBench(), qty=parseFloat($("benchQty").value)||0;
   if(b && qty>0 && isFinite(rec)){
     const implied=rec/qty;
-    if(implied > b.high*1.12) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — above the top of <b>$"+bnum(b.high)+"/"+b.unit+"</b> from "+esc(b.src)+". Possibly <b>over-priced</b>; expect pushback unless scope justifies it."]);
-    else if(implied < b.low*0.9) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+b.unit+"</b> — below the floor of <b>$"+bnum(b.low)+"/"+b.unit+"</b> from "+esc(b.src)+". Possibly <b>under-priced</b>; check you captured all costs."]);
+    if(implied > b.high*1.12) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+esc(b.unit)+"</b> above the top of <b>$"+bnum(b.high)+"/"+esc(b.unit)+"</b> from "+esc(b.src)+". Possibly <b>over-priced</b>; expect pushback unless scope justifies it."]);
+    else if(implied < b.low*0.9) flags.push(["warn","At this price you're <b>"+fmt2(implied)+"/"+esc(b.unit)+"</b> below the floor of <b>$"+bnum(b.low)+"/"+esc(b.unit)+"</b> from "+esc(b.src)+". Possibly <b>under-priced</b>; check you captured all costs."]);
   }
   const p=parseFloat($("proposed").value);
   if(!isNaN(p) && p>0){
@@ -1154,12 +1154,12 @@ function loadProfileIntoForm(){
   $("coEmail").value=p.email||""; $("coAddress").value=p.address||"";
   $("defMarkup").value=p.defMarkup!=null?p.defMarkup:40; $("defOverhead").value=p.defOverhead!=null?p.defOverhead:12;
   $("defContingency").value=p.defContingency!=null?p.defContingency:10; $("defTax").value=p.defTax!=null?p.defTax:9.5;
-  $("coLogoPrev").style.backgroundImage=p.logo?("url("+p.logo+")"):"";
+  $("coLogoPrev").style.backgroundImage=safeImg(p.logo)?("url("+safeImg(p.logo)+")"):"";
   applyBrand();
 }
 function applyBrand(){
   if(PROFILE.name){ $("brandName").textContent=PROFILE.name; }
-  if(PROFILE.logo){ $("brandLogo").style.background="#0000"; $("brandLogo").innerHTML='<img src="'+PROFILE.logo+'" style="width:30px;height:30px;border-radius:8px;object-fit:cover">'; }
+  if(safeImg(PROFILE.logo)){ $("brandLogo").style.background="#0000"; $("brandLogo").innerHTML='<img src="'+safeImg(PROFILE.logo)+'" style="width:30px;height:30px;border-radius:8px;object-fit:cover">'; }
 }
 $("pickLogo").addEventListener("click",()=>$("coLogo").click());
 $("coLogo").addEventListener("change",e=>{
@@ -1219,7 +1219,7 @@ function proposalLines(s){
 function buildProposal(s, inp){
   const p=PROFILE, r=compute(s), total=r.price;
   const dep=Math.max(0,Math.min(100,inp.deposit||0)), depAmt=Math.round(total*dep/100), bal=total-depAmt;
-  const head=(p.logo?"<img src='"+p.logo+"' style='height:52px;border-radius:8px;margin-bottom:6px'>":"")+
+  const head=(safeImg(p.logo)?"<img src='"+safeImg(p.logo)+"' style='height:52px;border-radius:8px;margin-bottom:6px'>":"")+
     "<div style='font-size:22px;font-weight:800'>"+esc(p.name||"Your Company")+"</div>"+
     "<div class=m>"+[esc(p.license||""),esc(p.phone||""),esc(p.email||""),esc(p.address||"")].filter(Boolean).join(" · ")+"</div>";
   let items="";
@@ -1239,7 +1239,7 @@ function buildProposal(s, inp){
     "<div class=tot><span>Total</span><span>"+fmt(total)+"</span></div>"+
     (dep>0?"<div class=pay><b>Deposit ("+dep+"%):</b> "+fmt(depAmt)+" &nbsp;·&nbsp; <b>Balance on completion:</b> "+fmt(bal)+"</div>":"")+
     terms+
-    "<div class=sig><div>"+(inp.signature?"<img src='"+inp.signature+"' style='max-height:64px;display:block;margin-bottom:2px'>":"")+"Client signature"+(inp.signedAt?" — <b>signed on device</b> "+esc(new Date(inp.signedAt).toLocaleString()):" &amp; date")+"</div><div>"+esc(p.name||"Contractor")+" &amp; date</div></div>"+
+    "<div class=sig><div>"+(safeImg(inp.signature)?"<img src='"+safeImg(inp.signature)+"' style='max-height:64px;display:block;margin-bottom:2px'>":"")+"Client signature"+(inp.signedAt?" — <b>signed on device</b> "+esc(new Date(inp.signedAt).toLocaleString()):" &amp; date")+"</div><div>"+esc(p.name||"Contractor")+" &amp; date</div></div>"+
     "</body></html>";
 }
 $("openProposal").addEventListener("click",()=>{
@@ -1311,6 +1311,7 @@ $("exportArch").addEventListener("click",()=>{
 $("importArch").addEventListener("click",()=>$("importArchInput").click());
 // Restore is the one path where untrusted data enters. Photo/signature data URLs get
 // injected into img src, so validate them. Keep only real image data URLs, cap photos, coerce rows.
+function safeImg(v){ return (typeof v==="string" && v.indexOf("data:image/")===0) ? v : ""; }
 function sanitizePhotos(arr){ return Array.isArray(arr) ? arr.filter(p=>typeof p==="string" && p.indexOf("data:image/")===0).slice(0,12) : []; }
 function sanitizeRows(arr){ return Array.isArray(arr) ? arr.map(r=>({ item:String((r&&r.item)||""), desc:String((r&&r.desc)||""), qty:+(r&&r.qty)||0, unit:+(r&&r.unit)||0 })) : []; }
 function sanitizeEntry(e){
@@ -1333,7 +1334,7 @@ $("importArchInput").addEventListener("change",e=>{
     raw.forEach(en=>{ const c=sanitizeEntry(en); if(c) inc.push(c); else skipped++; });
     if(!confirm("Restore "+inc.length+" estimate(s)? This replaces your current archive on this device.")) return;
     setArchive(inc.slice(0,500));
-    if(d.profile && confirm("Also restore the company profile from this backup?")){ PROFILE=d.profile; saveKey(LS_PROFILE,PROFILE); loadProfileIntoForm(); }
+    if(d.profile && typeof d.profile==="object" && confirm("Also restore the company profile from this backup?")){ d.profile.logo=safeImg(d.profile.logo); PROFILE=d.profile; saveKey(LS_PROFILE,PROFILE); loadProfileIntoForm(); }
     if(d.benchmarks && d.benchmarks.data){ BENCH=d.benchmarks.data; BENCH_UPDATED=d.benchmarks.updated||BENCH_UPDATED; saveKey("ea_bench",d.benchmarks); calc(); }
     renderArchive();
     toast("Restored "+Math.min(inc.length,500)+" estimate(s)"+(skipped?", skipped "+skipped+" invalid item"+(skipped===1?"":"s"):"")+".");
