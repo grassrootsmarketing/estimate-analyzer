@@ -265,6 +265,11 @@
           <option>Small commercial</option>
         </select>
       </div>
+      <div class="field"><span class="lbl">Contact name</span><input id="contactName" placeholder="e.g. Marisol Reyes" /></div>
+      <div class="row g2">
+        <div><span class="lbl">Phone</span><input id="contactPhone" type="tel" inputmode="tel" placeholder="(323) 555-0134" /></div>
+        <div><span class="lbl">Email</span><input id="contactEmail" type="email" inputmode="email" autocapitalize="off" placeholder="name@email.com" /></div>
+      </div>
       <div class="row g2">
         <div><span class="lbl">Benchmark check</span><select id="benchCat"></select></div>
         <div><span class="lbl" id="qtyLbl">Project size</span><input id="benchQty" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1200" /></div>
@@ -884,6 +889,7 @@ function readLS(k){ try{ const r=localStorage.getItem(k); return r==null?null:JS
 function saveKey(k,v){ if(IDB_OK){ idbSet(k,v); } else { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } }
 function getState(){
   return { ts:Date.now(), mode:MODE, jobName:$("jobName").value, clientType:$("clientType").value,
+    contactName:$("contactName").value, contactPhone:$("contactPhone").value, contactEmail:$("contactEmail").value,
     benchCat:$("benchCat").value, benchQty:$("benchQty").value, margin:$("margin").value,
     contingency:$("contingency").value, overhead:$("overhead").value, tax:$("tax").value, proposed:$("proposed").value,
     photos: PHOTOS.slice(),
@@ -1032,6 +1038,7 @@ function previewEntry(e){
   const s=e.state, r=e.results||compute(s), m=entryMeta(e), oc={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome];
   const rowsH=(s.rows||[]).filter(x=>((+x.qty||0)*(+x.unit||0))>0).map(x=>"<div class='hrow'><span>"+esc(x.desc||x.item)+"</span><span>"+fmt((+x.qty||0)*(+x.unit||0))+"</span></div>").join("");
   $("previewBody").innerHTML="<div class='sightitle'>"+esc(s.jobName||"Estimate")+"</div><p class='muted' style='font-size:12px;margin:4px 0 10px'>"+new Date(s.ts).toLocaleString()+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"")+" · <span class='oc "+oc+"' style='padding:1px 7px'>"+m.outcome+"</span></p>"+
+    ((s.contactName||s.contactPhone||s.contactEmail)?"<p style='font-size:12.5px;margin:0 0 10px;color:var(--ink)'>"+[esc(s.contactName||""),esc(s.contactPhone||""),esc(s.contactEmail||"")].filter(Boolean).join(" · ")+"</p>":"")+
     "<div class='hrow'><span>"+(r.mode==="cost"?"Price":"Bid")+"</span><span><b>"+fmt(r.price)+"</b></span></div>"+
     "<div class='hrow'><span>"+(r.mode==="cost"?"True cost":"Break-even cost")+"</span><span>"+fmt(r.mode==="cost"?r.trueCost:(r.breakeven!=null?r.breakeven:r.impliedCost))+"</span></div>"+
     "<div class='hrow'><span>Margin</span><span>"+r.marginPct.toFixed(0)+"%</span></div><div class='hrow'><span>Net</span><span>"+fmt(r.net)+"</span></div>"+
@@ -1198,6 +1205,7 @@ function buildProposal(s, inp){
 $("openProposal").addEventListener("click",()=>{
   if(!PROFILE.name){ toast("Add your company name in Settings first"); showView("settings"); return; }
   if(!$("termsText").value){ $("termsText").value="This proposal is valid for 30 days. Price covers the scope described above; unforeseen conditions discovered during work (hidden damage, code upgrades) may require a written change order. Permits not included unless stated."; }
+  if(!$("clientName").value && $("contactName").value){ $("clientName").value=$("contactName").value; }
   $("propTotal").textContent=$("recPrice").textContent;
   updateSigStatus();
   showView("proposal");
@@ -1296,6 +1304,7 @@ function applyState(s){
   if(!s) return;
   _setMode(s.mode==="cost"?"cost":"analyze");
   $("jobName").value=s.jobName||""; if(s.clientType) $("clientType").value=s.clientType;
+  $("contactName").value=s.contactName||""; $("contactPhone").value=s.contactPhone||""; $("contactEmail").value=s.contactEmail||"";
   if(s.benchCat){ $("benchCat").value=s.benchCat; syncQtyLabel(); }
   $("benchQty").value=s.benchQty||""; if(s.margin) $("margin").value=s.margin;
   if(s.contingency!=null) $("contingency").value=s.contingency;
