@@ -58,7 +58,13 @@
   .marg-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
   .marg-head .t{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent2)}
   .marg-head .big{font-size:22px;font-weight:800;color:var(--accent2)}
-  .slider{width:100%;margin:6px 0 2px;height:34px}
+  .slider{-webkit-appearance:none;appearance:none;width:100%;margin:6px 0 2px;height:34px;background:transparent;cursor:pointer}
+  .slider:focus{outline:none}
+  .slider::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:#e9e2cf}
+  .slider::-moz-range-track{height:6px;border-radius:6px;background:#e9e2cf}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:transparent;border:3.5px solid #1b6b3a;margin-top:-9px;transition:transform .1s ease}
+  .slider::-webkit-slider-thumb:active{transform:scale(1.12)}
+  .slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:transparent;border:3.5px solid #1b6b3a}
   .scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0}
   .sc{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
   .sc.active{border-color:var(--accent)}
@@ -135,10 +141,16 @@
   #calcView.mode-analyze #drop{border-color:var(--accent);background:rgba(255,140,66,.11)}
   /* Desktop: two columns, inputs left, price/summary pinned on the right so they stay visible while you edit. */
   @media(min-width:900px){
-    .app{max-width:1080px}
-    #calcView.on{display:grid;grid-template-columns:minmax(0,1fr) 384px;gap:0 20px;align-items:start}
+    .app{max-width:1240px}
+    #calcView.on{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:0 26px;align-items:start}
     #calcView.on > .seg, #calcView.on > .modehint, #calcView.on > #outcomePrompt{grid-column:1 / -1}
     .col-side{position:sticky;top:14px}
+    .nav{justify-content:center}
+    .nav button{flex:0 1 190px}
+  }
+  @media(min-width:1300px){
+    .app{max-width:1400px}
+    #calcView.on{grid-template-columns:minmax(0,1fr) 460px}
   }
   .drop b{color:var(--accent2)}
   .link{color:var(--accent2);text-decoration:underline;cursor:pointer}
@@ -252,8 +264,10 @@
   .hrow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
   .hrow:first-child{border-top:none}
   @media(min-width:720px){
-    .app{max-width:720px}
     .recbox .v{font-size:44px}
+  }
+  @media(min-width:720px) and (max-width:899px){
+    .app{max-width:720px}
   }
 </style>
 </head>
