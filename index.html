@@ -103,6 +103,13 @@
   .drop:hover{border-color:var(--accent);color:var(--ink);transform:translateY(-1px)}
   .link{transition:color .16s ease}
   .link:hover{color:var(--accent)}
+  /* info tooltips */
+  .tip{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font-size:11px;font-weight:700;font-style:normal;margin-left:6px;cursor:help;position:relative;vertical-align:middle;line-height:1;flex:0 0 auto;transition:color .16s ease,border-color .16s ease,transform .12s ease}
+  .tip:hover{color:var(--ink);border-color:var(--accent2)}
+  .tip:active{transform:scale(.9)}
+  .tip::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);background:#0d141b;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:12px;font-weight:500;line-height:1.38;width:190px;max-width:62vw;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .16s ease,transform .16s ease;z-index:40;white-space:normal}
+  .tip:hover::after,.tip:focus::after{opacity:1;transform:translateX(-50%) translateY(0)}
+  .tip:focus{outline:none}
   .savednote{font-size:12px;color:var(--good);margin-top:8px;min-height:15px}
   /* import */
   .drop{border:1.6px dashed #4a5b6b;border-radius:14px;padding:22px 14px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
@@ -241,7 +248,7 @@
 
     <div class="card result">
       <div class="marg-head">
-        <span class="t" id="marginTitle">Baked-in margin</span>
+        <span class="t" id="marginTitle">Baked-in margin</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="The profit margin already built into this bid — profit as a share of the price.">i</span>
         <span class="big" id="margVal">45%</span>
       </div>
       <div class="lbl" id="margLbl" style="margin-bottom:2px">Margin already in the estimate</div>
@@ -252,13 +259,13 @@
         <div class="sc active" data-m="45" role="button" tabindex="0" onclick="pickMargin(45)"><div class="m">45%</div><div class="p" id="p45">—</div></div>
       </div>
       <div class="recbox">
-        <div class="l" id="recLbl">Bid price (total)</div>
+        <div class="l"><span id="recLbl">Bid price (total)</span><span class="tip" id="tipRec" tabindex="0" role="button" aria-label="What is this?" data-tip="The bid's total price, with margin already included.">i</span></div>
         <div class="v" id="recPrice">$0</div>
         <div class="s" id="recSub"></div>
       </div>
       <div class="duo">
-        <div class="stat"><div class="l" id="beLbl">Implied cost</div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">cost the bid leaves room for</div></div>
-        <div class="stat"><div class="l">Net profit</div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
+        <div class="stat"><div class="l"><span id="beLbl">Implied cost</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="The most your actual costs can be and still hit this margin (price × (1 − margin)). Come in under it and you're on target.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">cost the bid leaves room for</div></div>
+        <div class="stat"><div class="l">Net profit<span class="tip" id="tipNet" tabindex="0" role="button" aria-label="What is this?" data-tip="What you keep after your overhead % is covered. Green = profit, red = losing money.">i</span></div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
       </div>
       <div class="btns">
         <button class="btn primary" id="saveArch">💾 Save</button>
@@ -618,6 +625,9 @@ function setMode(mode){
     $("recLbl").textContent="Recommended price (rounded up)";
     $("beLbl").textContent="Break-even (floor)";
     $("beSub").textContent="below this you lose money";
+    $("tipMargin").dataset.tip="Your markup — the % added on top of your true cost to set the price.";
+    $("tipRec").dataset.tip="Your suggested price: true cost plus markup, rounded up to a clean $50.";
+    $("tipBe").dataset.tip="Your break-even floor — true cost plus overhead. Price below this and you lose money.";
     $("margin").value = (PROFILE.defMarkup!=null && PROFILE.defMarkup!=="") ? PROFILE.defMarkup : 40;
   } else {
     $("costsTitle").textContent="Estimate line items (priced)";
@@ -627,6 +637,9 @@ function setMode(mode){
     $("recLbl").textContent="Bid price (total)";
     $("beLbl").textContent="Implied cost";
     $("beSub").textContent="cost the bid leaves room for";
+    $("tipMargin").dataset.tip="The profit margin already built into this bid — profit as a share of the price.";
+    $("tipRec").dataset.tip="The bid's total price, with margin already included.";
+    $("tipBe").dataset.tip="The most your actual costs can be and still hit this margin (price × (1 − margin)). Come in under it and you're on target.";
     $("margin").value=45;
   }
   calc();
