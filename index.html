@@ -906,10 +906,14 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.f
 const LS_STATE="ea_state", LS_ARCH="ea_archive", LS_PROFILE="ea_profile";
 const DB_NAME="ea_db", DB_STORE="kv";
 let _db=null, IDB_OK=false, ARCH_CACHE=[], STATE_CACHE=null;
-function idbOpen(){ return new Promise(res=>{ try{ const rq=indexedDB.open(DB_NAME,1);
-  rq.onupgradeneeded=()=>rq.result.createObjectStore(DB_STORE);
-  rq.onsuccess=()=>{ _db=rq.result; IDB_OK=true; res(true); };
-  rq.onerror=()=>res(false); }catch(e){ res(false); } }); }
+function idbOpen(){ return new Promise(res=>{ let done=false; const finish=v=>{ if(done) return; done=true; res(v); };
+  const t=setTimeout(()=>finish(false), 2500);   // never let a blocked/slow DB hang boot — fall back to localStorage
+  try{ const rq=indexedDB.open(DB_NAME,1);
+    rq.onupgradeneeded=()=>{ try{ rq.result.createObjectStore(DB_STORE); }catch(e){} };
+    rq.onsuccess=()=>{ _db=rq.result; IDB_OK=true; clearTimeout(t); finish(true); };
+    rq.onerror=()=>{ clearTimeout(t); finish(false); };
+    rq.onblocked=()=>{ clearTimeout(t); finish(false); };
+  }catch(e){ clearTimeout(t); finish(false); } }); }
 function idbGet(k){ return new Promise(res=>{ if(!_db){res(undefined);return;} try{ const rq=_db.transaction(DB_STORE,"readonly").objectStore(DB_STORE).get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>res(undefined); }catch(e){ res(undefined); } }); }
 function idbSet(k,v){ return new Promise(res=>{ if(!_db){res(false);return;} try{ const tx=_db.transaction(DB_STORE,"readwrite"); tx.objectStore(DB_STORE).put(v,k); tx.oncomplete=()=>res(true); tx.onerror=()=>res(false); }catch(e){ res(false); } }); }
 function readLS(k){ try{ const r=localStorage.getItem(k); return r==null?null:JSON.parse(r); }catch(e){ return null; } }
