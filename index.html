@@ -190,6 +190,8 @@
   .installhint{background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:14px;margin:14px 0 0;font-size:13.5px;color:var(--ink);line-height:1.45}
   .installhint .ih-btns{display:flex;gap:8px;margin-top:11px}
   .installhint .btn{min-height:44px}
+  .modehint{font-size:12.5px;color:var(--muted);background:var(--panel2);border-left:3px solid var(--accent);border-radius:9px;padding:9px 12px;margin:-6px 0 14px;line-height:1.45}
+  .modehint b{color:var(--ink)}
   .photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 10px}
   .photogrid:empty{display:none}
   .pthumb{position:relative;aspect-ratio:1/1;border-radius:11px;overflow:hidden;border:1px solid var(--line);background:#0e141b;cursor:pointer;transition:transform .12s ease}
@@ -249,6 +251,7 @@
       <button id="modeAnalyze" class="active">📋 Analyze a bid</button>
       <button id="modeCost">🧮 Build from cost</button>
     </div>
+    <div class="modehint" id="modeHint">You have a <b>priced bid</b> — enter the line items below. I'll show the margin, profit &amp; break-even at the bottom.</div>
 
     <div id="outcomePrompt" class="installhint" style="display:none">
       <div id="outcomePromptText"></div>
@@ -660,6 +663,7 @@ function setMode(mode){
     $("tipMargin").dataset.tip="Your markup — the % added on top of your true cost to set the price.";
     $("tipRec").dataset.tip="Your suggested price: true cost plus markup, rounded up to a clean $50.";
     $("tipBe").dataset.tip="Your break-even floor — true cost plus overhead. Price below this and you lose money.";
+    $("modeHint").innerHTML="You have your <b>costs</b> — enter what the job costs you below. I'll add your markup and show the price, break-even &amp; profit at the bottom.";
     $("margin").value = (PROFILE.defMarkup!=null && PROFILE.defMarkup!=="") ? PROFILE.defMarkup : 40;
   } else {
     $("costsTitle").textContent="Estimate line items (priced)";
@@ -672,6 +676,7 @@ function setMode(mode){
     $("tipMargin").dataset.tip="The profit margin already built into this bid — profit as a share of the price.";
     $("tipRec").dataset.tip="The bid's total price, with margin already included.";
     $("tipBe").dataset.tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.";
+    $("modeHint").innerHTML="You have a <b>priced bid</b> — enter the line items below. I'll show the margin, profit &amp; break-even at the bottom.";
     $("margin").value=45;
   }
   calc();
