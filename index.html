@@ -246,36 +246,23 @@
       <div class="ih-btns"><button id="ocWon" class="btn primary">Won</button><button id="ocLost" class="btn">Lost</button><button id="ocLater" class="btn ghost">Later</button></div>
     </div>
 
-    <div class="card result">
-      <div class="marg-head">
-        <span class="t" id="marginTitle">Baked-in margin</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="The profit margin already built into this bid — profit as a share of the price.">i</span>
-        <span class="big" id="margVal">45%</span>
+    <div class="card">
+      <h2>Job details</h2>
+      <div class="field"><span class="lbl">Job name</span><input id="jobName" placeholder="e.g. Marisol Ave unit turnover" /></div>
+      <div class="field"><span class="lbl">Client type</span>
+        <select id="clientType">
+          <option>Individual homeowner</option>
+          <option>Apartment / property management</option>
+          <option>Small commercial</option>
+        </select>
       </div>
-      <div class="lbl" id="margLbl" style="margin-bottom:2px">Margin already in the estimate</div>
-      <input class="slider" id="margin" type="range" min="10" max="120" value="45" step="1" />
-      <div class="scenarios">
-        <div class="sc" data-m="25" role="button" tabindex="0" onclick="pickMargin(25)"><div class="m">25%</div><div class="p" id="p25">—</div></div>
-        <div class="sc" data-m="35" role="button" tabindex="0" onclick="pickMargin(35)"><div class="m">35%</div><div class="p" id="p35">—</div></div>
-        <div class="sc active" data-m="45" role="button" tabindex="0" onclick="pickMargin(45)"><div class="m">45%</div><div class="p" id="p45">—</div></div>
+      <div class="row g2">
+        <div><span class="lbl">Benchmark check</span><select id="benchCat"></select></div>
+        <div><span class="lbl" id="qtyLbl">Project size</span><input id="benchQty" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1200" /></div>
       </div>
-      <div class="recbox">
-        <div class="l"><span id="recLbl">Bid price (total)</span><span class="tip" id="tipRec" tabindex="0" role="button" aria-label="What is this?" data-tip="The bid's total price, with margin already included.">i</span></div>
-        <div class="v" id="recPrice">$0</div>
-        <div class="s" id="recSub"></div>
-      </div>
-      <div class="duo">
-        <div class="stat"><div class="l"><span id="beLbl">Break-even cost</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">costs above this = you lose money</div></div>
-        <div class="stat"><div class="l">Net profit<span class="tip" id="tipNet" tabindex="0" role="button" aria-label="What is this?" data-tip="What you keep after your overhead % is covered. Green = profit, red = losing money.">i</span></div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
-      </div>
-      <div class="btns">
-        <button class="btn primary" id="saveArch">💾 Save</button>
-        <button class="btn" id="dlCurrent">⬇ Summary</button>
-        <button class="btn wide" id="openProposal">📄 Create client proposal</button>
-      </div>
-      <div class="savednote" id="savedNote"></div>
+      <input id="benchRange" style="display:none" disabled />
+      <div class="bench" id="benchNote"></div>
     </div>
-
-    <div id="similarCard" class="card" style="display:none;padding:12px 14px"></div>
 
     <div class="card" id="voiceCard">
       <h2>🎤 Describe the job</h2>
@@ -297,24 +284,6 @@
         <input id="pdfInput" type="file" accept="application/pdf,image/*" hidden>
       </div>
       <div id="importMsg" class="bench"></div>
-    </div>
-
-    <div class="card">
-      <h2>Job details</h2>
-      <div class="field"><span class="lbl">Job name</span><input id="jobName" placeholder="e.g. Marisol Ave unit turnover" /></div>
-      <div class="field"><span class="lbl">Client type</span>
-        <select id="clientType">
-          <option>Individual homeowner</option>
-          <option>Apartment / property management</option>
-          <option>Small commercial</option>
-        </select>
-      </div>
-      <div class="row g2">
-        <div><span class="lbl">Benchmark check</span><select id="benchCat"></select></div>
-        <div><span class="lbl" id="qtyLbl">Project size</span><input id="benchQty" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1200" /></div>
-      </div>
-      <input id="benchRange" style="display:none" disabled />
-      <div class="bench" id="benchNote"></div>
     </div>
 
     <div class="card">
@@ -355,13 +324,6 @@
     </div>
 
     <div class="card">
-      <h2>Test a quote</h2>
-      <p class="sub">Enter a price you're considering to check its margin.</p>
-      <input id="proposed" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 9500" />
-      <div id="quoteFlags"></div>
-    </div>
-
-    <div class="card">
       <h2>Cost summary</h2>
       <div class="totline"><span class="muted">Direct</span><span id="sDirect">$0</span></div>
       <div class="totline"><span class="muted">+ Material tax</span><span id="sTax">$0</span></div>
@@ -371,6 +333,44 @@
       <details><summary>How the math works</summary>
         <p><b>Markup</b> (Build-from-cost mode) adds % on top of your cost: $1,000 +10% = $1,100. <b>Margin</b> (Analyze mode) is profit as a % of the final price. <b>Break-even</b> covers true cost + overhead — quote below it and you lose money. LA 2026 benchmarks are built into the over/under check.</p>
       </details>
+    </div>
+
+    <div class="card result">
+      <div class="marg-head">
+        <span class="t" id="marginTitle">Baked-in margin</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="The profit margin already built into this bid — profit as a share of the price.">i</span>
+        <span class="big" id="margVal">45%</span>
+      </div>
+      <div class="lbl" id="margLbl" style="margin-bottom:2px">Margin already in the estimate</div>
+      <input class="slider" id="margin" type="range" min="10" max="120" value="45" step="1" />
+      <div class="scenarios">
+        <div class="sc" data-m="25" role="button" tabindex="0" onclick="pickMargin(25)"><div class="m">25%</div><div class="p" id="p25">—</div></div>
+        <div class="sc" data-m="35" role="button" tabindex="0" onclick="pickMargin(35)"><div class="m">35%</div><div class="p" id="p35">—</div></div>
+        <div class="sc active" data-m="45" role="button" tabindex="0" onclick="pickMargin(45)"><div class="m">45%</div><div class="p" id="p45">—</div></div>
+      </div>
+      <div class="recbox">
+        <div class="l"><span id="recLbl">Bid price (total)</span><span class="tip" id="tipRec" tabindex="0" role="button" aria-label="What is this?" data-tip="The bid's total price, with margin already included.">i</span></div>
+        <div class="v" id="recPrice">$0</div>
+        <div class="s" id="recSub"></div>
+      </div>
+      <div class="duo">
+        <div class="stat"><div class="l"><span id="beLbl">Break-even cost</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">costs above this = you lose money</div></div>
+        <div class="stat"><div class="l">Net profit<span class="tip" id="tipNet" tabindex="0" role="button" aria-label="What is this?" data-tip="What you keep after your overhead % is covered. Green = profit, red = losing money.">i</span></div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
+      </div>
+      <div class="btns">
+        <button class="btn primary" id="saveArch">💾 Save</button>
+        <button class="btn" id="dlCurrent">⬇ Summary</button>
+        <button class="btn wide" id="openProposal">📄 Create client proposal</button>
+      </div>
+      <div class="savednote" id="savedNote"></div>
+    </div>
+
+    <div id="similarCard" class="card" style="display:none;padding:12px 14px"></div>
+
+    <div class="card">
+      <h2>Test a quote</h2>
+      <p class="sub">Enter a price you're considering to check its margin.</p>
+      <input id="proposed" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 9500" />
+      <div id="quoteFlags"></div>
     </div>
   </section>
 
