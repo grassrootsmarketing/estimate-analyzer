@@ -397,6 +397,7 @@
         <input id="proposed" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 9500" />
         <div id="quoteFlags"></div>
       </div>
+      <div id="flagWarn"></div>
       <div class="btns">
         <button class="btn primary" id="saveArch">💾 Save</button>
         <button class="btn" id="dlCurrent">⬇ Summary</button>
@@ -594,6 +595,11 @@ function upd(i,k,v){
   } else { rows[i][k]=v; calc(); }
 }
 function confirmRow(i){ if(rows[i]){ rows[i].review=false; rows[i].flag=null; render(); } }
+function flaggedCount(){ return rows.filter(r=>r&&r.review===true).length; }
+function updateFlagWarn(){ const el=$("flagWarn"); if(!el) return; const n=flaggedCount();
+  if(n<=0){ el.innerHTML=""; el.style.display="none"; return; }
+  el.style.display=""; el.className="flag warn"; el.style.marginTop="10px";
+  el.textContent="⚠ "+n+" line"+(n===1?"":"s")+" from voice still need review. Check the amber rows above before trusting this price."; }
 function addRow(){ rows.push({item:"",desc:"",qty:1,unit:0}); render(); }
 function quickAdd(){ const v=$("quickAdd").value; if(!v) return; rows.push({item:v,desc:"",qty:1,unit:0}); $("quickAdd").value=""; render(); }
 function delRow(i){ rows.splice(i,1); render(); }
@@ -971,6 +977,8 @@ function updateSaveStatus(){ const el=$("savedNote"); if(!el) return;
   else { el.innerHTML="✓ Saved to your jobs."; el.className="savednote saved"; }
 }
 function saveToArchive(){
+  const fc=flaggedCount();
+  if(fc>0 && !confirm(fc+" line"+(fc===1?" is":"s are")+" still flagged for review. Save anyway?")) return;
   const st=getState(); const a=getArchive(); a.unshift(newEntry(st)); setArchive(a);
   _savedSig=stateSig(st); updateSaveStatus();
   toast("✓ Saved ("+a.length+")");
