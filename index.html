@@ -247,9 +247,9 @@
       <div class="lbl" id="margLbl" style="margin-bottom:2px">Margin already in the estimate</div>
       <input class="slider" id="margin" type="range" min="10" max="120" value="45" step="1" />
       <div class="scenarios">
-        <div class="sc" data-m="40" role="button" tabindex="0" onclick="pickMargin(40)"><div class="m">40%</div><div class="p" id="p40">—</div></div>
+        <div class="sc" data-m="25" role="button" tabindex="0" onclick="pickMargin(25)"><div class="m">25%</div><div class="p" id="p25">—</div></div>
+        <div class="sc" data-m="35" role="button" tabindex="0" onclick="pickMargin(35)"><div class="m">35%</div><div class="p" id="p35">—</div></div>
         <div class="sc active" data-m="45" role="button" tabindex="0" onclick="pickMargin(45)"><div class="m">45%</div><div class="p" id="p45">—</div></div>
-        <div class="sc" data-m="50" role="button" tabindex="0" onclick="pickMargin(50)"><div class="m">50%</div><div class="p" id="p50">—</div></div>
       </div>
       <div class="recbox">
         <div class="l" id="recLbl">Bid price (total)</div>
@@ -648,9 +648,9 @@ function calc(){
     const rec=roundUp(trueCost*(1+m),50);
     const grossProfit=rec-trueCost, net=grossProfit-rec*oh, realM=rec>0?grossProfit/rec*100:0;
     const be=oh<1?trueCost/(1-oh):Infinity;
-    $("p40").textContent=fmt(roundUp(trueCost*1.40,50));
+    $("p25").textContent=fmt(roundUp(trueCost*1.25,50));
+    $("p35").textContent=fmt(roundUp(trueCost*1.35,50));
     $("p45").textContent=fmt(roundUp(trueCost*1.45,50));
-    $("p50").textContent=fmt(roundUp(trueCost*1.50,50));
     $("recPrice").textContent=fmt(rec);
     $("recSub").textContent="+"+(m*100).toFixed(0)+"% markup · profit "+fmt(grossProfit)+" · "+realM.toFixed(0)+"% true margin";
     $("bePrice").textContent=fmt(be);
@@ -661,7 +661,7 @@ function calc(){
     benchmarkCheck(rec); quoteCheck(trueCost, be, oh, rec);
   } else {
     const price=direct, impliedCost=price*(1-m), grossProfit=price*m, net=grossProfit-price*oh;
-    $("p40").textContent=fmt(price*0.40); $("p45").textContent=fmt(price*0.45); $("p50").textContent=fmt(price*0.50);
+    $("p25").textContent=fmt(price*0.25); $("p35").textContent=fmt(price*0.35); $("p45").textContent=fmt(price*0.45);
     $("recPrice").textContent=fmt(price);
     $("recSub").textContent="Bid total · assuming "+(m*100).toFixed(0)+"% margin baked in → profit "+fmt(grossProfit);
     $("bePrice").textContent=fmt(impliedCost);
