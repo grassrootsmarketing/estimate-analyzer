@@ -322,12 +322,12 @@
 
     <div class="card">
       <div class="cardhead">
-        <h2 id="costsTitle">Estimate line items (priced)</h2>
+        <h2 id="costsTitle">Job costs</h2>
         <button class="iconbtn trash" id="clearRows" onclick="clearAllRows()" aria-label="Clear all line items" title="Clear all line items">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
         </button>
       </div>
-      <p class="sub" id="costsSub">These are the prices from the estimate — margin already baked in.</p>
+      <p class="sub" id="costsSub">Enter what the job actually costs you. Markup is added on top.</p>
       <div id="rows"></div>
       <datalist id="catlist">
         <option value="Subcontractor"></option><option value="Materials"></option>
@@ -373,23 +373,23 @@
       <h2 style="margin:0 0 4px">💰 Your price &amp; profit</h2>
       <p class="sub" style="margin:0 0 12px">Auto-calculated from everything above. Adjust the margin, then <b>Save</b> to keep this job.</p>
       <div class="marg-head">
-        <span class="t" id="marginTitle">Baked-in margin</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="The profit margin already built into this bid — profit as a share of the price.">i</span>
-        <span class="big" id="margVal">45%</span>
+        <span class="t" id="marginTitle">Markup on cost</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="Your markup — the % added on top of your true cost to set the price.">i</span>
+        <span class="big" id="margVal">40%</span>
       </div>
-      <div class="lbl" id="margLbl" style="margin-bottom:2px">Margin already in the estimate</div>
-      <input class="slider" id="margin" type="range" min="10" max="120" value="45" step="1" />
+      <div class="lbl" id="margLbl" style="margin-bottom:2px">% added on top of your cost</div>
+      <input class="slider" id="margin" type="range" min="10" max="120" value="40" step="1" />
       <div class="scenarios">
         <div class="sc" data-m="25" role="button" tabindex="0" onclick="pickMargin(25)"><div class="m">25%</div><div class="p" id="p25">—</div></div>
         <div class="sc" data-m="35" role="button" tabindex="0" onclick="pickMargin(35)"><div class="m">35%</div><div class="p" id="p35">—</div></div>
         <div class="sc active" data-m="45" role="button" tabindex="0" onclick="pickMargin(45)"><div class="m">45%</div><div class="p" id="p45">—</div></div>
       </div>
       <div class="recbox">
-        <div class="l"><span id="recLbl">Bid price (total)</span><span class="tip" id="tipRec" tabindex="0" role="button" aria-label="What is this?" data-tip="The bid's total price, with margin already included.">i</span></div>
+        <div class="l"><span id="recLbl">Recommended price (rounded up)</span><span class="tip" id="tipRec" tabindex="0" role="button" aria-label="What is this?" data-tip="Your suggested price: true cost plus markup, rounded up to a clean $50.">i</span></div>
         <div class="v" id="recPrice">$0</div>
         <div class="s" id="recSub"></div>
       </div>
       <div class="duo">
-        <div class="stat"><div class="l"><span id="beLbl">Break-even cost</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">costs above this = you lose money</div></div>
+        <div class="stat"><div class="l"><span id="beLbl">Break-even (floor)</span><span class="tip" id="tipBe" tabindex="0" role="button" aria-label="What is this?" data-tip="Your break-even floor — true cost plus overhead. Price below this and you lose money.">i</span></div><div class="v" id="bePrice">$0</div><div class="s2" id="beSub">below this you lose money</div></div>
         <div class="stat"><div class="l">Net profit<span class="tip" id="tipNet" tabindex="0" role="button" aria-label="What is this?" data-tip="What you keep after your overhead % is covered. Green = profit, red = losing money.">i</span></div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
       </div>
       <div class="testprice">
