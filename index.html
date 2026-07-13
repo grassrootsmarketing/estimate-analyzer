@@ -1199,45 +1199,27 @@ function downloadHTML(html, filename){
   const blob=new Blob([html],{type:"text/html"}), url=URL.createObjectURL(blob), a=document.createElement("a");
   a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
-let _pdfPromise=null;
-function loadPdfLibs(){
-  if(window.jspdf&&window.html2canvas) return Promise.resolve(true);
-  if(_pdfPromise) return _pdfPromise;
-  function load(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=()=>res(true); s.onerror=()=>rej(new Error("PDF lib load failed")); document.head.appendChild(s); }); }
-  _pdfPromise=Promise.all([
-    window.jspdf?Promise.resolve(true):load("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"),
-    window.html2canvas?Promise.resolve(true):load("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js")
-  ]).then(()=>true);
-  return _pdfPromise;
-}
-async function downloadPDF(docHtml, filename){
+/* PDF export via the browser's native print pipeline. No external libraries, so it
+   works offline and on a jobsite with no signal (a CDN-based PDF would hang there).
+   The doc's <title> becomes the default "Save as PDF" filename. Falls back to an
+   HTML download only if printing is unavailable. */
+function downloadPDF(docHtml, filename){
   try{
-    toast("Building PDF, one moment");
-    await loadPdfLibs();
     const iframe=document.createElement("iframe");
     iframe.setAttribute("aria-hidden","true");
-    iframe.style.cssText="position:fixed;left:-9999px;top:0;width:800px;height:600px;border:0;background:#fff";
+    iframe.style.cssText="position:fixed;left:-10000px;top:0;width:800px;height:1120px;border:0;background:#fff";
     document.body.appendChild(iframe);
-    const idoc=iframe.contentWindow.document;
+    let cleaned=false;
+    const clean=()=>{ if(cleaned) return; cleaned=true; if(iframe.parentNode) iframe.parentNode.removeChild(iframe); };
+    const win=iframe.contentWindow, idoc=win.document;
     idoc.open(); idoc.write(docHtml); idoc.close();
-    await new Promise(r=>setTimeout(r,450));
-    const imgs=idoc.images?[].slice.call(idoc.images):[];
-    await Promise.all(imgs.map(im=>im.complete?Promise.resolve():new Promise(r=>{ im.onload=im.onerror=r; })));
-    const target=idoc.body;
-    const canvas=await window.html2canvas(target,{scale:2,backgroundColor:"#ffffff",windowWidth:800,width:target.scrollWidth,height:target.scrollHeight,useCORS:true});
-    if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
-    const jsPDF=window.jspdf.jsPDF;
-    const pdf=new jsPDF("p","pt","a4");
-    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
-    const imgW=pw, imgH=canvas.height*(pw/canvas.width);
-    const imgData=canvas.toDataURL("image/jpeg",0.92);
-    let heightLeft=imgH, position=0;
-    pdf.addImage(imgData,"JPEG",0,position,imgW,imgH,undefined,"FAST");
-    heightLeft-=ph;
-    while(heightLeft>0.5){ position-=ph; pdf.addPage(); pdf.addImage(imgData,"JPEG",0,position,imgW,imgH,undefined,"FAST"); heightLeft-=ph; }
-    pdf.save(filename);
-    toast("PDF downloaded");
-  }catch(e){ console.error(e); toast("PDF failed, saved as HTML"); downloadHTML(docHtml, filename.replace(/\.pdf$/i,".html")); }
+    win.onafterprint=()=>setTimeout(clean,500);
+    setTimeout(()=>{
+      try{ win.focus(); win.print(); toast("Choose Save as PDF in the print dialog"); }
+      catch(err){ clean(); downloadHTML(docHtml, (filename||"summary").replace(/\.pdf$/i,".html")); toast("Print unavailable, saved as HTML"); }
+      setTimeout(clean,60000); // safety cleanup if onafterprint never fires
+    },350);
+  }catch(e){ console.error(e); downloadHTML(docHtml, (filename||"summary").replace(/\.pdf$/i,".html")); toast("Saved as HTML"); }
 }
 function slugify(x){ return String(x||"estimate").replace(/[^a-z0-9]+/gi,"-").toLowerCase().replace(/^-|-$/g,"")||"estimate"; }
 function downloadSummary(s){ downloadPDF(buildSummary(s), "estimate-"+slugify(s.jobName)+"-"+new Date(s.ts||Date.now()).toISOString().slice(0,10)+".pdf"); }
