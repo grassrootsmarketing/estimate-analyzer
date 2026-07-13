@@ -458,7 +458,7 @@
       <div id="flagWarn"></div>
       <div class="btns">
         <button class="btn primary" id="saveArch">💾 Save</button>
-        <button class="btn" id="dlCurrent">⬇ Summary</button>
+        <button class="btn" id="dlCurrent">⬇ Summary PDF</button>
         <button class="btn wide" id="openProposal">📄 Create client proposal</button>
       </div>
       <div class="savednote" id="savedNote"></div>
@@ -474,7 +474,7 @@
       <h2>📚 Saved estimates <span class="muted" id="archCount" style="font-weight:400"></span></h2>
       <input id="archSearch" placeholder="Search by job name…" style="margin:6px 0 12px" />
       <div class="arch-tools">
-        <button class="btn" id="dlLast">⬇ Last session</button>
+        <button class="btn" id="dlLast">⬇ Last session PDF</button>
         <button class="btn" id="exportArch">⬆ Backup</button>
         <button class="btn" id="importArch">⬇ Restore</button>
         <button class="btn ghost" id="clearArch">Clear all</button>
@@ -1199,8 +1199,48 @@ function downloadHTML(html, filename){
   const blob=new Blob([html],{type:"text/html"}), url=URL.createObjectURL(blob), a=document.createElement("a");
   a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
+let _pdfPromise=null;
+function loadPdfLibs(){
+  if(window.jspdf&&window.html2canvas) return Promise.resolve(true);
+  if(_pdfPromise) return _pdfPromise;
+  function load(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=()=>res(true); s.onerror=()=>rej(new Error("PDF lib load failed")); document.head.appendChild(s); }); }
+  _pdfPromise=Promise.all([
+    window.jspdf?Promise.resolve(true):load("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"),
+    window.html2canvas?Promise.resolve(true):load("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js")
+  ]).then(()=>true);
+  return _pdfPromise;
+}
+async function downloadPDF(docHtml, filename){
+  try{
+    toast("Building PDF, one moment");
+    await loadPdfLibs();
+    const iframe=document.createElement("iframe");
+    iframe.setAttribute("aria-hidden","true");
+    iframe.style.cssText="position:fixed;left:-9999px;top:0;width:800px;height:600px;border:0;background:#fff";
+    document.body.appendChild(iframe);
+    const idoc=iframe.contentWindow.document;
+    idoc.open(); idoc.write(docHtml); idoc.close();
+    await new Promise(r=>setTimeout(r,450));
+    const imgs=idoc.images?[].slice.call(idoc.images):[];
+    await Promise.all(imgs.map(im=>im.complete?Promise.resolve():new Promise(r=>{ im.onload=im.onerror=r; })));
+    const target=idoc.body;
+    const canvas=await window.html2canvas(target,{scale:2,backgroundColor:"#ffffff",windowWidth:800,width:target.scrollWidth,height:target.scrollHeight,useCORS:true});
+    if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    const jsPDF=window.jspdf.jsPDF;
+    const pdf=new jsPDF("p","pt","a4");
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+    const imgW=pw, imgH=canvas.height*(pw/canvas.width);
+    const imgData=canvas.toDataURL("image/jpeg",0.92);
+    let heightLeft=imgH, position=0;
+    pdf.addImage(imgData,"JPEG",0,position,imgW,imgH,undefined,"FAST");
+    heightLeft-=ph;
+    while(heightLeft>0.5){ position-=ph; pdf.addPage(); pdf.addImage(imgData,"JPEG",0,position,imgW,imgH,undefined,"FAST"); heightLeft-=ph; }
+    pdf.save(filename);
+    toast("PDF downloaded");
+  }catch(e){ console.error(e); toast("PDF failed, saved as HTML"); downloadHTML(docHtml, filename.replace(/\.pdf$/i,".html")); }
+}
 function slugify(x){ return String(x||"estimate").replace(/[^a-z0-9]+/gi,"-").toLowerCase().replace(/^-|-$/g,"")||"estimate"; }
-function downloadSummary(s){ downloadHTML(buildSummary(s), "estimate-"+slugify(s.jobName)+"-"+new Date(s.ts||Date.now()).toISOString().slice(0,10)+".html"); }
+function downloadSummary(s){ downloadPDF(buildSummary(s), "estimate-"+slugify(s.jobName)+"-"+new Date(s.ts||Date.now()).toISOString().slice(0,10)+".pdf"); }
 
 /* ---------------- COMPANY PROFILE ---------------- */
 let PROFILE={};
@@ -1313,7 +1353,7 @@ $("proposalBack").addEventListener("click",()=>showView("calc"));
 let SIGNATURE=null, SIGNED_AT=null, _sigCtx=null, _sigDrawing=false, _sigInk=false;
 function proposalInputs(){ return { client:$("clientName").value, clientAddr:$("clientAddress").value, scope:$("projScope").value,
   deposit:parseFloat($("depositPct").value)||0, terms:$("termsText").value, itemize:$("itemize").checked, signature:SIGNATURE, signedAt:SIGNED_AT }; }
-function openProposalWindow(html){ const w=window.open("","_blank"); if(w){ w.document.write(html); w.document.close(); toast("Proposal opened, print to PDF"); } else { downloadHTML(html, "proposal-"+new Date().toISOString().slice(0,10)+".html"); toast("Pop-up blocked, proposal downloaded"); } }
+function openProposalWindow(html){ const w=window.open("","_blank"); if(w){ w.document.write(html); w.document.close(); toast("Proposal opened, print to PDF"); } else { downloadPDF(html, "proposal-"+new Date().toISOString().slice(0,10)+".pdf"); } }
 $("genProposal").addEventListener("click",()=>{ const s=getState(); openProposalWindow(buildProposal(s, proposalInputs())); });
 async function shareProposal(){
   const s=getState(), inp=proposalInputs(), html=buildProposal(s, inp);
@@ -1441,7 +1481,7 @@ document.addEventListener("change", persist);
 
 $("saveArch").addEventListener("click",saveToArchive);
 $("dlCurrent").addEventListener("click",()=>downloadSummary(getState()));
-$("dlLast").addEventListener("click",()=>{ const s=STATE_CACHE; downloadSummary(s&&s.rows?s:getState()); toast("Summary downloaded"); });
+$("dlLast").addEventListener("click",()=>{ const s=STATE_CACHE; downloadSummary(s&&s.rows?s:getState()); });
 $("clearArch").addEventListener("click",()=>{ if(confirm("Clear all saved estimates? This can't be undone.")){ setArchive([]); renderArchive(); toast("Archive cleared"); } });
 
 /* one-time migration: copy any existing localStorage data into IndexedDB, verify, then clear LS. On any failure, leave LS untouched. */
