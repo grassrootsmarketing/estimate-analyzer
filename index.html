@@ -1221,8 +1221,91 @@ function downloadPDF(docHtml, filename){
     },350);
   }catch(e){ console.error(e); downloadHTML(docHtml, (filename||"summary").replace(/\.pdf$/i,".html")); toast("Saved as HTML"); }
 }
+/* ---- Dependency-free PDF writer: builds a real .pdf file client-side, so the
+   summary downloads silently as a PDF and works offline (no CDN, no libraries).
+   Uses the 14 standard PDF fonts (Helvetica / Courier), so nothing is embedded. */
+function _pdfEsc(v){ return String(v==null?"":v).replace(/([\\()])/g,"\\$1"); }
+function _lat1(str){ const a=[]; for(let i=0;i<str.length;i++){ const c=str.charCodeAt(i); a.push(c>255?63:c); } return a; }
+function _wrap(str,maxChars){ str=String(str==null?"":str); if(!str) return [""]; const words=str.split(/\s+/); const lines=[]; let ln="";
+  for(const w of words){ const t=ln?ln+" "+w:w;
+    if(t.length>maxChars && ln){ lines.push(ln); ln=w; }
+    else if(t.length>maxChars && !ln){ let rest=w; while(rest.length>maxChars){ lines.push(rest.slice(0,maxChars)); rest=rest.slice(maxChars); } ln=rest; }
+    else { ln=t; } }
+  if(ln) lines.push(ln); return lines.length?lines:[""]; }
+function _mkPDF(pages){
+  const bytes=[], offsets=[];
+  function push(s){ const b=_lat1(s); for(let i=0;i<b.length;i++) bytes.push(b[i]); }
+  function pushBytes(b){ for(let i=0;i<b.length;i++) bytes.push(b[i]); }
+  push("%PDF-1.4\n");
+  const N=pages.length, pageStart=3, fH=pageStart+N, fHB=fH+1, fC=fH+2, cStart=fC+1, last=cStart+N-1;
+  function obj(n){ offsets[n]=bytes.length; push(n+" 0 obj\n"); }
+  obj(1); push("<</Type/Catalog/Pages 2 0 R>>\nendobj\n");
+  let kids=""; for(let i=0;i<N;i++) kids+=(pageStart+i)+" 0 R ";
+  obj(2); push("<</Type/Pages/Kids["+kids.trim()+"]/Count "+N+">>\nendobj\n");
+  for(let i=0;i<N;i++){ obj(pageStart+i); push("<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 "+fH+" 0 R/F2 "+fHB+" 0 R/F3 "+fC+" 0 R>>>>/Contents "+(cStart+i)+" 0 R>>\nendobj\n"); }
+  obj(fH); push("<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>\nendobj\n");
+  obj(fHB); push("<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>\nendobj\n");
+  obj(fC); push("<</Type/Font/Subtype/Type1/BaseFont/Courier/Encoding/WinAnsiEncoding>>\nendobj\n");
+  for(let i=0;i<N;i++){ const cb=_lat1(pages[i]); obj(cStart+i); push("<</Length "+cb.length+">>\nstream\n"); pushBytes(cb); push("\nendstream\nendobj\n"); }
+  const xref=bytes.length;
+  push("xref\n0 "+(last+1)+"\n0000000000 65535 f \n");
+  for(let n=1;n<=last;n++){ push(String(offsets[n]||0).padStart(10,"0")+" 00000 n \n"); }
+  push("trailer<</Size "+(last+1)+"/Root 1 0 R>>\nstartxref\n"+xref+"\n%%EOF");
+  return new Uint8Array(bytes);
+}
+function _estimatePdf(s){
+  const r=compute(s), name=(s.jobName&&s.jobName.trim())||"Estimate", when=new Date(s.ts||Date.now()).toLocaleString();
+  const ML=54, rightX=558, MB=56, top=738;
+  const pages=[]; let cur="", y=top;
+  function flush(){ pages.push(cur); cur=""; y=top; }
+  function need(h){ if(y-h<MB) flush(); }
+  function T(font,size,x,str,col){ cur+=(col||"0 0 0")+" rg\nBT /"+font+" "+size+" Tf "+x.toFixed(1)+" "+y.toFixed(1)+" Td ("+_pdfEsc(str)+") Tj ET\n"; }
+  function Tr(size,xr,str,col){ const w=String(str).length*0.6*size; T("F3",size,xr-w,str,col); }
+  function TrF(font,size,xr,str,col){ const w=String(str).length*0.52*size; T(font,size,xr-w,str,col); }
+  function hr(){ cur+="0.8 0.8 0.8 RG 0.6 w "+ML+" "+y.toFixed(1)+" m "+rightX+" "+y.toFixed(1)+" l S\n"; }
+  T("F2",17,ML,"Estimate, internal summary"); y-=20;
+  T("F1",9.5,ML,name+"  |  "+(s.clientType||"")+"  |  "+when,"0.42 0.42 0.42"); y-=22;
+  T("F2",10,ML,"LINE ITEMS"); y-=14;
+  T("F2",9,ML,"Item"); T("F2",9,210,"Description"); TrF("F2",9,430,"Qty"); TrF("F2",9,492,"Unit"); TrF("F2",9,558,(r.mode==="cost"?"Cost":"Price")); y-=4; hr(); y-=13;
+  const rows=(s.rows||[]).filter(x=>((+x.qty||0)*(+x.unit||0))!==0||x.item||x.desc);
+  for(const x of rows){
+    const c=(+x.qty||0)*(+x.unit||0), il=_wrap(x.item,33), dl=_wrap(x.desc,33), nlines=Math.max(il.length,dl.length,1);
+    need(nlines*11+4); const y0=y;
+    for(let i=0;i<il.length;i++){ T("F1",9,ML,il[i]); y-=11; }
+    y=y0; for(let i=0;i<dl.length;i++){ T("F1",9,210,dl[i]); y-=11; }
+    y=y0; Tr(9,430,String(+x.qty||0)); Tr(9,492,fmt(+x.unit||0)); Tr(9,558,fmt(c));
+    y=y0-nlines*11-3;
+  }
+  if(!rows.length){ T("F1",9,ML,"(none)"); y-=12; }
+  y-=8; need(140); T("F2",10,ML,"RESULT"); y-=4; hr(); y-=14;
+  const res = r.mode==="cost" ? [
+    ["True job cost", fmt(r.trueCost)],
+    ["Recommended price (+"+(r.markupPct||0).toFixed(0)+"% markup)", fmt(r.price)],
+    ["True gross margin", r.marginPct.toFixed(1)+"%"],
+    ["Net profit (after overhead)", fmt(r.net)],
+    ["Break-even", fmt(r.breakeven)]
+  ] : [
+    ["Bid total", fmt(r.price)],
+    ["Assumed baked-in margin", r.assumed.toFixed(0)+"%"],
+    ["Break-even cost", fmt(r.breakeven!=null?r.breakeven:r.impliedCost)],
+    ["Gross profit", fmt(r.grossProfit)],
+    ["Net profit", fmt(r.net)]
+  ];
+  for(const kv of res){ need(16); T("F1",10,ML,kv[0]); Tr(10,558,kv[1]); y-=15; }
+  y-=10; need(20); T("F1",8,ML,"Internal worksheet, not for the client. estimate-analyzer-atb.vercel.app","0.5 0.5 0.5");
+  flush();
+  return _mkPDF(pages);
+}
 function slugify(x){ return String(x||"estimate").replace(/[^a-z0-9]+/gi,"-").toLowerCase().replace(/^-|-$/g,"")||"estimate"; }
-function downloadSummary(s){ downloadPDF(buildSummary(s), "estimate-"+slugify(s.jobName)+"-"+new Date(s.ts||Date.now()).toISOString().slice(0,10)+".pdf"); }
+function downloadSummary(s){
+  try{
+    const blob=new Blob([_estimatePdf(s)],{type:"application/pdf"});
+    const url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download="estimate-"+slugify(s.jobName)+"-"+new Date(s.ts||Date.now()).toISOString().slice(0,10)+".pdf";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+    toast("PDF downloaded");
+  }catch(e){ console.error(e); downloadPDF(buildSummary(s), "estimate-"+slugify(s.jobName)+".pdf"); }
+}
 
 /* ---------------- COMPANY PROFILE ---------------- */
 let PROFILE={};
