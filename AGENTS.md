@@ -1,0 +1,152 @@
+# AGENTS.md
+
+Operating guide for AI coding agents (Codex and similar) working in this repo.
+Codex loads this file automatically. Read it fully before making changes.
+
+## What this is
+
+Estimate Analyzer is a phone-first pricing tool for a Los Angeles general
+contractor. It helps price a job two ways:
+
+- **Build mode (from cost):** enter your costs, get a recommended price from a markup.
+- **Analyze mode:** enter a bid you already have, see the margin and break-even baked into it.
+
+It is a Progressive Web App: installable, works offline, stores everything on the
+user's own device. Live at https://estimate-analyzer-atb.vercel.app
+
+## Golden rules (do not violate)
+
+1. **Never change the pricing math.** The formulas in `compute()` are the product.
+   Any change that alters a documented result is a regression. See "Pricing model" below.
+2. **Run the test before every commit:** `node test/math.test.js`. It has no
+   dependencies and is not loaded by the app. A nonzero exit means a pricing
+   invariant broke. Do not push until it passes.
+3. **No em dashes in user-facing copy.** Use commas, parentheses, or "to". This is a
+   house style rule and it also protects a few load-bearing characters (see "Protected code").
+4. **Keep it a single file with no build step.** All HTML, CSS, and JS live in
+   `index.html`. Do not introduce a bundler, framework, npm dependency, or build
+   pipeline. The no-build constraint is deliberate: it keeps deploys trivial.
+5. **Do not add external runtime dependencies or CDN script tags.** The app must
+   work offline on a jobsite with no signal. Anything loaded from a third-party CDN
+   can be blocked or unreachable and will hang. Prefer dependency-free code. (The
+   PDF export was deliberately written by hand for this reason.)
+6. **Never touch `#rows` in the results-painting path.** Rewriting that container
+   while the user types destroys input focus on mobile. See "Gotchas".
+
+## Run, test, deploy
+
+- **Run locally:** open `index.html` in a browser, or serve the folder statically
+  (e.g. `npx serve`). No install step.
+- **Test:** `node test/math.test.js` (required before every commit).
+- **Deploy:** Vercel auto-deploys the `main` branch. Push to `main` and the live
+  site updates in about a minute. There is no manual deploy step.
+- **Serverless:** `/api/structure` is a Vercel serverless function used by the
+  voice-to-estimate feature. It is optional to the core calculator.
+
+## Architecture and file map
+
+- `index.html` — the entire app. HTML, CSS, and vanilla JS in one file.
+- `sw.js` — service worker. Network-first for page navigations (so new deploys flow),
+  cache-first for same-origin assets, and it intentionally ignores cross-origin and
+  non-GET requests. Do not make it intercept cross-origin traffic.
+- `manifest.json` — PWA manifest (name, icons, standalone display).
+- `icons/` — PWA app icons including a maskable icon, plus `apple-touch-icon`.
+- `api/` — Vercel serverless function(s), e.g. `structure` for voice parsing.
+- `test/math.test.js` — zero-dependency pricing test. Extracts `compute` and
+  `roundUp` from `index.html` by brace-matching and asserts the invariants.
+- `README.md`, `HANDOFF.md`, `AUDIT.md` — background docs. HANDOFF.md has the
+  deepest architecture and data-model notes.
+
+## Pricing model (the invariants the test guards)
+
+`compute(state)` is the single source of truth for all pricing math. `calc()` is a
+thin pipeline: `getState()` then `compute()` then `paintResults()`. `paintResults()`
+only writes result fields and never rebuilds the line-item inputs.
+
+**Build mode (from cost):**
+- `trueCost = direct + materialTax + contingency`
+  (material tax applies only to Materials lines; contingency is applied on the
+  direct-plus-tax base).
+- `price = roundUpTo50( trueCost * (1 + markup%) )`
+- `breakeven = trueCost / (1 - overhead%)`
+- Canonical check: **$1,000 cost + 10% markup = $1,100.**
+- Markup is not margin: a 10% markup on $1,000 is a 9.09% gross margin.
+
+**Analyze mode:**
+- `price = sum(line items)`
+- `breakeven = price * (1 - overhead%)`
+- `grossProfit = price * margin%`
+- `net = grossProfit - price * overhead%`
+- Canonical check: $10,000 at 45% margin and 12% overhead gives break-even $8,800
+  and net $3,300.
+
+If you need to change presentation of these numbers, do it in `paintResults()` or the
+document/PDF builders, never in `compute()`.
+
+## Data and storage model
+
+- Primary store is **IndexedDB**, with a **localStorage fallback** if IndexedDB is
+  blocked or times out. In-memory caches (`ARCH_CACHE`, `STATE_CACHE`) mirror the data.
+- Working state autosaves so a crash or refresh recovers the current estimate.
+- **Archive** keeps a rolling history of saved jobs, capped at `HISTORY_CAP` (30).
+  Entries can be **pinned** to survive the cap, or deleted manually. Pruning is
+  applied on save, not on restore.
+- Persistence caveat worth knowing: on iOS Safari, script-writable storage is
+  evicted after 7 days of no visits unless the app is installed to the Home Screen.
+  Backup (Archive tab) exports a JSON file as the durable, portable copy.
+
+## Security invariants
+
+- `safeImg(v)` returns a value only if it starts with `data:image/`; it is applied to
+  every image `src` (company logo, signature, photos). This blocks `onerror=` and
+  `javascript:` payloads that could arrive through a restored backup.
+- `esc()` HTML-escapes any user or benchmark text written via `innerHTML`.
+- Restored backups are validated and sanitized (non-image photos dropped, photo count
+  capped, row fields coerced, logo passed through `safeImg`). Keep this validation if
+  you touch restore.
+
+## Protected code (do not touch without care)
+
+These use characters or patterns that look cosmetic but are functional:
+
+- `SEED_BENCH` keys such as `"Flooring - tile (per sf)"` — the separators are parsed.
+- The range-detection regex `(?:-|to)` variants and the `deriveMeta` separator check.
+- Because of the above, do not run a blind find-and-replace on dashes across the file.
+  A copy-only em-dash sweep is fine if it skips these.
+
+## What is already implemented (recent state)
+
+- Two modes (Build from cost, Analyze a bid) with mode-aware layout.
+- Voice-to-estimate via `/api/structure`, with a review flag on parsed lines and a
+  guard that warns before saving lines still flagged for review.
+- PDF export written by hand (no libraries): `_mkPDF()` assembles the PDF, `_estimatePdf()`
+  lays out the summary. The summary downloads silently as a real `.pdf`. The branded
+  client proposal uses the browser's print-to-PDF path (it carries the logo/letterhead).
+- Project size is a dropdown (`#benchQty` select: 1,000 through 100,000) feeding the
+  per-unit benchmark check.
+- Desktop two-column layout above 900px (results column is sticky); mobile stays single
+  column. Custom hollow dark-green margin slider on a cream track.
+- Installable PWA with real app icons and a maskable icon; offline shell via `sw.js`.
+- Company profile and branded proposal; on-site signature capture; editable benchmarks
+  and tax rate; personal/past-job benchmarks.
+- Boot resilience (each storage load is isolated) and a storage-usage meter in Settings.
+
+## Gotchas
+
+- **Focus loss on mobile:** any code that rewrites the `#rows` container while typing
+  will drop the input's focus. Results painting must not rebuild inputs.
+- **Offline first:** do not reach for a CDN. A blocked CDN request hangs with no error.
+  If you truly need a library, vendor it into the repo so it is same-origin and cached.
+- **Service worker caching:** after a deploy, navigations are network-first so users
+  get fresh HTML, but same-origin assets are cache-first. Bump the cache name in
+  `sw.js` if you change a cached asset's contents under the same path.
+- **Test extraction is brace-based:** `test/math.test.js` finds `compute` and `roundUp`
+  by name and matches braces. Keep those as normal named function declarations.
+
+## Where to look
+
+- Pricing: `compute()`. Rendering results: `paintResults()`. Orchestration: `calc()`.
+- Summary and PDF: `buildSummary()`, `_estimatePdf()`, `_mkPDF()`, `downloadSummary()`.
+- Proposal: `buildProposal()` / `openProposalWindow()`.
+- Archive and backup: the save, prune (`pruneArchive`), restore, and export handlers.
+- Storage: `idbOpen()` and the load/persist helpers, with the localStorage fallback.
