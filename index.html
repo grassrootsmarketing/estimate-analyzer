@@ -270,54 +270,86 @@
     .app{max-width:720px}
   }
 
-  /* ================= REALM WARM THEME (overrides) ================= */
+  /* ================= THEME: dark (default) + light ================= */
   :root{
+    --bg:#0f1311; --panel:#171d19; --panel2:#1d251f; --line:#2b342d;
+    --ink:#eef2ec; --muted:#9aa89c; --accent:#f1c14e; --accent2:#5cc98d;
+    --good:#5cc98d; --warn:#f1c14e; --bad:#f0836b; --chip:#232c26;
+    --resultbg:#16211b; --resultbd:#2f5f45;
+    --goodbg:#14271e; --goodbd:#2c5540; --goodink:#8fe0b4;
+    --warnbg:#2a2410; --warnbd:#57491d; --warnink:#f0d68a;
+    --badbg:#2c1a16; --badbd:#5e342b; --badink:#f3b3a4;
+    --tipbg:#050806; --tipink:#eef2ec; --primink:#241a05;
+    --field:#141a16; --fieldbd:#333e35; --onaccent2:#04120a;
+    --shadow:rgba(0,0,0,.45); --shadowsoft:rgba(0,0,0,.30);
+  }
+  :root[data-theme="light"]{
     --bg:#f6f2e9; --panel:#ffffff; --panel2:#f4efe2; --line:#e7e0cf;
     --ink:#1b2a22; --muted:#75705f; --accent:#f1c14e; --accent2:#1f6b46;
     --good:#1f6b46; --warn:#b9831c; --bad:#bf432f; --chip:#efe8d5;
+    --resultbg:#f3f9f4; --resultbd:#cfe6d8;
+    --goodbg:#eaf5ee; --goodbd:#bfe0cd; --goodink:#1c5c3c;
+    --warnbg:#fdf3d7; --warnbd:#ecd08a; --warnink:#7a531a;
+    --badbg:#fbeee9; --badbd:#e7c4b9; --badink:#9a3322;
+    --tipbg:#1b2a22; --tipink:#ffffff; --primink:#3a2c05;
+    --field:#ffffff; --fieldbd:#ddd5c1; --onaccent2:#ffffff;
+    --shadow:rgba(30,50,35,.12); --shadowsoft:rgba(30,40,30,.05);
   }
   body{background:var(--bg);color:var(--ink)}
   a{color:var(--accent2)}
-  header{background:rgba(246,242,233,.92);border-bottom:1px solid var(--line)}
-  header .logo{background:var(--accent2);color:#fff}
+  header{background:var(--panel);border-bottom:1px solid var(--line)}
+  header .logo{background:var(--accent);color:var(--primink)}
   header .ttl{color:var(--ink)} header .sub{color:var(--muted)}
-  .card{box-shadow:0 1px 2px rgba(30,40,30,.04)}
-  .result{background:linear-gradient(180deg,#ffffff,#f3f9f4);border:1px solid #cfe6d8;box-shadow:none}
+  .card{box-shadow:0 1px 2px var(--shadowsoft)}
+  .result{background:var(--resultbg);border:1px solid var(--resultbd);box-shadow:none}
   .seg{background:var(--panel);border:1px solid var(--line)}
   .seg button{color:var(--muted)}
-  .seg button.active{background:var(--accent);color:#3a2c05}
-  .seg button:hover:not(.active){color:var(--ink);background:rgba(0,0,0,.04)}
-  .drop{border-color:var(--accent2);background:rgba(31,107,70,.05);color:var(--muted)}
-  .drop:hover{border-color:var(--accent2);background:rgba(31,107,70,.10)}
-  .drop.over{border-color:var(--accent2);background:#eaf4ee;color:var(--ink)}
+  .seg button.active{background:var(--accent);color:var(--primink)}
+  .seg button:hover:not(.active){color:var(--ink);background:rgba(127,127,127,.10)}
+  .drop{border-color:var(--accent2);background:var(--panel2);color:var(--muted)}
+  .drop:hover{border-color:var(--accent2);background:var(--chip)}
+  .drop.over{border-color:var(--accent2);background:var(--goodbg);color:var(--ink)}
   .drop-main{color:var(--ink)}
-  #calcView.mode-analyze #drop{border-color:var(--accent2);background:rgba(31,107,70,.09)}
-  .savednote.unsaved{color:#8a5a12;background:#fdf3d7;border-color:#ecd08a}
-  .litem.review{border-color:#e6c06a;box-shadow:inset 0 0 0 1px #ecd08a}
-  .reviewbar{background:#fdf3d7;border-color:#ecd08a}
-  .revbadge{color:#8a5a12}
-  .revok{background:var(--accent);color:#3a2c05}
-  .flag.good{background:#eaf5ee;border-color:#bfe0cd;color:#1c5c3c}
-  .flag.warn{background:#fdf3d7;border-color:#ecd08a;color:#7a531a}
-  .flag.bad{background:#fbe9e5;border-color:#eec2b8;color:#9a3322}
+  #calcView.mode-analyze #drop{border-color:var(--accent2);background:var(--chip)}
+  .savednote.unsaved{color:var(--warnink);background:var(--warnbg);border-color:var(--warnbd)}
+  .litem.review{border-color:var(--warnbd);box-shadow:inset 0 0 0 1px var(--warnbd)}
+  .reviewbar{background:var(--warnbg);border-color:var(--warnbd)}
+  .revbadge{color:var(--warnink)}
+  .revok{background:var(--accent);color:var(--primink)}
+  .flag.good{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
+  .flag.warn{background:var(--warnbg);border-color:var(--warnbd);color:var(--warnink)}
+  .flag.bad{background:var(--badbg);border-color:var(--badbd);color:var(--badink)}
   .flag b{color:var(--ink)}
   .tip{border-color:var(--muted);color:var(--muted)}
-  .tip::after{background:#1b2a22;color:#fff;border-color:#2c3d33}
-  .nav{background:rgba(255,255,255,.96);border-top:1px solid var(--line)}
+  .tip::after{background:var(--tipbg);color:var(--tipink);border-color:var(--line)}
+  .nav{background:var(--panel);border-top:1px solid var(--line)}
   .nav button{color:var(--muted)} .nav button.active{color:var(--accent2)}
-  .oc-won{background:#eaf5ee;border-color:#bfe0cd;color:#1c5c3c}
-  .oc-lost{background:#fbe9e5;border-color:#eec2b8;color:#9a3322}
+  .oc-won{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
+  .oc-lost{background:var(--badbg);border-color:var(--badbd);color:var(--badink)}
   .oc-pend{color:var(--muted)}
-  .pthumb{background:#efe8d5} .logoprev{background-color:var(--panel2)}
+  .pthumb{background:var(--panel2)} .logoprev{background-color:var(--panel2)}
   .arch-nums b{color:var(--ink)} summary{color:var(--accent2)}
-  .toast{background:#12241b;border-color:#1f5a40;color:#bff0d4}
+  .toast{background:var(--tipbg);border-color:var(--line);color:var(--ink)}
   .backbtn{color:var(--accent2)}
-  .btn:hover{box-shadow:0 4px 14px rgba(30,50,35,.12)}
+  .btn:hover{box-shadow:0 4px 14px var(--shadow)}
   .modehint b{color:var(--ink)}
-  input,select,textarea{background:#ffffff;border-color:#ddd5c1}
-  input:focus,select:focus,textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(31,107,70,.12)}
+  input,select,textarea{background:var(--field);border-color:var(--fieldbd);color:var(--ink)}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(92,201,141,.18)}
   .litem{background:var(--panel2)}
-  .btn.primary{color:#3a2c05}
+  .btn.primary{color:var(--primink)}
+  /* ---- inline SVG icon system ---- */
+  .ic{width:18px;height:18px;flex:0 0 auto;display:inline-block;vertical-align:-3px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ic.fill{fill:currentColor;stroke:none}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .seg button{gap:6px} .arch-row button{gap:6px}
+  .nav button .ic{width:23px;height:23px;stroke-width:1.9}
+  .hicon{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;transition:color .16s ease,border-color .16s ease,transform .12s ease}
+  .hicon .ic{width:20px;height:20px}
+  .hicon:hover{color:var(--ink);border-color:var(--accent2)} .hicon:active{transform:scale(.92)}
+  .ic.starfill{fill:var(--accent);stroke:var(--accent)}
+  .oc{display:inline-flex;align-items:center;gap:4px}
+  .oc .ic,.tag .ic{width:14px;height:14px;vertical-align:-2px;stroke-width:2.2}
+  .arch-row button[data-a=dl]{padding-left:11px;padding-right:11px}
 
   /* ================= DASHBOARD HOME ================= */
   .dash-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:2px 0 16px;flex-wrap:wrap}
@@ -334,7 +366,7 @@
   .projgrid{display:grid;grid-template-columns:1fr;gap:11px}
   .proj{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 15px;cursor:pointer;
     box-shadow:0 1px 2px rgba(30,40,30,.04);transition:transform .13s ease,box-shadow .16s ease,border-color .16s ease}
-  .proj:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(30,50,35,.12);border-color:#d8cfb8}
+  .proj:hover{transform:translateY(-2px);box-shadow:0 8px 22px var(--shadow);border-color:var(--accent2)}
   .proj:active{transform:translateY(0) scale(.99)}
   .proj-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .proj-name{font-size:15.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -348,16 +380,65 @@
   .dash-empty{background:var(--panel);border:1px dashed var(--line);border-radius:16px;padding:34px 20px;text-align:center;color:var(--muted);font-size:13.5px}
   @media(min-width:640px){ .kpis{grid-template-columns:repeat(4,1fr)} .projgrid{grid-template-columns:1fr 1fr} }
   @media(min-width:1040px){ .projgrid{grid-template-columns:1fr 1fr 1fr} }
+
+  /* ===== Button-box + spacing polish (archive rows and toolbar) ===== */
+  .arch-row{gap:8px;margin-top:11px}
+  .arch-row button{white-space:nowrap;min-height:40px;height:auto;padding:9px 13px;
+    display:inline-flex;align-items:center;justify-content:center;line-height:1;border-radius:10px}
+  /* Archive Delete: a real text button (not the 44x44 line-item icon style), styled as destructive */
+  .arch-row .del{width:auto;height:auto;min-height:40px;font-size:12.5px;
+    color:var(--badink);border:1px solid var(--badbd);background:var(--badbg)}
+  .arch-row .del:hover{color:#fff;background:var(--bad);border-color:var(--bad);transform:none}
+  .arch-row .del:active{color:#fff;transform:scale(.96)}
+  /* Toolbar (Backup / Restore / Clear all): never let labels squish; wrap to a new row instead */
+  .arch-tools{gap:8px}
+  .arch-tools .btn{white-space:nowrap;min-width:auto}
+  /* Line-item delete stays the intended 44x44 icon button (unaffected by the rules above) */
 </style>
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+  <symbol id="i-calc" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14v4"/><path d="M8 18h.01"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="i-folder-open" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol>
+  <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></symbol>
+  <symbol id="i-dollar" viewBox="0 0 24 24"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></symbol>
+  <symbol id="i-printer" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></symbol>
+</defs></svg>
+
 <header>
-  <div class="logo" id="brandLogo">🧰</div>
-  <div>
+  <div class="logo" id="brandLogo"><svg class="ic"><use href="#i-ruler"/></svg></div>
+  <div style="min-width:0">
     <div class="ttl" id="brandName">Estimate Analyzer</div>
-    <div class="sub">LA contractor pricing · 2026</div>
+    <div class="sub">LA contractor pricing</div>
   </div>
+  <button class="hicon" id="themeToggle" aria-label="Toggle dark or light mode"><svg class="ic"><use href="#i-sun"/></svg></button>
 </header>
 
 <div class="app">
@@ -377,7 +458,7 @@
         <div class="dash-title">Dashboard</div>
         <div class="dash-sub">Your jobs at a glance</div>
       </div>
-      <button class="btn primary" id="dashNew">＋ New estimate</button>
+      <button class="btn primary" id="dashNew"><svg class="ic"><use href="#i-plus"/></svg>New estimate</button>
     </div>
     <div class="kpis" id="dashKpis"></div>
     <div class="dash-secttl"><span>Recent projects</span><span class="link" id="dashAll" style="font-size:11px">View all</span></div>
@@ -387,8 +468,8 @@
   <!-- ============ CALCULATOR ============ -->
   <section class="view" id="calcView">
     <div class="seg">
-      <button id="modeAnalyze">📋 Analyze a bid</button>
-      <button id="modeCost" class="active">🧮 Build from cost</button>
+      <button id="modeAnalyze"><svg class="ic"><use href="#i-clipboard"/></svg>Analyze a bid</button>
+      <button id="modeCost" class="active"><svg class="ic"><use href="#i-calc"/></svg>Build from cost</button>
     </div>
     <div class="modehint" id="modeHint">You have your <b>costs</b>. Enter what the job costs you below. I'll add your markup and show the price, break-even &amp; profit at the bottom.</div>
 
@@ -433,23 +514,23 @@
     </div>
 
     <div class="card" id="photosCard">
-      <h2>📷 Job photos</h2>
+      <h2>Job photos</h2>
       <p class="sub">Attach site photos to this job. They're saved with it in your archive for reference later.</p>
       <div id="photoGrid" class="photogrid"></div>
       <div class="btns">
-        <label class="btn primary wide" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📷 Add photos
+        <label class="btn primary wide" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><svg class="ic"><use href="#i-camera"/></svg>Add photos
           <input id="photoInput" type="file" accept="image/*" multiple hidden onchange="addPhotoFiles(this.files); this.value='';">
         </label>
       </div>
     </div>
 
     <div class="card" id="voiceCard">
-      <h2>🎤 Describe the job</h2>
+      <h2>Describe the job</h2>
       <p class="sub">Talk it out, e.g. "two bathrooms, demo and retile, 120 square feet, materials about eighteen hundred, two guys three days at 65 an hour." It fills in cost lines for you to review. Nothing is invented; anything unclear is flagged.</p>
       <div class="btns">
-        <button class="btn primary wide" id="micBtn">🎤 Start talking</button>
+        <button class="btn primary wide" id="micBtn"><svg class="ic"><use href="#i-mic"/></svg>Start talking</button>
       </div>
-      <textarea id="transcript" placeholder="…or type / paste the job description here" style="display:none;width:100%;min-height:88px;margin-top:10px;box-sizing:border-box;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--card2,#141a22);color:var(--ink);font-size:15px;line-height:1.4"></textarea>
+      <textarea id="transcript" placeholder="…or type / paste the job description here" style="display:none;width:100%;min-height:88px;margin-top:10px;box-sizing:border-box;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--field);color:var(--ink);font-size:15px;line-height:1.4"></textarea>
       <div class="btns" id="voiceSubmitRow" style="display:none;margin-top:10px">
         <button class="btn primary wide" id="structureBtn">Turn into line items →</button>
       </div>
@@ -457,7 +538,7 @@
     </div>
 
     <div class="card" id="importCard">
-      <h2>📄 Import a PDF or photo</h2>
+      <h2>Import a PDF or photo</h2>
       <p class="sub">Drop a PDF, scan, or phone photo (PNG/JPG) of an estimate. Scans &amp; images use OCR, so always eyeball the numbers.</p>
       <div id="drop" class="drop">
         <svg class="drop-ico" viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 9 12 4 17 9"></polyline><line x1="12" y1="4" x2="12" y2="16"></line></svg>
@@ -521,7 +602,7 @@
     </div>
 
     <div class="card result">
-      <h2 style="margin:0 0 4px">💰 Your price &amp; profit</h2>
+      <h2 style="margin:0 0 4px">Your price &amp; profit</h2>
       <p class="sub" style="margin:0 0 12px">Auto-calculated from everything above. Adjust the margin, then <b>Save</b> to keep this job.</p>
       <div class="marg-head">
         <span class="t" id="marginTitle">Markup on cost</span><span class="tip" id="tipMargin" tabindex="0" role="button" aria-label="What is this?" data-tip="Your markup: the % added on top of your true cost to set the price.">i</span>
@@ -544,15 +625,15 @@
         <div class="stat"><div class="l">Net profit<span class="tip" id="tipNet" tabindex="0" role="button" aria-label="What is this?" data-tip="What you keep after your overhead % is covered. Green = profit, red = losing money.">i</span></div><div class="v" id="netProfit">$0</div><div class="s2">after overhead</div></div>
       </div>
       <div class="testprice">
-        <span class="lbl" style="display:block;margin-bottom:5px">🧪 Test a different price: check its margin vs break-even</span>
+        <span class="lbl" style="display:block;margin-bottom:5px">Test a different price: check its margin vs break-even</span>
         <input id="proposed" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 9500" />
         <div id="quoteFlags"></div>
       </div>
       <div id="flagWarn"></div>
       <div class="btns">
-        <button class="btn primary" id="saveArch">💾 Save</button>
-        <button class="btn" id="dlCurrent">⬇ Summary PDF</button>
-        <button class="btn wide" id="openProposal">📄 Create client proposal</button>
+        <button class="btn primary" id="saveArch"><svg class="ic"><use href="#i-bookmark"/></svg>Save</button>
+        <button class="btn" id="dlCurrent"><svg class="ic"><use href="#i-download"/></svg>Summary PDF</button>
+        <button class="btn wide" id="openProposal"><svg class="ic"><use href="#i-file"/></svg>Create client proposal</button>
       </div>
       <div class="savednote" id="savedNote"></div>
     </div>
@@ -564,19 +645,19 @@
   <!-- ============ ARCHIVE ============ -->
   <section class="view" id="archiveView">
     <div class="card" style="padding-bottom:8px">
-      <h2>📚 Saved estimates <span class="muted" id="archCount" style="font-weight:400"></span></h2>
+      <h2>Saved estimates <span class="muted" id="archCount" style="font-weight:400"></span></h2>
       <input id="archSearch" placeholder="Search by job name…" style="margin:6px 0 12px" />
       <div class="arch-tools">
-        <button class="btn" id="dlLast">⬇ Last session PDF</button>
-        <button class="btn" id="exportArch">⬆ Backup</button>
-        <button class="btn" id="importArch">⬇ Restore</button>
+        <button class="btn" id="dlLast"><svg class="ic"><use href="#i-download"/></svg>Last session PDF</button>
+        <button class="btn" id="exportArch"><svg class="ic"><use href="#i-download"/></svg>Backup</button>
+        <button class="btn" id="importArch"><svg class="ic"><use href="#i-rotate"/></svg>Restore</button>
         <button class="btn ghost" id="clearArch">Clear all</button>
         <input id="importArchInput" type="file" accept="application/json,.json" hidden>
       </div>
     </div>
-    <div class="card"><h2>📊 Your history</h2><div id="historyBox"></div></div>
+    <div class="card"><h2>Your history</h2><div id="historyBox"></div></div>
     <div id="archiveList"></div>
-    <p class="muted" style="font-size:12px">History keeps your newest 30 jobs; older ones roll off automatically. Tap <b>📌 Keep</b> on any job to pin it and keep it forever. Estimates live on this device; use <b>Backup</b> to export a file you can restore on another device.</p>
+    <p class="muted" style="font-size:12px">History keeps your newest 30 jobs; older ones roll off automatically. Tap <b>Keep</b> on any job to save it forever. Estimates live on this device; use <b>Backup</b> to export a file you can restore on another device.</p>
   </section>
 
   <!-- ============ SETTINGS ============ -->
@@ -637,10 +718,10 @@
       </div>
       <div class="field"><span class="lbl">Terms</span><textarea id="termsText"></textarea></div>
       <div id="sigStatus" class="bench" style="margin-top:0"></div>
-      <div class="btns"><button class="btn wide" id="openSign">✍️ Client signs here</button></div>
+      <div class="btns"><button class="btn wide" id="openSign"><svg class="ic"><use href="#i-pencil"/></svg>Client signs here</button></div>
       <div class="btns">
-        <button class="btn primary" id="shareProposal">📤 Send proposal</button>
-        <button class="btn" id="genProposal">🖨 Preview / print</button>
+        <button class="btn primary" id="shareProposal"><svg class="ic"><use href="#i-share"/></svg>Send proposal</button>
+        <button class="btn" id="genProposal"><svg class="ic"><use href="#i-printer"/></svg>Preview / print</button>
       </div>
       <p class="muted" style="font-size:11.5px;margin-top:8px"><b>Send</b> opens your phone's share sheet with the proposal attached. <b>Preview</b> opens a print-ready page (Share → Print → Save as PDF). Your cost &amp; margin never appear on it.</p>
     </div>
@@ -673,10 +754,10 @@
 </div>
 
 <nav class="nav">
-  <button id="navDash" class="active"><span class="ic">📊</span>Dashboard</button>
-  <button id="navCalc"><span class="ic">🧮</span>Estimate</button>
-  <button id="navArchive"><span class="ic">📚</span>Archive</button>
-  <button id="navSettings"><span class="ic">⚙️</span>Settings</button>
+  <button id="navDash" class="active"><svg class="ic"><use href="#i-dashboard"/></svg>Dashboard</button>
+  <button id="navCalc"><svg class="ic"><use href="#i-ruler"/></svg>Estimate</button>
+  <button id="navArchive"><svg class="ic"><use href="#i-folder"/></svg>Archive</button>
+  <button id="navSettings"><svg class="ic"><use href="#i-settings"/></svg>Settings</button>
 </nav>
 
 <div class="toast" id="toast"></div>
@@ -688,6 +769,16 @@ const fmt2 = n => "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimu
 const $ = id => document.getElementById(id);
 function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
+function ic(n,cls){ return '<svg class="ic'+(cls?' '+cls:'')+'" aria-hidden="true"><use href="#i-'+n+'"/></svg>'; }
+/* Theme: dark by default, light optional, remembered on the device */
+function applyTheme(t){ if(t==="light") document.documentElement.setAttribute("data-theme","light"); else document.documentElement.removeAttribute("data-theme");
+  const tg=$("themeToggle"); if(tg) tg.innerHTML='<svg class="ic"><use href="#i-'+(t==="light"?"moon":"sun")+'"/></svg>';
+  const mt=document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute("content", t==="light"?"#f6f2e9":"#0f1311"); }
+function currentTheme(){ return document.documentElement.getAttribute("data-theme")==="light"?"light":"dark"; }
+function initTheme(){ let t="dark"; try{ t=localStorage.getItem("ea_theme")||"dark"; }catch(e){} applyTheme(t); }
+function toggleTheme(){ const next=currentTheme()==="light"?"dark":"light"; try{ localStorage.setItem("ea_theme",next); }catch(e){} applyTheme(next); }
+initTheme();
+if($("themeToggle")) $("themeToggle").addEventListener("click", toggleTheme);
 
 /* PWA manifest + icons are static files: /manifest.json and /icons/*.png (linked in <head>). */
 
@@ -760,7 +851,7 @@ let _rec=null, _recActive=false, _finalT="";
 function initVoiceUI(){
   const mic=$("micBtn"), sub=$("structureBtn");
   if(!mic) return;
-  if(!SR) mic.textContent="⌨️ Type the job description";
+  if(!SR) mic.innerHTML=ic("keyboard")+" Type the job description";
   mic.addEventListener("click", ()=>{
     if(!SR){ $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("transcript").focus(); return; }
     if(_recActive){ stopRec(); } else { startRec(); }
@@ -774,12 +865,12 @@ function startRec(){
     _finalT=($("transcript").value||"");
     $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Listening… tap Stop when done.";
     _rec.onresult=e=>{ let interim=""; for(let i=e.resultIndex;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal) _finalT+=t+" "; else interim+=t; } $("transcript").value=(_finalT+interim).replace(/\s+/g," ").trim(); };
-    _rec.onend=()=>{ _recActive=false; $("micBtn").textContent="🎤 Start talking"; if($("voiceMsg").textContent==="Listening… tap Stop when done.") $("voiceMsg").textContent=""; };
-    _rec.onerror=ev=>{ _recActive=false; $("micBtn").textContent="🎤 Start talking"; $("voiceMsg").textContent = ev && ev.error==="not-allowed" ? "Mic blocked. You can type the description instead." : ""; $("transcript").style.display=""; };
-    _rec.start(); _recActive=true; $("micBtn").textContent="⏹ Stop";
+    _rec.onend=()=>{ _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; if($("voiceMsg").textContent==="Listening… tap Stop when done.") $("voiceMsg").textContent=""; };
+    _rec.onerror=ev=>{ _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; $("voiceMsg").textContent = ev && ev.error==="not-allowed" ? "Mic blocked. You can type the description instead." : ""; $("transcript").style.display=""; };
+    _rec.start(); _recActive=true; $("micBtn").innerHTML=ic("stop")+" Stop";
   }catch(e){ _recActive=false; $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Couldn't start the mic. Type it instead."; }
 }
-function stopRec(){ if(_rec){ try{_rec.stop();}catch(e){} } _recActive=false; $("micBtn").textContent="🎤 Start talking"; }
+function stopRec(){ if(_rec){ try{_rec.stop();}catch(e){} } _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; }
 function voiceLine(l){
   let cat = VOICE_CATS.indexOf(l.category)>=0 ? l.category : categorize((l.description||"")+" "+(l.category||""));
   if(VOICE_CATS.indexOf(cat)<0) cat="Materials";
@@ -908,7 +999,7 @@ function quoteCheck(trueCost, be, oh, rec){
       if(p < trueCost) flags.push(["bad","<b>Below cost.</b> Doesn't cover your job cost of <b>"+fmt(trueCost)+"</b>. You'd lose <b>"+fmt(trueCost-p)+"</b>."]);
       else if(p < be) flags.push(["bad","<b>Below break-even "+fmt(be)+".</b> Margin "+mm.toFixed(0)+"%, covers direct cost but not overhead. Net loss <b>"+fmt(-net)+"</b>."]);
       else if(mm < targetMargin-5) flags.push(["warn","Margin <b>"+mm.toFixed(0)+"%</b>: profitable (net "+fmt(net)+") but below your "+targetMargin.toFixed(0)+"% target."]);
-      else if(mm <= targetMargin+8) flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b>: on your "+targetMargin.toFixed(0)+"% target. Net <b>"+fmt(net)+"</b>. 👍"]);
+      else if(mm <= targetMargin+8) flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b>: on your "+targetMargin.toFixed(0)+"% target. Net <b>"+fmt(net)+"</b>."]);
       else flags.push(["good","Margin <b>"+mm.toFixed(0)+"%</b>: above your "+targetMargin.toFixed(0)+"% target (net "+fmt(net)+")."]);
     }
   }
@@ -1123,8 +1214,8 @@ function stateSig(s){ s=s||getState(); return JSON.stringify({m:s.mode,j:s.jobNa
 function hasContent(){ const s=getState(); return !!(s.jobName&&s.jobName.trim()) || (s.rows||[]).some(r=>(+r.qty||0)*(+r.unit||0)>0); }
 function updateSaveStatus(){ const el=$("savedNote"); if(!el) return;
   if(!hasContent()){ el.textContent=""; el.className="savednote"; return; }
-  if(_savedSig===null){ el.innerHTML="● <b>Not saved to your jobs yet.</b> Tap 💾 Save to keep it. (Your work is auto-held on this device so you won't lose it if you leave.)"; el.className="savednote unsaved"; }
-  else if(_savedSig!==stateSig()){ el.innerHTML="● <b>Unsaved changes</b> since your last save. Tap 💾 Save."; el.className="savednote unsaved"; }
+  if(_savedSig===null){ el.innerHTML="<b>Not saved to your jobs yet.</b> Tap Save to keep it. (Your work is auto-held on this device so you won't lose it if you leave.)"; el.className="savednote unsaved"; }
+  else if(_savedSig!==stateSig()){ el.innerHTML="<b>Unsaved changes</b> since your last save. Tap Save."; el.className="savednote unsaved"; }
   else { el.innerHTML="✓ Saved to your jobs."; el.className="savednote saved"; }
 }
 // Rolling history: keep every pinned job plus the newest 30 unpinned; older unpinned roll off.
@@ -1143,7 +1234,7 @@ let ARCH_Q="";
 function renderArchive(){
   const all=getArchive(), list=$("archiveList"); $("archCount").textContent="("+all.length+")";
   const a=ARCH_Q ? all.filter(e=>((e.state.jobName||"")+"").toLowerCase().includes(ARCH_Q)) : all;
-  if(!all.length){ list.innerHTML='<div class="arch-empty">No saved estimates yet. On the Calculator, tap <b>💾 Save</b> to log one.</div>'; return; }
+  if(!all.length){ list.innerHTML='<div class="arch-empty">No saved estimates yet. On the estimate screen, tap <b>Save</b> to log one.</div>'; return; }
   if(!a.length){ list.innerHTML='<div class="arch-empty">No estimates match “'+esc(ARCH_Q)+'”.</div>'; return; }
   list.innerHTML="";
   a.forEach(e=>{
@@ -1154,14 +1245,24 @@ function renderArchive(){
     const nums=r.mode==="cost"
       ? "Price <b>"+fmt(r.price)+"</b> · cost "+fmt(r.trueCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net)
       : "Bid <b>"+fmt(r.price)+"</b> · break-even "+fmt(r.breakeven!=null?r.breakeven:r.impliedCost)+" · "+r.marginPct.toFixed(0)+"% margin · net "+fmt(r.net);
-    const signedTag=(s.proposal&&s.proposal.signature)?'<span class="tag">✍ signed</span>':'';
+    const signedTag=(s.proposal&&s.proposal.signature)?'<span class="tag">signed</span>':'';
     const ocls={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome]||"oc-pend";
     const acLabel=m.actualCost!=null?("actual "+fmt(m.actualCost)):"+ actual $";
     const nphoto=(s.photos&&s.photos.length)||0;
-    const meta=when+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"")+(nphoto?" · 📷 "+nphoto:"");
+    const meta=when+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"")+(nphoto?" · "+nphoto+" photo"+(nphoto>1?"s":""):"");
     const div=document.createElement("div"); div.className="arch-entry"+(e.pinned?" pinned":"");
-    div.innerHTML='<div class="arch-meta">'+meta+'</div><div class="arch-title">'+(e.pinned?'📌 ':'')+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
-      '<div class="arch-row"><button class="oc '+ocls+'" data-a="oc">'+m.outcome+'</button><button data-a="ac">'+acLabel+'</button><button class="'+(e.pinned?"pin-on":"")+'" data-a="pin">'+(e.pinned?"📌 Kept":"📌 Keep")+'</button><button data-a="load">Load</button><button data-a="dup">Duplicate</button><button data-a="rename">Rename</button><button data-a="dl">⬇</button><button class="del" data-a="del">Delete</button></div>';
+    const ocIcon={pending:"circle",won:"check-circle",lost:"x-circle"}[m.outcome]||"circle";
+    div.innerHTML='<div class="arch-meta">'+meta+'</div><div class="arch-title">'+(e.pinned?ic("star","starfill")+' ':'')+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
+      '<div class="arch-row">'+
+      '<button class="oc '+ocls+'" data-a="oc">'+ic(ocIcon)+m.outcome+'</button>'+
+      '<button data-a="ac">'+ic("dollar")+acLabel+'</button>'+
+      '<button class="'+(e.pinned?"pin-on":"")+'" data-a="pin">'+ic("star",e.pinned?"fill":"")+(e.pinned?"Kept":"Keep")+'</button>'+
+      '<button data-a="load">'+ic("folder-open")+'Load</button>'+
+      '<button data-a="dup">'+ic("copy")+'Duplicate</button>'+
+      '<button data-a="rename">'+ic("pencil")+'Rename</button>'+
+      '<button data-a="dl" aria-label="Download summary PDF">'+ic("download")+'</button>'+
+      '<button class="del" data-a="del">'+ic("trash")+'Delete</button>'+
+      '</div>';
     function persistMeta(){ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.trade=m.trade; t.size=m.size; t.outcome=m.outcome; t.actualCost=m.actualCost; setArchive(arr); } }
     div.querySelector('[data-a=oc]').onclick=()=>{ m.outcome=m.outcome==="pending"?"won":(m.outcome==="won"?"lost":"pending"); persistMeta(); renderArchive(); renderHistory(); };
     div.querySelector('[data-a=ac]').onclick=()=>{ const v=prompt("Actual final cost for this job ($):", m.actualCost!=null?m.actualCost:""); if(v==null) return; const n=parseFloat(v); m.actualCost=(v.trim()===""?null:(isFinite(n)?n:null)); persistMeta(); renderArchive(); renderHistory(); };
@@ -1218,7 +1319,7 @@ function renderSimilar(){
   if(!cur.trade || !cur.size || !(cur.size.n>0)){ card.style.display="none"; return; }
   const ms=getArchive().filter(e=>{ const m=entryMeta(e); if(m.trade!==cur.trade || !m.size || m.size.unit!==cur.size.unit) return false; const ratio=m.size.n/cur.size.n; return ratio>=0.6 && ratio<=1.4; }).slice(0,3);
   if(!ms.length){ card.style.display="none"; return; }
-  let html='<details><summary>📁 '+ms.length+' past job'+(ms.length>1?'s':'')+' like this</summary><div class="simlist">';
+  let html='<details><summary>'+ms.length+' past job'+(ms.length>1?'s':'')+' like this</summary><div class="simlist">';
   ms.forEach(e=>{ const m=entryMeta(e), r=e.results||compute(e.state), oc={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome];
     html+='<div class="simrow" data-id="'+esc(e.id)+'"><div><b>'+esc(e.state.jobName||"Estimate")+'</b><div class="arch-meta">'+new Date(e.state.ts).toLocaleDateString()+(m.size?" · "+m.size.n+" "+m.size.unit:"")+'</div></div><div style="text-align:right">'+fmt(r.price)+'<div class="arch-meta">'+r.marginPct.toFixed(0)+'% · <span class="oc '+oc+'" style="padding:1px 7px">'+m.outcome+'</span></div></div></div>';
   });
@@ -1487,7 +1588,7 @@ function buildProposal(s, inp){
   const terms=inp.terms?("<h2>Terms</h2><p class=t>"+esc(inp.terms).replace(/\n/g,"<br>")+"</p>"):"";
   return "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Proposal, "+esc(p.name||"")+"</title>"+
     "<style>body{font:14px Arial,Helvetica,sans-serif;color:#1a2330;max-width:760px;margin:24px auto;padding:0 22px}.m{color:#667;font-size:12px;margin-top:2px}h1{font-size:15px;letter-spacing:2px;color:#9a4a11;margin:22px 0 4px}h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:#9a4a11;margin:20px 0 6px}p{margin:6px 0}.t{white-space:normal;color:#333}.top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a2330;padding-bottom:12px}.meta{text-align:right;font-size:12px;color:#667}table{width:100%;border-collapse:collapse;margin:6px 0}td{border-bottom:1px solid #e2e6ea;padding:8px;font-size:13.5px}.r{text-align:right;white-space:nowrap}.tot{display:flex;justify-content:space-between;font-size:18px;font-weight:800;border-top:2px solid #1a2330;padding-top:10px;margin-top:6px}.pay{background:#f5f7f9;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13.5px}.sig{display:flex;gap:40px;margin-top:34px}.sig div{flex:1;border-top:1px solid #99a;padding-top:6px;font-size:12px;color:#667}.print{position:fixed;top:10px;right:10px}@media print{.print{display:none}body{margin:0}}</style></head><body>"+
-    "<button class=print onclick='window.print()' style='padding:8px 14px;font-size:13px'>🖨 Print / Save PDF</button>"+
+    "<button class=print onclick='window.print()' style='padding:8px 14px;font-size:13px'>Print / Save PDF</button>"+
     "<div class=top><div>"+head+"</div><div class=meta>PROPOSAL<br>"+new Date().toLocaleDateString()+"<br>#"+String(s.ts||Date.now()).slice(-6)+"</div></div>"+
     "<h1>PROPOSAL</h1>"+
     "<h2>Prepared for</h2><p><b>"+esc(inp.client||"Client")+"</b>"+(inp.clientAddr?"<br>"+esc(inp.clientAddr):"")+"</p>"+
@@ -1527,7 +1628,7 @@ async function shareProposal(){
   openProposalWindow(html); // fallback: print pipeline
 }
 $("shareProposal").addEventListener("click",shareProposal);
-function updateSigStatus(){ $("sigStatus").innerHTML = SIGNATURE ? ("✍️ <b>Signed on device</b> "+esc(new Date(SIGNED_AT).toLocaleString())+", appears on the proposal.") : ""; }
+function updateSigStatus(){ $("sigStatus").innerHTML = SIGNATURE ? ("<b>Signed on device</b> "+esc(new Date(SIGNED_AT).toLocaleString())+", appears on the proposal.") : ""; }
 function openSignature(){
   const c=$("sigCanvas"); $("sigOverlay").style.display="flex";
   const r=c.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
@@ -1637,7 +1738,7 @@ function renderDashboard(){
   ];
   $("dashKpis").innerHTML=kpis.map(k=>'<div class="kpi"><div class="k-l">'+k[0]+'</div><div class="k-v">'+k[1]+'</div><div class="k-s">'+k[2]+'</div></div>').join("");
   const box=$("dashProjects");
-  if(!n){ box.innerHTML='<div class="dash-empty">No projects yet. Tap <b>＋ New estimate</b> to price a job, then <b>💾 Save</b> it and it shows up here.</div>'; return; }
+  if(!n){ box.innerHTML='<div class="dash-empty">No projects yet. Tap <b>New estimate</b> to price a job, then <b>Save</b> it and it shows up here.</div>'; return; }
   box.innerHTML="";
   arr.slice(0,12).forEach(e=>{
     const s=e.state, r=e.results||compute(s), m=entryMeta(e);
@@ -1647,7 +1748,7 @@ function renderDashboard(){
     const mp=Math.max(0,Math.min(100,(r.marginPct||0)));
     const meta=[(s.clientType||""),when].filter(Boolean).join(" · ")+(m.trade?" · "+m.trade:"");
     const div=document.createElement("button"); div.className="proj"; div.type="button";
-    div.innerHTML='<div class="proj-top"><span class="proj-name">'+(e.pinned?"📌 ":"")+esc(name)+'</span><span class="oc '+ocls+'">'+m.outcome+'</span></div>'+
+    div.innerHTML='<div class="proj-top"><span class="proj-name">'+(e.pinned?ic("star","starfill")+" ":"")+esc(name)+'</span><span class="oc '+ocls+'">'+ic(ocls==="oc-won"?"check-circle":ocls==="oc-lost"?"x-circle":"circle")+m.outcome+'</span></div>'+
       '<div class="proj-meta">'+esc(meta)+'</div>'+
       '<div class="proj-figs"><span class="proj-price">'+fmt(r.price)+'</span><span class="proj-marg">'+r.marginPct.toFixed(0)+'% margin · net '+fmt(r.net)+'</span></div>'+
       '<div class="proj-bar"><i style="width:'+mp.toFixed(0)+'%"></i></div>';
@@ -1726,8 +1827,8 @@ async function maybeInstallHint(){
     if(standalone||dismissed||v<3) return;
     const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
     $("installHintText").innerHTML = ios
-      ? "📲 <b>Add to your Home Screen</b> so it opens like an app and your saved estimates stay safe: tap the <b>Share</b> button, then <b>Add to Home Screen</b>."
-      : "📲 <b>Install this app</b> so it opens full-screen and your saved estimates stay safe. Tap Install, or use your browser menu, <b>Install app</b>.";
+      ? "<b>Add to your Home Screen</b> so it opens like an app and your saved estimates stay safe: tap the <b>Share</b> button, then <b>Add to Home Screen</b>."
+      : "<b>Install this app</b> so it opens full-screen and your saved estimates stay safe. Tap Install, or use your browser menu, <b>Install app</b>.";
     $("installNow").style.display=(!ios && _deferredPrompt)?"":"none";
     $("installHint").style.display="";
   }catch(e){}
