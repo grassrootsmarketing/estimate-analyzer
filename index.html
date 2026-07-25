@@ -394,6 +394,97 @@
   .arch-tools{gap:8px}
   .arch-tools .btn{white-space:nowrap;min-width:auto}
   /* Line-item delete stays the intended 44x44 icon button (unaffected by the rules above) */
+
+  /* ================= JOB TRACKING + BENTO DASHBOARD ================= */
+  /* shared spend bar (green under 85%, amber to 100%, red over) */
+  .jbar{display:block;height:8px;border-radius:8px;background:var(--panel2);overflow:hidden;margin-top:14px}
+  .jbar i{display:block;height:100%;border-radius:8px;background:var(--good)}
+  .jbar.warn i{background:var(--warn)}
+  .jbar.bad i{background:var(--bad)}
+  /* job page */
+  .jback{background:transparent;border:none;color:var(--accent2);font-size:14px;font-weight:500;cursor:pointer;padding:0;margin:0 0 10px;display:inline-flex;align-items:center;gap:2px}
+  .jback .ic{width:17px;height:17px}
+  .jhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 14px;flex-wrap:wrap}
+  .jtitle{font-size:20px;font-weight:500;color:var(--ink);line-height:1.2}
+  .jsub{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .jstage{display:flex;gap:6px;flex:0 0 auto;align-items:center;flex-wrap:wrap}
+  .stpill{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:20px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:36px;transition:border-color .16s ease,background .16s ease,color .16s ease,transform .12s ease}
+  .stpill:hover{border-color:var(--accent2);color:var(--ink)}
+  .stpill:active{transform:scale(.96)}
+  .stpill.on{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
+  .stpill.done{background:var(--panel2);border-color:var(--line);color:var(--muted)}
+  .stpill .ic{width:14px;height:14px}
+  .jcard{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 1px 2px var(--shadowsoft)}
+  .jbudget-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+  .jb-l .l,.jb-r .l,.jstat .l{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .jb-l .v{font-size:30px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:3px}
+  .jb-r{text-align:right}
+  .jb-r .v{font-size:16px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:6px}
+  .jcap{font-size:12px;color:var(--muted);margin-top:8px}
+  .jdiv{border-top:1px solid var(--line);margin:14px 0 12px}
+  .jduo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .jstat .v{font-size:19px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:3px}
+  .jsecthead{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 10px}
+  .jsecthead .t{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:500}
+  .addcost{background:var(--accent);color:var(--primink);border:none;border-radius:20px;padding:9px 15px;font-weight:500;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:38px;transition:filter .16s ease,transform .12s ease}
+  .addcost:hover{filter:brightness(1.06)}
+  .addcost:active{transform:scale(.96)}
+  .addcost .ic{width:15px;height:15px}
+  .costform{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:12px}
+  .costform .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .cgroup{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:2px 14px;margin-bottom:10px}
+  .cgroup-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;font-weight:500;font-size:13.5px;color:var(--ink)}
+  .cgroup-h .hl{display:inline-flex;align-items:center;gap:8px;min-width:0}
+  .cgroup-h .hl .ic{width:16px;height:16px;color:var(--accent2)}
+  .cgroup-h .a{font-variant-numeric:tabular-nums}
+  .crow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px;cursor:pointer;transition:background .16s ease}
+  .crow:hover{background:rgba(127,127,127,.05)}
+  .crow .n{color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow .m{color:var(--muted);font-size:11.5px}
+  .crow .a{font-variant-numeric:tabular-nums;color:var(--ink);flex:0 0 auto}
+  .jempty{background:var(--panel);border:1px dashed var(--line);border-radius:15px;padding:28px 18px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5}
+  /* bento dashboard */
+  .bgreet{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 14px}
+  .bdate{font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .bhi{font-size:22px;font-weight:500;letter-spacing:-.2px;color:var(--ink);margin-top:3px}
+  .bnew{background:var(--accent);color:var(--primink);border:none;border-radius:14px;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;transition:filter .16s ease,transform .12s ease}
+  .bnew:hover{filter:brightness(1.06)}
+  .bnew:active{transform:scale(.94)}
+  .bnew .ic{width:20px;height:20px}
+  .bcard{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 1px 2px var(--shadowsoft)}
+  .bgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .blabel{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  .bbig{font-size:28px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:3px}
+  .bbars{display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:14px}
+  .bbars i{flex:1;max-width:52px;border-radius:6px 6px 3px 3px;background:var(--accent2);opacity:.3;min-height:3px;transition:opacity .16s ease}
+  .bbars i.hot{opacity:1}
+  .ringwrap{position:relative;width:96px;height:96px;margin:8px auto 2px}
+  .ringwrap svg{width:96px;height:96px;display:block}
+  .ringtxt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+  .bsub{font-size:11.5px;color:var(--muted);text-align:center;margin-top:8px}
+  .bmargin .bbig{color:var(--accent2)}
+  .mdist{display:flex;align-items:flex-end;gap:6px;height:34px;margin-top:12px}
+  .mdist i{flex:1;background:var(--panel2);border-radius:4px;min-height:3px}
+  .mdist i.f{background:var(--accent2);opacity:.75}
+  .mlbl{display:flex;gap:6px;margin-top:5px}
+  .mlbl span{flex:1;text-align:center;font-size:9.5px;color:var(--muted)}
+  .bsect{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:500;margin:16px 2px 8px;display:flex;justify-content:space-between;align-items:center}
+  .iprow{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;color:var(--ink);transition:transform .13s ease,border-color .16s ease,box-shadow .16s ease}
+  .iprow:hover{transform:translateY(-1px);border-color:var(--accent2);box-shadow:0 4px 14px var(--shadowsoft)}
+  .iprow:active{transform:none}
+  .iprow .t{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px;font-weight:500}
+  .iprow .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .iprow .fig{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .iprow .jbar{height:5px;margin-top:9px}
+  .brrow{display:flex;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;justify-content:space-between;align-items:center;gap:10px;color:var(--ink);transition:transform .13s ease,border-color .16s ease,box-shadow .16s ease}
+  .brrow:hover{transform:translateY(-1px);border-color:var(--accent2);box-shadow:0 4px 14px var(--shadowsoft)}
+  .brrow:active{transform:none}
+  .brrow .bl{min-width:0}
+  .brrow .nm{display:block;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brrow .mt{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+  .brrow .br{text-align:right;flex:0 0 auto}
+  .brrow .pr{display:block;font-size:15px;font-weight:500;color:var(--accent2);font-variant-numeric:tabular-nums}
+  @media(min-width:900px){ #dashBody,#jobBody{max-width:680px;margin:0 auto} }
 </style>
 </head>
 <body>
@@ -430,6 +521,14 @@
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-package" viewBox="0 0 24 24"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
+  <symbol id="i-trending-up" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
 </defs></svg>
 
 <header>
@@ -453,16 +552,7 @@
 
   <!-- ============ DASHBOARD (home) ============ -->
   <section class="view on" id="dashView">
-    <div class="dash-hero">
-      <div class="h-l">
-        <div class="dash-title">Dashboard</div>
-        <div class="dash-sub">Your jobs at a glance</div>
-      </div>
-      <button class="btn primary" id="dashNew"><svg class="ic"><use href="#i-plus"/></svg>New estimate</button>
-    </div>
-    <div class="kpis" id="dashKpis"></div>
-    <div class="dash-secttl"><span>Recent projects</span><span class="link" id="dashAll" style="font-size:11px">View all</span></div>
-    <div class="projgrid" id="dashProjects"></div>
+    <div id="dashBody"></div>
   </section>
 
   <!-- ============ CALCULATOR ============ -->
@@ -658,6 +748,11 @@
     <div class="card"><h2>Your history</h2><div id="historyBox"></div></div>
     <div id="archiveList"></div>
     <p class="muted" style="font-size:12px">History keeps your newest 30 jobs; older ones roll off automatically. Tap <b>Keep</b> on any job to save it forever. Estimates live on this device; use <b>Backup</b> to export a file you can restore on another device.</p>
+  </section>
+
+  <!-- ============ JOB (dashboard sub-view: status + cost log) ============ -->
+  <section class="view" id="jobView">
+    <div id="jobBody"></div>
   </section>
 
   <!-- ============ SETTINGS ============ -->
@@ -1189,9 +1284,15 @@ function deriveMeta(s){
   return {trade, size};
 }
 function entryMeta(e){ const d=deriveMeta(e.state||{}); return { trade:e.trade||d.trade||"", size:e.size||d.size||null, outcome:e.outcome||"pending", actualCost:(e.actualCost!=null?e.actualCost:null) }; }
-function newEntry(st){ const m=deriveMeta(st); return {id:"e"+st.ts, state:st, results:compute(st), trade:m.trade, size:m.size, outcome:"pending", actualCost:null}; }
+function newEntry(st){ const m=deriveMeta(st); return {id:"e"+st.ts, state:st, results:compute(st), trade:m.trade, size:m.size, outcome:"pending", actualCost:null, stage:"", costs:[]}; }
 function median(a){ if(!a.length) return 0; const s=a.slice().sort((x,y)=>x-y), n=s.length, m=Math.floor(n/2); return n%2?s[m]:(s[m-1]+s[m])/2; }
 function entryPrice(e){ return (e.results&&e.results.price)||compute(e.state).price||0; }
+/* ---- job tracking: stage + cost log (P5) ---- */
+const COST_CATS=[["Materials","package"],["Labor","users"],["Subcontractor","tool"],["Equipment/rental","bolt"],["Permits/fees","receipt"],["Other","receipt"]];
+function jobBudget(e){ const r=e.results||compute(e.state)||{}; if(r.mode==="cost") return r.trueCost||0; return r.breakeven!=null?r.breakeven:(r.impliedCost||0); }
+function jobSpent(e){ return (e.costs||[]).reduce((a,c)=>a+((c&&isFinite(+c.amount))?+c.amount:0),0); }
+function jobProfitToDate(e){ return entryPrice(e)-jobSpent(e); }
+function barTone(pct){ return pct>100?"bad":(pct>85?"warn":"good"); }
 // personal benchmark: >=3 WON jobs, same trade & unit → real min/median/max $ per unit
 function personalBench(trade, unit){
   if(!trade||!unit) return null; const pts=[];
@@ -1257,6 +1358,7 @@ function renderArchive(){
       '<button class="oc '+ocls+'" data-a="oc">'+ic(ocIcon)+m.outcome+'</button>'+
       '<button data-a="ac">'+ic("dollar")+acLabel+'</button>'+
       '<button class="'+(e.pinned?"pin-on":"")+'" data-a="pin">'+ic("star",e.pinned?"fill":"")+(e.pinned?"Kept":"Keep")+'</button>'+
+      '<button data-a="open">'+ic("clipboard")+'Open</button>'+
       '<button data-a="load">'+ic("folder-open")+'Load</button>'+
       '<button data-a="dup">'+ic("copy")+'Duplicate</button>'+
       '<button data-a="rename">'+ic("pencil")+'Rename</button>'+
@@ -1267,6 +1369,7 @@ function renderArchive(){
     div.querySelector('[data-a=oc]').onclick=()=>{ m.outcome=m.outcome==="pending"?"won":(m.outcome==="won"?"lost":"pending"); persistMeta(); renderArchive(); renderHistory(); };
     div.querySelector('[data-a=ac]').onclick=()=>{ const v=prompt("Actual final cost for this job ($):", m.actualCost!=null?m.actualCost:""); if(v==null) return; const n=parseFloat(v); m.actualCost=(v.trim()===""?null:(isFinite(n)?n:null)); persistMeta(); renderArchive(); renderHistory(); };
     div.querySelector('[data-a=pin]').onclick=()=>{ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.pinned=!t.pinned; e.pinned=t.pinned; setArchive(arr); renderArchive(); toast(t.pinned?"Pinned. Kept forever, exempt from the rolling history.":"Unpinned. Back in the rolling 30."); } };
+    div.querySelector('[data-a=open]').onclick=()=>openJob(e.id);
     div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded into calculator"); maybeOutcomePrompt(e); };
     div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; let arr=getArchive(); arr.unshift(newEntry(st)); arr=pruneArchive(arr); setArchive(arr); renderArchive(); toast("Duplicated"); };
     div.querySelector('[data-a=rename]').onclick=()=>{ const nn=prompt("Rename estimate:", s.jobName||""); if(nn==null) return; const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.state.jobName=nn; setArchive(arr); renderArchive(); } };
@@ -1674,6 +1777,12 @@ function sanitizeRows(arr){ return Array.isArray(arr) ? arr.map(r=>({ item:Strin
 function sanitizeEntry(e){
   if(!e || typeof e!=="object" || !e.state || typeof e.state!=="object") return null;
   e.pinned=!!e.pinned;
+  e.stage=(e.stage==="active"||e.stage==="complete")?e.stage:"";
+  const okCat={}; COST_CATS.forEach(c=>{ okCat[c[0]]=1; });
+  e.costs=Array.isArray(e.costs)
+    ? e.costs.filter(c=>c&&typeof c==="object"&&okCat[c.cat]&&isFinite(+c.amount)&&+c.amount>=0)
+        .map((c,i)=>({id:String(c.id||("c"+i)), ts:+c.ts||0, cat:c.cat, note:String(c.note==null?"":c.note), amount:+c.amount}))
+    : [];
   const s=e.state;
   s.photos = sanitizePhotos(s.photos);
   if(s.rows) s.rows = sanitizeRows(s.rows);
@@ -1702,8 +1811,8 @@ $("importArchInput").addEventListener("change",e=>{
 
 /* ---------------- NAV / VIEWS ---------------- */
 function showView(name){
-  ["dash","calc","archive","settings","proposal"].forEach(v=>{ const el=$(v+"View"); if(el) el.classList.toggle("on", v===name); });
-  $("navDash").classList.toggle("active", name==="dash");
+  ["dash","calc","archive","settings","proposal","job"].forEach(v=>{ const el=$(v+"View"); if(el) el.classList.toggle("on", v===name); });
+  $("navDash").classList.toggle("active", name==="dash"||name==="job");
   $("navCalc").classList.toggle("active", name==="calc"||name==="proposal");
   $("navArchive").classList.toggle("active", name==="archive");
   $("navSettings").classList.toggle("active", name==="settings");
@@ -1717,44 +1826,148 @@ $("navDash").addEventListener("click",()=>showView("dash"));
 $("navCalc").addEventListener("click",()=>showView("calc"));
 $("navArchive").addEventListener("click",()=>showView("archive"));
 $("navSettings").addEventListener("click",()=>showView("settings"));
-$("dashNew").addEventListener("click",()=>showView("calc"));
-$("dashAll").addEventListener("click",()=>showView("archive"));
 
-/* Dashboard home: KPIs + recent projects, computed from the archive */
+/* Dashboard home: artful bento overview, hand-drawn SVG/CSS charts, computed from the archive */
 function renderDashboard(){
-  const arr=getArchive();
-  const n=arr.length;
-  const pipeline=arr.reduce((a,e)=>a+((e.results&&e.results.price)||0),0);
-  const margs=arr.map(e=>e.results&&e.results.marginPct).filter(v=>typeof v==="number"&&isFinite(v));
-  const avgM=margs.length?margs.reduce((a,b)=>a+b,0)/margs.length:null;
+  const box=$("dashBody"); if(!box) return;
+  const arr=getArchive(), n=arr.length;
+  const now=new Date(), hour=now.getHours();
+  const greet=hour<12?"Good morning":(hour<17?"Good afternoon":"Good evening");
+  const dateLine=now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  let html='<div class="bgreet"><div><div class="bdate">'+esc(dateLine)+'</div><div class="bhi">'+greet+', David</div></div>'+
+    '<button type="button" class="bnew" id="dashNew" aria-label="New estimate">'+ic("plus")+'</button></div>';
+  if(!n){
+    html+='<div class="dash-empty">No jobs yet. Tap <b>+</b> to price your first job, then <b>Save</b> it and your dashboard comes to life.</div>';
+    box.innerHTML=html; $("dashNew").onclick=()=>showView("calc"); return;
+  }
+  /* hero: pipeline total + bar chart of the last ~8 job prices (most recent highlighted) */
+  const pipeline=arr.reduce((a,e)=>a+entryPrice(e),0);
+  const last=arr.slice(0,8).reverse();
+  const maxP=Math.max.apply(null,last.map(entryPrice).concat([1]));
+  const bars=last.map((e,i)=>'<i class="'+(i===last.length-1?"hot":"")+'" style="height:'+Math.max(4,Math.round(entryPrice(e)/maxP*100))+'%"></i>').join("");
+  html+='<div class="bcard"><div class="blabel">Pipeline</div><div class="bbig">'+fmt(pipeline)+'</div><div class="bbars">'+bars+'</div></div>';
+  /* bento row: win-rate ring + avg-margin tile with distribution */
   const decided=arr.filter(e=>{ const o=entryMeta(e).outcome; return o==="won"||o==="lost"; });
   const won=decided.filter(e=>entryMeta(e).outcome==="won").length;
   const winRate=decided.length?Math.round(won/decided.length*100):null;
-  const kpis=[
-    ["Projects", String(n), n===1?"saved estimate":"saved estimates"],
-    ["Pipeline", fmt(pipeline), "total of saved bids"],
-    ["Avg margin", avgM!=null?avgM.toFixed(0)+"%":"–", "across all jobs"],
-    ["Win rate", winRate!=null?winRate+"%":"–", decided.length?won+" of "+decided.length+" decided":"mark jobs won/lost"]
-  ];
-  $("dashKpis").innerHTML=kpis.map(k=>'<div class="kpi"><div class="k-l">'+k[0]+'</div><div class="k-v">'+k[1]+'</div><div class="k-s">'+k[2]+'</div></div>').join("");
-  const box=$("dashProjects");
-  if(!n){ box.innerHTML='<div class="dash-empty">No projects yet. Tap <b>New estimate</b> to price a job, then <b>Save</b> it and it shows up here.</div>'; return; }
-  box.innerHTML="";
-  arr.slice(0,12).forEach(e=>{
-    const s=e.state, r=e.results||compute(s), m=entryMeta(e);
-    const name=(s.jobName&&s.jobName.trim())||"Untitled estimate";
+  const off=(226.2*(1-(winRate||0)/100)).toFixed(1);
+  const margs=arr.map(e=>e.results&&e.results.marginPct).filter(v=>typeof v==="number"&&isFinite(v));
+  const avgM=margs.length?margs.reduce((a,b)=>a+b,0)/margs.length:null;
+  const bands=[[0,20],[20,35],[35,1e9]].map(b=>margs.filter(v=>v>=b[0]&&v<b[1]).length);
+  const maxB=Math.max.apply(null,bands.concat([1]));
+  html+='<div class="bgrid">'+
+    '<div class="bcard"><div class="blabel">Win rate</div><div class="ringwrap"><svg viewBox="0 0 96 96" aria-hidden="true">'+
+      '<circle cx="48" cy="48" r="36" fill="none" stroke="var(--panel2)" stroke-width="10"/>'+
+      (winRate!=null?'<circle cx="48" cy="48" r="36" fill="none" stroke="var(--accent2)" stroke-width="10" stroke-linecap="round" stroke-dasharray="226.2" stroke-dashoffset="'+off+'" transform="rotate(-90 48 48)"/>':'')+
+      '</svg><div class="ringtxt">'+(winRate!=null?winRate+"%":"–")+'</div></div>'+
+      '<div class="bsub">'+(decided.length?won+" of "+decided.length+" won":"mark jobs won or lost")+'</div></div>'+
+    '<div class="bcard bmargin"><div class="blabel">Avg margin</div><div class="bbig">'+(avgM!=null?avgM.toFixed(0)+"%":"–")+'</div>'+
+      '<div class="mdist">'+bands.map(c=>'<i class="'+(c?"f":"")+'" style="height:'+(c?Math.max(12,Math.round(c/maxB*100)):0)+'%"></i>').join("")+'</div>'+
+      '<div class="mlbl"><span>under 20</span><span>20–35</span><span>over 35</span></div></div>'+
+    '</div>';
+  /* in-progress jobs: spend vs budget */
+  const act=arr.filter(e=>e.stage==="active");
+  if(act.length){
+    html+='<div class="bsect"><span>In progress</span></div>';
+    act.forEach(e=>{
+      const s=e.state, nm=(s.jobName&&s.jobName.trim())||"Untitled job";
+      const b=jobBudget(e), sp=jobSpent(e), pct=b>0?sp/b*100:0;
+      html+='<button type="button" class="iprow" data-job="'+esc(e.id)+'"><span class="t"><span class="nm">'+esc(nm)+'</span><span class="fig">'+fmt(sp)+' / '+fmt(b)+'</span></span>'+
+        '<span class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></span></button>';
+    });
+  }
+  /* recent jobs */
+  html+='<div class="bsect"><span>Recent</span><span class="link" id="dashAll" style="font-size:11px">View all</span></div>';
+  arr.slice(0,5).forEach(e=>{
+    const s=e.state, r=e.results||compute(s);
+    const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
-    const ocls={pending:"oc-pend",won:"oc-won",lost:"oc-lost"}[m.outcome]||"oc-pend";
-    const mp=Math.max(0,Math.min(100,(r.marginPct||0)));
-    const meta=[(s.clientType||""),when].filter(Boolean).join(" · ")+(m.trade?" · "+m.trade:"");
-    const div=document.createElement("button"); div.className="proj"; div.type="button";
-    div.innerHTML='<div class="proj-top"><span class="proj-name">'+(e.pinned?ic("star","starfill")+" ":"")+esc(name)+'</span><span class="oc '+ocls+'">'+ic(ocls==="oc-won"?"check-circle":ocls==="oc-lost"?"x-circle":"circle")+m.outcome+'</span></div>'+
-      '<div class="proj-meta">'+esc(meta)+'</div>'+
-      '<div class="proj-figs"><span class="proj-price">'+fmt(r.price)+'</span><span class="proj-marg">'+r.marginPct.toFixed(0)+'% margin · net '+fmt(r.net)+'</span></div>'+
-      '<div class="proj-bar"><i style="width:'+mp.toFixed(0)+'%"></i></div>';
-    div.onclick=()=>{ applyState(s); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded into calculator"); maybeOutcomePrompt(e); };
-    box.appendChild(div);
+    const meta=[(s.clientType||""),when].filter(Boolean).join(" · ");
+    html+='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nm">'+esc(nm)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
+      '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
   });
+  box.innerHTML=html;
+  $("dashNew").onclick=()=>showView("calc");
+  const va=$("dashAll"); if(va) va.onclick=()=>showView("archive");
+  box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job); });
+}
+
+/* ---------------- JOB PAGE (status + cost log) ---------------- */
+let CUR_JOB=null, _costFormOpen=false;
+function jobById(id){ return getArchive().find(x=>x&&x.id===id)||null; }
+function openJob(id){ const e=jobById(id); if(!e){ toast("Job not found"); return; } CUR_JOB=id; _costFormOpen=false; renderJob(); showView("job"); }
+function setStage(st){
+  const arr=getArchive(), t=arr.find(x=>x.id===CUR_JOB); if(!t) return;
+  t.stage=st; setArchive(arr); renderJob();
+  toast(st==="complete"?"Marked complete":"Marked in progress");
+}
+function renderJob(){
+  const box=$("jobBody"); if(!box) return;
+  const e=jobById(CUR_JOB); if(!e){ box.innerHTML=""; showView("dash"); return; }
+  if(!Array.isArray(e.costs)) e.costs=[];
+  const s=e.state;
+  const nm=(s.jobName&&s.jobName.trim())||"Untitled job";
+  const started=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+  const sub=[(s.clientType||""),"started "+started].filter(Boolean).join(" · ");
+  const budget=jobBudget(e), spent=jobSpent(e), rem=budget-spent, pct=budget>0?spent/budget*100:0;
+  const profit=jobProfitToDate(e), stage=e.stage||"";
+  const stHtml= stage==="complete"
+    ? '<button type="button" class="stpill done" id="jobStDone">'+ic("check")+'Complete</button><button type="button" class="stpill" id="jobStAct">Reopen</button>'
+    : '<button type="button" class="stpill'+(stage==="active"?" on":"")+'" id="jobStAct">'+(stage==="active"?ic("circle"):"")+'In progress</button><button type="button" class="stpill" id="jobStDone">'+ic("check")+'Complete</button>';
+  let html='<button type="button" class="jback" id="jobBack">'+ic("chevron-left")+'Jobs</button>'+
+    '<div class="jhead"><div style="min-width:0"><div class="jtitle">'+esc(nm)+'</div><div class="jsub">'+esc(sub)+'</div></div><div class="jstage">'+stHtml+'</div></div>';
+  /* budget hero */
+  const capRem= rem>=0 ? fmt(rem)+" remaining" : fmt(Math.abs(rem))+" over budget";
+  html+='<div class="jcard"><div class="jbudget-top"><div class="jb-l"><div class="l">Spent</div><div class="v">'+fmt(spent)+'</div></div>'+
+    '<div class="jb-r"><div class="l">Budget</div><div class="v">'+fmt(budget)+'</div></div></div>'+
+    '<div class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></div>'+
+    '<div class="jcap">'+pct.toFixed(0)+'% of budget used · '+capRem+'</div>'+
+    '<div class="jdiv"></div>'+
+    '<div class="jduo"><div class="jstat"><div class="l">Bid price</div><div class="v">'+fmt(entryPrice(e))+'</div></div>'+
+    '<div class="jstat"><div class="l">Profit to date</div><div class="v" style="color:var(--'+(profit>=0?"good":"bad")+')">'+fmt(profit)+'</div></div></div></div>';
+  /* cost log */
+  html+='<div class="jsecthead"><span class="t">Cost log</span><button type="button" class="addcost" id="addCostBtn">'+ic("plus")+'Add cost</button></div>';
+  html+='<div class="costform" id="costForm" style="display:'+(_costFormOpen?"":"none")+'">'+
+    '<div class="row2"><select id="costCat">'+COST_CATS.map(c=>'<option>'+esc(c[0])+'</option>').join("")+'</select>'+
+    '<input id="costAmt" type="number" inputmode="decimal" step="any" min="0" placeholder="Amount $"></div>'+
+    '<input id="costNote" placeholder="Note (optional)">'+
+    '<div class="btns" style="margin-top:10px"><button class="btn primary wide" id="costAdd">'+ic("plus")+'Add</button></div></div>';
+  if(!e.costs.length){
+    html+='<div class="jempty">No costs logged yet. Tap <b>Add cost</b> as you buy materials, pay labor, or pull permits, and this page tracks spend against your '+fmt(budget)+' budget.</div>';
+  } else {
+    COST_CATS.forEach(c=>{
+      const items=e.costs.filter(x=>x.cat===c[0]); if(!items.length) return;
+      const catSub=items.reduce((a,x)=>a+(+x.amount||0),0);
+      html+='<div class="cgroup"><div class="cgroup-h"><span class="hl">'+ic(c[1])+esc(c[0])+'</span><span class="a">'+fmt(catSub)+'</span></div>';
+      items.forEach(x=>{
+        const d=new Date(+x.ts||0).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+        html+='<div class="crow" data-cost="'+esc(x.id)+'" title="Tap to delete"><span class="n">'+esc(x.note||c[0])+' <span class="m">· '+d+'</span></span><span class="a">'+fmt(+x.amount||0)+'</span></div>';
+      });
+      html+='</div>';
+    });
+  }
+  html+='<div class="btns"><button class="btn wide" id="jobEdit">'+ic("pencil")+'Edit estimate</button></div>';
+  box.innerHTML=html;
+  $("jobBack").onclick=()=>showView("dash");
+  $("jobEdit").onclick=()=>{ applyState(s); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded into calculator"); };
+  const stAct=$("jobStAct"), stDone=$("jobStDone");
+  if(stAct) stAct.onclick=()=>setStage("active");
+  if(stDone) stDone.onclick=()=>{ if(stage!=="complete") setStage("complete"); };
+  $("addCostBtn").onclick=()=>{ _costFormOpen=!_costFormOpen; $("costForm").style.display=_costFormOpen?"":"none"; if(_costFormOpen) $("costAmt").focus(); };
+  $("costAdd").onclick=()=>{
+    const cat=$("costCat").value, amt=parseFloat($("costAmt").value), note=$("costNote").value.trim();
+    if(!isFinite(amt)||amt<0){ toast("Enter a valid amount"); return; }
+    const arr=getArchive(), t=arr.find(x=>x.id===CUR_JOB); if(!t) return;
+    if(!Array.isArray(t.costs)) t.costs=[];
+    t.costs.push({id:"c"+Date.now(), ts:Date.now(), cat:cat, note:note, amount:amt});
+    setArchive(arr); _costFormOpen=true; renderJob(); toast("Cost added");
+  };
+  box.querySelectorAll("[data-cost]").forEach(el=>{ el.onclick=()=>{
+    if(!confirm("Delete this cost entry?")) return;
+    const arr=getArchive(), t=arr.find(x=>x.id===CUR_JOB); if(!t) return;
+    t.costs=(t.costs||[]).filter(x=>x.id!==el.dataset.cost);
+    setArchive(arr); renderJob();
+  }; });
 }
 
 /* ---------------- APPLY STATE / AUTOSAVE / INIT ---------------- */
