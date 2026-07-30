@@ -14,6 +14,9 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
 <title>Estimate Analyzer, LA Contractor Pricing</title>
 <style>
+  /* Vendored display face (OFL): Space Grotesk, served same-origin, cached by the SW */
+  @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:500;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-500-normal.woff2") format("woff2")}
+  @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:700;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-700-normal.woff2") format("woff2")}
   :root{
     --bg:#0f1419; --panel:#171e26; --panel2:#1d2731; --line:#2a3744;
     --ink:#ffffff; --muted:#eef2f6; --accent:#ff8c42; --accent2:#ffb072;
@@ -592,9 +595,14 @@
   @media(max-width:379px){ .nav button{font-size:10px} .jstrip{gap:7px} .jtile{padding:10px 10px} .jtile .v{font-size:16px} }
 
   /* ================= TEN-ROUND POLISH PASS ================= */
-  /* R1: numeric type signature (SF Rounded on Apple devices, graceful elsewhere) */
-  :root{--numfont:ui-rounded,-apple-system,"SF Pro Rounded","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  .recbox .v,.bbig,.jb-l .v,.jtile .v,.ringtxt,.fold-num,.jstat .v,.kpi .k-v,.proj-price,.brrow .pr,.marg-head .big,.stat .v{font-family:var(--numfont);letter-spacing:-.4px}
+  /* Type system: Space Grotesk carries the brand voice (titles + money), system UI carries the reading text */
+  :root{--dfont:"Space Grotesk",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--numfont:var(--dfont)}
+  .recbox .v,.bbig,.jb-l .v,.jtile .v,.ringtxt,.fold-num,.jstat .v,.kpi .k-v,.proj-price,.brrow .pr,.marg-head .big,.stat .v,#margVal,.sc .p,.litem-cost b,.totline.big,.pipopen .fig,.iprow .fig,.drow .amt,.payline{font-family:var(--numfont);letter-spacing:-.3px;font-weight:500}
+  header .ttl,.titlein,.th-head,.bhi,.jtitle,.sightitle{font-family:var(--dfont)}
+  header .ttl{font-weight:700;letter-spacing:-.2px}
+  .bhi,.th-head,.jtitle{font-weight:700;letter-spacing:-.4px}
+  .recbox .v{font-weight:700}
+  .bbig,.jb-l .v{font-weight:700}
   /* R3: the price is the payoff: soft green gradient ink + a pulse when it changes */
   #recPrice{display:inline-block;background:linear-gradient(97deg,var(--accent2) 20%,var(--goodink) 95%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   #recPrice.pop{animation:pricepop .38s cubic-bezier(.2,.8,.3,1.2)}
@@ -614,6 +622,28 @@
   /* R9: primary controls get a machined sheen; keyboard focus is always visible */
   .btn.primary,.addcost,.micorb,.bnew,.minibtn.gold{background-image:linear-gradient(180deg,rgba(255,255,255,.10),rgba(0,0,0,.05))}
   button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+  /* Hover layer: the app answers the cursor everywhere (desktop only) */
+  .fold,.jtile,.kpi,.arch-entry{transition:border-color .16s ease,transform .13s ease,box-shadow .16s ease}
+  @media (hover:hover){
+    .fold:hover{border-color:var(--goodbd)}
+    .fold>summary:hover>span:first-child{color:var(--ink)}
+    .jtile:hover,.kpi:hover{transform:translateY(-2px);border-color:var(--accent2);box-shadow:0 8px 22px var(--shadow)}
+    .arch-entry:hover{border-color:var(--accent2)}
+    .titlein:hover{background:var(--panel)}
+    input:hover:not(:focus),select:hover,textarea:hover:not(:focus){border-color:var(--goodbd)}
+    .hicon:hover .ic{transform:rotate(22deg)}
+    .hicon .ic{transition:transform .25s ease}
+    .trow:hover{background:rgba(127,127,127,.05)}
+    .brrow:hover .nm,.iprow:hover .nm{color:var(--accent2)}
+    .homebtn:hover .logo{transform:rotate(-8deg)}
+    .homebtn .logo{transition:transform .2s ease}
+  }
+  .link{text-decoration:none;background-image:linear-gradient(currentColor,currentColor);background-size:0% 1px;background-position:0 100%;background-repeat:no-repeat;transition:background-size .22s ease}
+  .link:hover{background-size:100% 1px}
+  .fold>summary::after{content:"";width:13px;height:13px;flex:0 0 auto;background:currentColor;opacity:.65;transition:transform .2s ease;
+    -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>') center/contain no-repeat;
+    mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>') center/contain no-repeat}
+  .fold[open]>summary::after{transform:rotate(180deg)}
   /* R10: motion: views breathe in, toasts spring */
   .view.on{animation:viewin .2s cubic-bezier(.2,.7,.3,1)}
   @keyframes viewin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
