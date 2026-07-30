@@ -141,6 +141,27 @@
   /* Each mode shows only its own input path: Build talks costs in (voice), Analyze takes a finished bid in (upload). */
   #calcView:not(.mode-analyze) #importCard{display:none}
   #calcView.mode-analyze #voiceCard{display:none}
+  /* ===== Estimate screen hierarchy: title, then the hero input, then the work ===== */
+  .titlerow{order:-2;margin:2px 0 10px}
+  .titlein{background:transparent;border:none;outline:none;box-shadow:none;width:100%;font-size:24px;font-weight:500;letter-spacing:-.3px;color:var(--ink);padding:6px 2px;min-height:auto;border-radius:10px}
+  .titlein::placeholder{color:var(--muted);opacity:.55}
+  .titlein:focus{background:var(--panel);border:none;box-shadow:none;padding:6px 10px}
+  .talkhero{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 18px 20px;margin-bottom:14px;text-align:center;box-shadow:0 1px 2px var(--shadowsoft)}
+  .th-kicker{font-size:10.5px;text-transform:uppercase;letter-spacing:1.4px;color:var(--accent2);font-weight:500}
+  .th-head{font-size:21px;font-weight:500;letter-spacing:-.2px;color:var(--ink);margin-top:5px}
+  .th-sub{font-size:12.5px;color:var(--muted);margin:8px auto 16px;max-width:400px;line-height:1.55}
+  .micorb{background:var(--accent);color:var(--primink);border:none;border-radius:46px;min-width:86px;height:86px;padding:0 26px;display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;font-weight:500;font-size:14px;font-family:inherit;box-shadow:0 8px 26px var(--shadowsoft);transition:transform .14s ease,filter .16s ease}
+  .micorb .ic{width:32px;height:32px}
+  .micorb:hover{filter:brightness(1.05);transform:translateY(-2px)}
+  .micorb:active{transform:scale(.94)}
+  .th-alt{margin-top:14px;font-size:12.5px;color:var(--muted)}
+  /* folded admin: rates, client, photos stay one tap away, not in the way */
+  .fold{background:var(--panel);border:1px solid var(--line);border-radius:16px;margin-bottom:12px;box-shadow:0 1px 2px var(--shadowsoft)}
+  .fold>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent2);font-weight:500}
+  .fold>summary::-webkit-details-marker{display:none}
+  .fold-hint{font-size:11px;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fold[open]>summary .fold-hint{display:none}
+  .fold .foldbody{padding:2px 16px 16px}
   #calcView.mode-analyze #drop{border-color:var(--accent);background:rgba(255,140,66,.11)}
   /* Desktop: two columns, inputs left, price/summary pinned on the right so they stay visible while you edit. */
   @media(min-width:900px){
@@ -656,58 +677,16 @@
     </div>
 
     <div class="col col-main">
-    <div class="card">
-      <h2>Job details</h2>
-      <div class="field"><span class="lbl">Job name</span><input id="jobName" placeholder="e.g. Marisol Ave unit turnover" /></div>
-      <div class="field"><span class="lbl">Client type</span>
-        <select id="clientType">
-          <option>Individual homeowner</option>
-          <option>Apartment / property management</option>
-          <option>Small commercial</option>
-        </select>
-      </div>
-      <div class="field"><span class="lbl">Contact name</span><input id="contactName" placeholder="e.g. Marisol Reyes" /></div>
-      <div class="row g2">
-        <div><span class="lbl">Phone</span><input id="contactPhone" type="tel" inputmode="tel" placeholder="(323) 555-0134" /></div>
-        <div><span class="lbl">Email</span><input id="contactEmail" type="email" inputmode="email" autocapitalize="off" placeholder="name@email.com" /></div>
-      </div>
-      <div class="row g2">
-        <div><span class="lbl">Benchmark check</span><select id="benchCat"></select></div>
-        <div><span class="lbl" id="qtyLbl">Project size</span>
-          <select id="benchQty">
-            <option value="">Select size…</option>
-            <option value="1000">1,000+</option>
-            <option value="5000">5,000+</option>
-            <option value="10000">10,000+</option>
-            <option value="15000">15,000+</option>
-            <option value="25000">25,000+</option>
-            <option value="50000">50,000+</option>
-            <option value="100000">100,000+</option>
-          </select>
-        </div>
-      </div>
-      <input id="benchRange" style="display:none" disabled />
-      <div class="bench" id="benchNote"></div>
-    </div>
 
-    <div class="card" id="photosCard">
-      <h2>Job photos</h2>
-      <p class="sub">Attach site photos to this job. They're saved with it in your archive for reference later.</p>
-      <div id="photoGrid" class="photogrid"></div>
-      <div class="btns">
-        <label class="btn primary wide" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><svg class="ic"><use href="#i-camera"/></svg>Add photos
-          <input id="photoInput" type="file" accept="image/*" multiple hidden onchange="addPhotoFiles(this.files); this.value='';">
-        </label>
-      </div>
-    </div>
+    <div class="titlerow"><input id="jobName" class="titlein" placeholder="Name this job" aria-label="Job name" /></div>
 
-    <div class="card" id="voiceCard">
-      <h2>Describe the job</h2>
-      <p class="sub">Talk it out, e.g. "two bathrooms, demo and retile, 120 square feet, materials about eighteen hundred, two guys three days at 65 an hour." It fills in cost lines for you to review. Nothing is invented; anything unclear is flagged.</p>
-      <div class="btns">
-        <button class="btn primary wide" id="micBtn"><svg class="ic"><use href="#i-mic"/></svg>Start talking</button>
-      </div>
-      <textarea id="transcript" placeholder="…or type / paste the job description here" style="display:none;width:100%;min-height:88px;margin-top:10px;box-sizing:border-box;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--field);color:var(--ink);font-size:15px;line-height:1.4"></textarea>
+    <div class="talkhero" id="voiceCard">
+      <div class="th-kicker">The fast way</div>
+      <div class="th-head">Talk out the job</div>
+      <p class="th-sub">Ramble it like you'd tell your foreman: "two bathrooms, demo and retile, 120 square feet, materials about eighteen hundred, two guys three days at 65 an hour." It becomes cost lines you can tweak. Nothing gets invented; anything unclear is flagged.</p>
+      <button class="micorb" id="micBtn" aria-label="Start talking"><svg class="ic"><use href="#i-mic"/></svg></button>
+      <div class="th-alt"><span class="link" id="typeInstead">or type it out instead</span></div>
+      <textarea id="transcript" placeholder="Type or paste the job description here…" style="display:none;width:100%;min-height:88px;margin-top:12px;box-sizing:border-box;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--field);color:var(--ink);font-size:15px;line-height:1.4;text-align:left"></textarea>
       <div class="btns" id="voiceSubmitRow" style="display:none;margin-top:10px">
         <button class="btn primary wide" id="structureBtn">Turn into line items →</button>
       </div>
@@ -715,8 +694,8 @@
     </div>
 
     <div class="card" id="importCard">
-      <h2>Import a PDF or photo</h2>
-      <p class="sub">Drop a PDF, scan, or phone photo (PNG/JPG) of an estimate. Scans &amp; images use OCR, so always eyeball the numbers.</p>
+      <h2>Drop in the bid</h2>
+      <p class="sub">A PDF, scan, or phone photo of the estimate. Scans &amp; images use OCR, so always eyeball the numbers.</p>
       <div id="drop" class="drop">
         <svg class="drop-ico" viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 9 12 4 17 9"></polyline><line x1="12" y1="4" x2="12" y2="16"></line></svg>
         <div class="drop-main"><b>Tap to upload a PDF or photo</b></div>
@@ -755,14 +734,63 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>Rates</h2>
-      <div class="row g3">
-        <div><span class="lbl">Contingency %</span><input id="contingency" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
-        <div><span class="lbl">Overhead %</span><input id="overhead" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
-        <div><span class="lbl">Mat. tax %</span><input id="tax" type="number" inputmode="decimal" value="0" min="0" step="0.1" /></div>
+    <details class="fold">
+      <summary><span>Rates</span><span class="fold-hint">contingency · overhead · material tax</span></summary>
+      <div class="foldbody">
+        <div class="row g3">
+          <div><span class="lbl">Contingency %</span><input id="contingency" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
+          <div><span class="lbl">Overhead %</span><input id="overhead" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
+          <div><span class="lbl">Mat. tax %</span><input id="tax" type="number" inputmode="decimal" value="0" min="0" step="0.1" /></div>
+        </div>
       </div>
-    </div>
+    </details>
+
+    <details class="fold">
+      <summary><span>Client &amp; benchmark</span><span class="fold-hint">who it's for, market check</span></summary>
+      <div class="foldbody">
+        <div class="field"><span class="lbl">Client type</span>
+          <select id="clientType">
+            <option>Individual homeowner</option>
+            <option>Apartment / property management</option>
+            <option>Small commercial</option>
+          </select>
+        </div>
+        <div class="field"><span class="lbl">Contact name</span><input id="contactName" placeholder="e.g. Marisol Reyes" /></div>
+        <div class="row g2 field">
+          <div><span class="lbl">Phone</span><input id="contactPhone" type="tel" inputmode="tel" placeholder="(323) 555-0134" /></div>
+          <div><span class="lbl">Email</span><input id="contactEmail" type="email" inputmode="email" autocapitalize="off" placeholder="name@email.com" /></div>
+        </div>
+        <div class="row g2">
+          <div><span class="lbl">Benchmark check</span><select id="benchCat"></select></div>
+          <div><span class="lbl" id="qtyLbl">Project size</span>
+            <select id="benchQty">
+              <option value="">Select size…</option>
+              <option value="1000">1,000+</option>
+              <option value="5000">5,000+</option>
+              <option value="10000">10,000+</option>
+              <option value="15000">15,000+</option>
+              <option value="25000">25,000+</option>
+              <option value="50000">50,000+</option>
+              <option value="100000">100,000+</option>
+            </select>
+          </div>
+        </div>
+        <input id="benchRange" style="display:none" disabled />
+        <div class="bench" id="benchNote"></div>
+      </div>
+    </details>
+
+    <details class="fold" id="photosCard">
+      <summary><span>Job photos</span><span class="fold-hint">saved with the job</span></summary>
+      <div class="foldbody">
+        <div id="photoGrid" class="photogrid"></div>
+        <div class="btns" style="margin-top:0">
+          <label class="btn primary wide" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><svg class="ic"><use href="#i-camera"/></svg>Add photos
+            <input id="photoInput" type="file" accept="image/*" multiple hidden onchange="addPhotoFiles(this.files); this.value='';">
+          </label>
+        </div>
+      </div>
+    </details>
     </div><!-- /col-main -->
 
     <div class="col col-side">
@@ -2111,6 +2139,7 @@ $("navJobs").addEventListener("click",()=>showView("jobs"));
 $("navArchive").addEventListener("click",()=>showView("archive"));
 $("navSettings").addEventListener("click",()=>showView("settings"));
 $("homeBtn").addEventListener("click",()=>showView("dash"));
+if($("typeInstead")) $("typeInstead").addEventListener("click",()=>{ $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("transcript").focus(); });
 
 /* Dashboard home: artful bento overview, hand-drawn SVG/CSS charts, computed from the archive */
 function renderDashboard(){
