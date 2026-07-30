@@ -162,6 +162,10 @@
   .fold-hint{font-size:11px;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .fold[open]>summary .fold-hint{display:none}
   .fold .foldbody{padding:2px 16px 16px}
+  .fold-num{font-size:13.5px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0}
+  .addsel .iconbtn{flex:0 0 auto;width:44px;height:44px;align-self:center}
+  .micorb.rec{background:var(--bad);color:#fff;animation:orbpulse 1.5s ease-out infinite}
+  @keyframes orbpulse{0%{box-shadow:0 0 0 0 rgba(240,131,107,.45)}70%{box-shadow:0 0 0 18px rgba(240,131,107,0)}100%{box-shadow:0 0 0 0 rgba(240,131,107,0)}}
   #calcView.mode-analyze #drop{border-color:var(--accent);background:rgba(255,140,66,.11)}
   /* Desktop: two columns, inputs left, price/summary pinned on the right so they stay visible while you edit. */
   @media(min-width:900px){
@@ -706,13 +710,9 @@
       <div id="importMsg" class="bench"></div>
     </div>
 
-    <div class="card">
-      <div class="cardhead">
-        <h2 id="costsTitle">Job costs</h2>
-        <button class="iconbtn trash" id="clearRows" onclick="clearAllRows()" aria-label="Clear all line items" title="Clear all line items">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-        </button>
-      </div>
+    <details class="fold" id="costsFold" open>
+      <summary><span id="costsTitle">Job costs</span><span class="fold-num" id="costsFoldTotal">$0</span></summary>
+      <div class="foldbody">
       <p class="sub" id="costsSub">Enter what the job actually costs you. Markup is added on top.</p>
       <div id="rows"></div>
       <datalist id="catlist">
@@ -731,8 +731,12 @@
           <option value="Dump / disposal">Dump / disposal</option>
           <option value="Owner labor">Owner labor</option>
         </select>
+        <button class="iconbtn trash" id="clearRows" onclick="clearAllRows()" aria-label="Clear all line items" title="Clear all line items">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </button>
       </div>
-    </div>
+      </div>
+    </details>
 
     <details class="fold">
       <summary><span>Rates</span><span class="fold-hint">contingency · overhead · material tax</span></summary>
@@ -1080,12 +1084,12 @@ function startRec(){
     _finalT=($("transcript").value||"");
     $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Listening… tap Stop when done.";
     _rec.onresult=e=>{ let interim=""; for(let i=e.resultIndex;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal) _finalT+=t+" "; else interim+=t; } $("transcript").value=(_finalT+interim).replace(/\s+/g," ").trim(); };
-    _rec.onend=()=>{ _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; if($("voiceMsg").textContent==="Listening… tap Stop when done.") $("voiceMsg").textContent=""; };
-    _rec.onerror=ev=>{ _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; $("voiceMsg").textContent = ev && ev.error==="not-allowed" ? "Mic blocked. You can type the description instead." : ""; $("transcript").style.display=""; };
-    _rec.start(); _recActive=true; $("micBtn").innerHTML=ic("stop")+" Stop";
+    _rec.onend=()=>{ _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; $("micBtn").classList.remove("rec"); if($("voiceMsg").textContent==="Listening… tap Stop when done.") $("voiceMsg").textContent=""; };
+    _rec.onerror=ev=>{ _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; $("micBtn").classList.remove("rec"); $("voiceMsg").textContent = ev && ev.error==="not-allowed" ? "Mic blocked. You can type the description instead." : ""; $("transcript").style.display=""; };
+    _rec.start(); _recActive=true; $("micBtn").innerHTML=ic("stop")+" Stop"; $("micBtn").classList.add("rec");
   }catch(e){ _recActive=false; $("transcript").style.display=""; $("voiceSubmitRow").style.display=""; $("voiceMsg").textContent="Couldn't start the mic. Type it instead."; }
 }
-function stopRec(){ if(_rec){ try{_rec.stop();}catch(e){} } _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; }
+function stopRec(){ if(_rec){ try{_rec.stop();}catch(e){} } _recActive=false; $("micBtn").innerHTML=ic("mic")+" Start talking"; $("micBtn").classList.remove("rec"); }
 function voiceLine(l){
   let cat = VOICE_CATS.indexOf(l.category)>=0 ? l.category : categorize((l.description||"")+" "+(l.category||""));
   if(VOICE_CATS.indexOf(cat)<0) cat="Materials";
@@ -1162,6 +1166,7 @@ function setMode(mode){
 function calc(){ const s=getState(); const r=compute(s); paintResults(s, r); }
 // paintResults does ALL result-card DOM writes. It must never touch the #rows container (keeps input focus).
 function paintResults(s, r){
+  const cf=$("costsFoldTotal"); if(cf) cf.textContent=fmt(r.direct||0);   // live total on the collapsed Job costs header
   $("margVal").textContent=Math.round((parseFloat(s.margin)||0))+"%";
   setActive((parseFloat(s.margin)||0)/100);
   $("p25").textContent=fmt(r.sc25); $("p35").textContent=fmt(r.sc35); $("p45").textContent=fmt(r.sc45);
