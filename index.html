@@ -60,11 +60,13 @@
   .marg-head .big{font-size:22px;font-weight:800;color:var(--accent2)}
   .slider{-webkit-appearance:none;appearance:none;width:100%;margin:6px 0 2px;height:34px;background:transparent;cursor:pointer}
   .slider:focus{outline:none}
-  .slider::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:#e9e2cf}
-  .slider::-moz-range-track{height:6px;border-radius:6px;background:#e9e2cf}
-  .slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:transparent;border:3.5px solid #1b6b3a;margin-top:-9px;transition:transform .1s ease}
-  .slider::-webkit-slider-thumb:active{transform:scale(1.12)}
-  .slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:transparent;border:3.5px solid #1b6b3a}
+  /* margin slider: green progress fill, solid gold thumb (matches the orb + CTAs, both themes) */
+  .slider::-webkit-slider-runnable-track{height:7px;border-radius:7px;background:linear-gradient(90deg,var(--accent2) 0%,var(--accent2) var(--sp,40%),var(--panel2) var(--sp,40%))}
+  .slider::-moz-range-track{height:7px;border-radius:7px;background:var(--panel2)}
+  .slider::-moz-range-progress{height:7px;border-radius:7px;background:var(--accent2)}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--accent);border:none;box-shadow:0 2px 8px var(--shadowsoft),0 0 0 1px var(--line);margin-top:-8.5px;transition:transform .1s ease}
+  .slider::-webkit-slider-thumb:active{transform:scale(1.15)}
+  .slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--accent);border:none;box-shadow:0 2px 8px var(--shadowsoft),0 0 0 1px var(--line)}
   .scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0}
   .sc{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
   .sc.active{border-color:var(--accent)}
@@ -1167,6 +1169,8 @@ function calc(){ const s=getState(); const r=compute(s); paintResults(s, r); }
 // paintResults does ALL result-card DOM writes. It must never touch the #rows container (keeps input focus).
 function paintResults(s, r){
   const cf=$("costsFoldTotal"); if(cf) cf.textContent=fmt(r.direct||0);   // live total on the collapsed Job costs header
+  const sl=$("margin"); if(sl){ const lo=parseFloat(sl.min)||0, hi=parseFloat(sl.max)||100;
+    sl.style.setProperty("--sp", (((parseFloat(sl.value)||lo)-lo)/(hi-lo)*100).toFixed(1)+"%"); }  // webkit progress fill
   $("margVal").textContent=Math.round((parseFloat(s.margin)||0))+"%";
   setActive((parseFloat(s.margin)||0)/100);
   $("p25").textContent=fmt(r.sc25); $("p35").textContent=fmt(r.sc35); $("p45").textContent=fmt(r.sc45);
