@@ -18,9 +18,10 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 
 1. **Never change the pricing math.** The formulas in `compute()` are the product.
    Any change that alters a documented result is a regression. See "Pricing model" below.
-2. **Run the test before every commit:** `node test/math.test.js`. It has no
-   dependencies and is not loaded by the app. A nonzero exit means a pricing
-   invariant broke. Do not push until it passes.
+2. **Run the tests before every commit:** `node test/math.test.js` and
+   `node test/pm.test.js`. They have no dependencies and are not loaded by the
+   app. A nonzero exit means a pricing or project-management invariant broke.
+   Do not push until both pass.
 3. **No em dashes in user-facing copy.** Use commas, parentheses, or "to". This is a
    house style rule and it also protects a few load-bearing characters (see "Protected code").
 4. **Keep it a single file with no build step.** All HTML, CSS, and JS live in
@@ -37,9 +38,15 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 
 - **Run locally:** open `index.html` in a browser, or serve the folder statically
   (e.g. `npx serve`). No install step.
-- **Test:** `node test/math.test.js` (required before every commit).
+- **Test:** `node test/math.test.js` and `node test/pm.test.js` (both required
+  before every commit).
 - **Deploy:** Vercel auto-deploys the `main` branch. Push to `main` and the live
   site updates in about a minute. There is no manual deploy step.
+- **Deploy from a Cowork session:** commit through the github.com web UI via the
+  Claude in Chrome extension (the repo's `/upload/main` page, commit directly to
+  main). The claude.ai GitHub Integration does not attach git credentials to
+  Cowork cloud sandboxes, so `git push` fails there. Never automate GitHub
+  Desktop; it runs elevated and Windows blocks synthetic input.
 - **Serverless:** `/api/structure` is a Vercel serverless function used by the
   voice-to-estimate feature. It is optional to the core calculator.
 
@@ -54,6 +61,9 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 - `api/` — Vercel serverless function(s), e.g. `structure` for voice parsing.
 - `test/math.test.js` — zero-dependency pricing test. Extracts `compute` and
   `roundUp` from `index.html` by brace-matching and asserts the invariants.
+- `test/pm.test.js` — zero-dependency project-management test (lifecycle,
+  pruning, unknown-vs-zero tracking, cents-exact money, receivables, change
+  orders, sanitization). Same extraction approach; run it with the math test.
 - `README.md`, `HANDOFF.md`, `AUDIT.md` — background docs. HANDOFF.md has the
   deepest architecture and data-model notes.
 

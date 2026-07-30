@@ -484,7 +484,74 @@
   .brrow .mt{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
   .brrow .br{text-align:right;flex:0 0 auto}
   .brrow .pr{display:block;font-size:15px;font-weight:500;color:var(--accent2);font-variant-numeric:tabular-nums}
-  @media(min-width:900px){ #dashBody,#jobBody{max-width:680px;margin:0 auto} }
+  @media(min-width:900px){ #dashBody,#jobBody,#jobsBody{max-width:680px;margin:0 auto} }
+
+  /* ================= JOBS TAB (pipeline board) + PM hardening ================= */
+  .jstrip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:2px 0 14px}
+  .jtile{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:12px 13px;box-shadow:0 1px 2px var(--shadowsoft)}
+  .jtile .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .jtile .v{font-size:19px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .jtile .s{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .pipecard{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}
+  .pipecard .pipopen{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--ink);padding:12px 14px 4px;cursor:pointer;font:inherit}
+  .pipecard.solo .pipopen{padding-bottom:12px}
+  .pipopen:hover .nm{color:var(--accent2)}
+  .pipopen .t{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px;font-weight:500}
+  .pipopen .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .16s ease}
+  .pipopen .fig{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .pipopen .pm{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+  .pipbody{padding:0 14px 12px}
+  .pipbody .jbar{height:5px;margin-top:8px}
+  .pnext{font-size:11.5px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:6px}
+  .pnext .ic{width:13px;height:13px;flex:0 0 auto}
+  .pnext .od{color:var(--badink);font-weight:500}
+  .pipact{padding:0 14px 12px;display:flex;gap:8px}
+  .persistwarn{position:fixed;left:12px;right:12px;bottom:calc(var(--navh) + 12px + env(safe-area-inset-bottom));z-index:70;
+    background:var(--badbg);border:1px solid var(--badbd);color:var(--badink);border-radius:13px;padding:10px 12px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px}
+  .persistwarn .btn{flex:0 0 auto;min-width:0;min-height:38px;padding:8px 14px}
+  /* small explicit-action buttons (payments, COs, lifecycle) */
+  .minibtn{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:500;cursor:pointer;min-height:36px;display:inline-flex;align-items:center;gap:5px;transition:border-color .16s ease,background .16s ease,transform .12s ease}
+  .minibtn:hover{border-color:var(--accent2)} .minibtn:active{transform:scale(.96)}
+  .minibtn.gold{background:var(--accent);border-color:var(--accent);color:var(--primink)}
+  .minibtn.danger{color:var(--badink);border-color:var(--badbd);background:var(--badbg)}
+  .chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .chip.good{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
+  .chip.warn{background:var(--warnbg);border-color:var(--warnbd);color:var(--warnink)}
+  .chip.bad{background:var(--badbg);border-color:var(--badbd);color:var(--badink)}
+  /* job page: tasks, payments, change orders */
+  .trow{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+  .trow:first-of-type{border-top:none}
+  .trow .tgl{background:transparent;border:none;color:var(--muted);width:44px;height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+  .trow .tgl .ic{width:19px;height:19px}
+  .trow .tgl.done{color:var(--accent2)}
+  .trow .body{flex:1;min-width:0}
+  .trow .ttl{font-size:13.5px;color:var(--ink)}
+  .trow.done .ttl{color:var(--muted);text-decoration:line-through}
+  .trow .meta{font-size:11px;color:var(--muted);margin-top:1px}
+  .trow .meta .od{color:var(--badink);font-weight:500}
+  .trow .rmx{background:transparent;border:none;color:var(--muted);width:44px;height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:10px;padding:0}
+  .trow .rmx:hover{color:var(--bad)}
+  .trow .rmx .ic{width:16px;height:16px}
+  .drow{padding:10px 0;border-top:1px solid var(--line)}
+  .drow:first-of-type{border-top:none}
+  .drow .r1{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .drow .lb{font-size:13.5px;color:var(--ink);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .drow .amt{font-variant-numeric:tabular-nums;color:var(--ink);flex:0 0 auto}
+  .drow .amt.neg{color:var(--badink)}
+  .drow .r2{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+  .drow .note{font-size:11px;color:var(--muted);margin-top:5px}
+  .drow.voided .lb,.drow.voided .amt{color:var(--muted);text-decoration:line-through}
+  .paybar{height:7px;border-radius:7px;background:var(--panel2);overflow:hidden;margin-top:10px}
+  .paybar i{display:block;height:100%;border-radius:7px;background:var(--accent2)}
+  .payline{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+  .schedrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .schedrow input[type=date]{min-height:44px;color-scheme:dark}
+  :root[data-theme="light"] .schedrow input[type=date]{color-scheme:light}
+  .formrow2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .nottracked{color:var(--muted);font-weight:400;font-size:15px}
+  .jnote{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45}
+  @media(max-width:379px){ .nav button{font-size:10px} .jstrip{gap:7px} .jtile{padding:10px 10px} .jtile .v{font-size:16px} }
 </style>
 </head>
 <body>
@@ -529,6 +596,9 @@
   <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
   <symbol id="i-trending-up" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-kanban" viewBox="0 0 24 24"><path d="M5 3v18"/><path d="M12 3v13"/><path d="M19 3v8"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
 </defs></svg>
 
 <header>
@@ -553,6 +623,11 @@
   <!-- ============ DASHBOARD (home) ============ -->
   <section class="view on" id="dashView">
     <div id="dashBody"></div>
+  </section>
+
+  <!-- ============ JOBS (pipeline board) ============ -->
+  <section class="view" id="jobsView">
+    <div id="jobsBody"></div>
   </section>
 
   <!-- ============ CALCULATOR ============ -->
@@ -747,7 +822,7 @@
     </div>
     <div class="card"><h2>Your history</h2><div id="historyBox"></div></div>
     <div id="archiveList"></div>
-    <p class="muted" style="font-size:12px">History keeps your newest 30 jobs; older ones roll off automatically. Tap <b>Keep</b> on any job to save it forever. Estimates live on this device; use <b>Backup</b> to export a file you can restore on another device.</p>
+    <p class="muted" style="font-size:12px">History keeps your newest 30 estimates; older ones roll off automatically. Jobs you manage (won, in progress, complete, or with costs, tasks, or payments logged) are kept automatically, and <b>Keep</b> protects anything else. Estimates live on this device; use <b>Backup</b> to export a file you can restore elsewhere.</p>
   </section>
 
   <!-- ============ JOB (dashboard sub-view: status + cost log) ============ -->
@@ -851,9 +926,15 @@
 <nav class="nav">
   <button id="navDash" class="active"><svg class="ic"><use href="#i-dashboard"/></svg>Dashboard</button>
   <button id="navCalc"><svg class="ic"><use href="#i-ruler"/></svg>Estimate</button>
+  <button id="navJobs"><svg class="ic"><use href="#i-kanban"/></svg>Jobs</button>
   <button id="navArchive"><svg class="ic"><use href="#i-folder"/></svg>Archive</button>
   <button id="navSettings"><svg class="ic"><use href="#i-settings"/></svg>Settings</button>
 </nav>
+
+<div id="persistWarn" class="persistwarn" style="display:none" role="alert">
+  <span>Saving failed. Your latest change may not be stored on this device.</span>
+  <button class="btn" id="persistRetry">Retry</button>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -937,7 +1018,7 @@ function updateFlagWarn(){ const el=$("flagWarn"); if(!el) return; const n=flagg
 function addRow(){ rows.push({item:"",desc:"",qty:1,unit:0}); render(); }
 function quickAdd(){ const v=$("quickAdd").value; if(!v) return; rows.push({item:v,desc:"",qty:1,unit:0}); $("quickAdd").value=""; render(); }
 function delRow(i){ rows.splice(i,1); render(); }
-function clearAllRows(){ if(!rows.length){ toast("No line items to clear"); return; } if(confirm("Clear all "+rows.length+" line item"+(rows.length>1?"s":"")+"?")){ rows=[]; render(); toast("Line items cleared"); } }
+function clearAllRows(){ if(!rows.length){ toast("No line items to clear"); return; } if(confirm("Clear all "+rows.length+" line item"+(rows.length>1?"s":"")+"?")){ rows=[]; EDIT_ENTRY_ID=null; render(); toast("Line items cleared. The next save creates a new job."); } }
 
 /* ---------- P5: voice-to-estimate ---------- */
 const VOICE_CATS=["Subcontractor","Materials","Equipment / rental","Permits / fees","Dump / disposal","Owner labor"];
@@ -1251,6 +1332,7 @@ function getState(){
     contactName:$("contactName").value, contactPhone:$("contactPhone").value, contactEmail:$("contactEmail").value,
     benchCat:$("benchCat").value, benchQty:$("benchQty").value, margin:$("margin").value,
     contingency:$("contingency").value, overhead:$("overhead").value, tax:$("tax").value, proposed:$("proposed").value,
+    editId: EDIT_ENTRY_ID||null,
     photos: PHOTOS.slice(),
     rows: rows.map(r=>({item:r.item,desc:r.desc,qty:r.qty,unit:r.unit})) };
 }
@@ -1272,7 +1354,35 @@ function compute(s){
 }
 function persist(){ const st=getState(); STATE_CACHE=st; saveKey(LS_STATE, st); }
 function getArchive(){ return ARCH_CACHE; }
-function setArchive(a){ ARCH_CACHE=a; saveKey(LS_ARCH, a); }
+/* Archive writes are serialized, awaited, and cross-tab notified. PM actions
+   (payments, approvals, stage changes) await the returned promise so a failed
+   write surfaces the retry banner instead of silently dropping money data. */
+let _archWriteQ=Promise.resolve();
+const _bcSelf=Math.random().toString(36).slice(2);
+let _bc=null; try{ _bc=new BroadcastChannel("ea_arch"); }catch(e){}
+if(_bc) _bc.onmessage=async ev=>{
+  if(!ev.data || ev.data.src===_bcSelf) return;
+  try{
+    const fresh=(IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
+    ARCH_CACHE=(Array.isArray(fresh)?fresh:[]).map(sanitizeEntry).filter(Boolean);
+    const on=v=>{ const el=$(v+"View"); return el&&el.classList.contains("on"); };
+    if(on("jobs")) renderJobs();
+    if(on("job")) renderJob();
+    if(on("dash")) renderDashboard();
+    if(on("archive")) renderArchive();
+  }catch(e){}
+};
+async function _writeArch(v){
+  let ok=false;
+  if(IDB_OK){ ok=await idbSet(LS_ARCH,v); }
+  else { try{ localStorage.setItem(LS_ARCH,JSON.stringify(v)); ok=true; }catch(e){ ok=false; } }
+  const w=$("persistWarn");
+  if(ok){ if(w) w.style.display="none"; if(_bc){ try{ _bc.postMessage({src:_bcSelf}); }catch(e){} } }
+  else if(w){ w.style.display=""; }
+  return ok;
+}
+function setArchive(a){ ARCH_CACHE=a; _archWriteQ=_archWriteQ.then(()=>_writeArch(a)); return _archWriteQ; }
+if($("persistRetry")) $("persistRetry").addEventListener("click",()=>{ setArchive(getArchive()); toast("Retrying save"); });
 
 /* ---- past-job memory (P4) ---- */
 function deriveMeta(s){
@@ -1284,14 +1394,72 @@ function deriveMeta(s){
   return {trade, size};
 }
 function entryMeta(e){ const d=deriveMeta(e.state||{}); return { trade:e.trade||d.trade||"", size:e.size||d.size||null, outcome:e.outcome||"pending", actualCost:(e.actualCost!=null?e.actualCost:null) }; }
-function newEntry(st){ const m=deriveMeta(st); return {id:"e"+st.ts, state:st, results:compute(st), trade:m.trade, size:m.size, outcome:"pending", actualCost:null, stage:"", costs:[]}; }
+function newEntry(st){ const m=deriveMeta(st); const now=Date.now(); return {id:uid("e"), state:st, results:compute(st), trade:m.trade, size:m.size, outcome:"pending", actualCost:null,
+  stage:"", costs:[], tasks:[], draws:[], changes:[], sched:{start:"",target:""},
+  createdTs:(+st.ts||now), updatedTs:(+st.ts||now), stageChangedTs:null, actualStart:"", completed:"",
+  costTracking:"unknown", paymentTracking:"unknown"}; }
 function median(a){ if(!a.length) return 0; const s=a.slice().sort((x,y)=>x-y), n=s.length, m=Math.floor(n/2); return n%2?s[m]:(s[m-1]+s[m])/2; }
 function entryPrice(e){ return (e.results&&e.results.price)||compute(e.state).price||0; }
-/* ---- job tracking: stage + cost log (P5) ---- */
+/* ---- PM utilities: ids, dates, money in cents ---- */
+function uid(p){ try{ if(typeof crypto!=="undefined"&&crypto.randomUUID) return p+crypto.randomUUID().replace(/-/g,"").slice(0,10); }catch(e){}
+  return p+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function numTs(v){ const n=+v; return (isFinite(n)&&n>0&&n<4102444800000)?n:0; }
+function txt(v,n){ return String(v==null?"":v).slice(0,n||200); }
+function capArr(a){ return Array.isArray(a)?a.slice(0,300):[]; }
+function validDateStr(s){ if(typeof s!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(s)) return "";
+  const y=+s.slice(0,4), m=+s.slice(5,7), d=+s.slice(8,10);
+  const dt=new Date(Date.UTC(y,m-1,d));
+  return (dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d)?s:""; }
+function dayOrdinal(s){ const y=+s.slice(0,4), m=+s.slice(5,7), d=+s.slice(8,10); return Math.floor(Date.UTC(y,m-1,d)/864e5); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function fmtDay(s){ if(!s) return ""; const y=+s.slice(0,4), m=+s.slice(5,7), d=+s.slice(8,10); return new Date(y,m-1,d).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+function toC(n){ return Math.round((+n||0)*100); }
+function fromC(c){ return c/100; }
+function sumC(arr,f){ return (arr||[]).reduce((a,x)=>a+toC(f(x)),0); }
+function money2(v){ const n=+v; return (isFinite(n)&&Math.abs(n)<=1e9)?Math.round(n*100)/100:null; }
+function validAmount(v){ const n=money2(v); return (n!=null&&n>0)?n:null; }
+function validSignedAmount(v){ const n=money2(v); return (n!=null&&n!==0)?n:null; }
+function fmtSigned(n){ return (n>=0?"+":"")+fmt(n); }
+
+/* ---- job tracking: lifecycle, cost log, payments, change orders ---- */
 const COST_CATS=[["Materials","package"],["Labor","users"],["Subcontractor","tool"],["Equipment/rental","bolt"],["Permits/fees","receipt"],["Other","receipt"]];
-function jobBudget(e){ const r=e.results||compute(e.state)||{}; if(r.mode==="cost") return r.trueCost||0; return r.breakeven!=null?r.breakeven:(r.impliedCost||0); }
-function jobSpent(e){ return (e.costs||[]).reduce((a,c)=>a+((c&&isFinite(+c.amount))?+c.amount:0),0); }
-function jobProfitToDate(e){ return entryPrice(e)-jobSpent(e); }
+/* lifecycle: pending bid -> won|lost; won -> active; active -> complete; complete -> active (reopen).
+   Lost is checked FIRST: a lost job never appears on the operational board. */
+function boardStage(e){ if(!e) return null; const o=(e.outcome==="won"||e.outcome==="lost")?e.outcome:"pending";
+  if(o==="lost") return null;
+  if(e.stage==="complete") return "complete";
+  if(e.stage==="active") return "active";
+  if(o==="won") return "upnext";
+  return "bidding"; }
+function hasPmActivity(e){ return !!((e.costs&&e.costs.length)||(e.tasks&&e.tasks.length)||(e.draws&&e.draws.length)||(e.changes&&e.changes.length)||(e.sched&&(e.sched.start||e.sched.target))); }
+function isManagedJob(e){ return !!e && (e.stage==="active"||e.stage==="complete"||e.outcome==="won"||hasPmActivity(e)); }
+function approvedChanges(e){ return (e.changes||[]).filter(c=>c&&c.status==="approved"); }
+function changesTotalC(e){ return sumC(approvedChanges(e),c=>c.amount); }
+function contractPrice(e){ return fromC(toC(entryPrice(e))+changesTotalC(e)); }
+/* Budget semantics: build mode -> trueCost is the target cost budget.
+   Analyze mode -> impliedCost is the target; breakeven is the loss ceiling, NOT the budget. */
+function jobBudgetTarget(e){ const r=e.results||compute(e.state)||{};
+  const base=(r.mode==="cost") ? (r.trueCost||0) : (r.impliedCost!=null?r.impliedCost:(r.breakeven||0));
+  return fromC(toC(base)+sumC(approvedChanges(e),c=>c.cost)); }
+function jobBudgetCeiling(e){ const r=e.results||compute(e.state)||{};
+  if(r.mode==="cost"||r.breakeven==null) return null;
+  return fromC(toC(r.breakeven)+sumC(approvedChanges(e),c=>c.cost)); }
+function jobSpent(e){ return fromC(sumC(e.costs||[],c=>c.amount)); }
+function projectedProfit(e){ return fromC(toC(contractPrice(e))-toC(jobBudgetTarget(e))); }
+function contractLessCosts(e){ return fromC(toC(contractPrice(e))-toC(jobSpent(e))); }
+/* Receivables ledger: three distinct figures, never one ambiguous "outstanding". */
+function rowPaidC(d){ return (d&&(d.status==="invoiced"||d.status==="paid"))?toC(d.paidAmount||0):0; }
+function rowInvoicedC(d){ return (d&&(d.status==="invoiced"||d.status==="paid"))?toC(d.amount):0; }
+function drawsPaid(e){ return fromC((e.draws||[]).reduce((a,d)=>a+rowPaidC(d),0)); }
+function drawsInvoiced(e){ return fromC((e.draws||[]).reduce((a,d)=>a+rowInvoicedC(d),0)); }
+function drawsTotal(e){ return fromC(sumC(e.draws||[],d=>d.amount)); }
+function contractRemaining(e){ return fromC(toC(contractPrice(e))-toC(drawsPaid(e))); }
+function accountsReceivable(e){ return Math.max(0, fromC(toC(drawsInvoiced(e))-toC(drawsPaid(e)))); }
+function unbilled(e){ return fromC(toC(contractPrice(e))-toC(drawsInvoiced(e))); }
+function nextTask(e){ const open=(e.tasks||[]).filter(t=>t&&!t.done).slice();
+  open.sort((a,b)=>{ const ad=a.due?dayOrdinal(a.due):Infinity, bd=b.due?dayOrdinal(b.due):Infinity; return (ad-bd)||((a.ts||0)-(b.ts||0)); });
+  return open[0]||null; }
+function isOverdue(t){ return !!(t&&!t.done&&t.due&&dayOrdinal(t.due)<dayOrdinal(todayStr())); }
 function barTone(pct){ return pct>100?"bad":(pct>85?"warn":"good"); }
 // personal benchmark: >=3 WON jobs, same trade & unit → real min/median/max $ per unit
 function personalBench(trade, unit){
@@ -1319,16 +1487,39 @@ function updateSaveStatus(){ const el=$("savedNote"); if(!el) return;
   else if(_savedSig!==stateSig()){ el.innerHTML="<b>Unsaved changes</b> since your last save. Tap Save."; el.className="savednote unsaved"; }
   else { el.innerHTML="✓ Saved to your jobs."; el.className="savednote saved"; }
 }
-// Rolling history: keep every pinned job plus the newest 30 unpinned; older unpinned roll off.
+// Rolling history: pinned jobs and MANAGED jobs (won, staged, or with any PM data)
+// are never pruned; only disposable unpinned estimate history rolls off at the cap.
 const HISTORY_CAP=30;
-function pruneArchive(arr){ let unp=0, kept=[]; for(const e of (arr||[])){ if(e&&e.pinned){ kept.push(e); } else if(unp<HISTORY_CAP){ kept.push(e); unp++; } } return kept; }
+function pruneArchive(arr){ let unp=0, kept=[]; for(const e of (arr||[])){ if(!e) continue;
+  if(e.pinned||isManagedJob(e)){ kept.push(e); } else if(unp<HISTORY_CAP){ kept.push(e); unp++; } } return kept; }
+/* Stable identity: the calculator tracks which archive entry it is editing.
+   Saving updates that entry in place (preserving all PM data) instead of forking a duplicate. */
+let EDIT_ENTRY_ID=null;
+function upsertFromState(st){
+  let a=getArchive();
+  const t=EDIT_ENTRY_ID ? a.find(x=>x&&x.id===EDIT_ENTRY_ID) : null;
+  if(t){
+    const m=deriveMeta(st);
+    t.state=st; t.results=compute(st); t.trade=m.trade; t.size=m.size; t.updatedTs=Date.now();
+    setArchive(a);
+    return {entry:t, created:false};
+  }
+  const e=newEntry(st);
+  a.unshift(e); a=pruneArchive(a); setArchive(a);
+  EDIT_ENTRY_ID=e.id; persist();
+  return {entry:e, created:true};
+}
 function saveToArchive(){
   const fc=flaggedCount();
   if(fc>0 && !confirm(fc+" line"+(fc===1?" is":"s are")+" still flagged for review. Save anyway?")) return;
-  const st=getState(); let a=getArchive(); a.unshift(newEntry(st)); a=pruneArchive(a); setArchive(a);
+  const cur=EDIT_ENTRY_ID ? getArchive().find(x=>x&&x.id===EDIT_ENTRY_ID) : null;
+  if(cur && (cur.stage==="active"||cur.stage==="complete")){
+    if(!confirm("This job is "+(cur.stage==="active"?"in progress":"marked complete")+". Updating the estimate keeps its costs, payments, and change orders, but contract changes are better logged as change orders. Update it anyway?")) return;
+  }
+  const st=getState();
+  const res=upsertFromState(st);
   _savedSig=stateSig(st); updateSaveStatus();
-  const unp=a.filter(e=>!(e&&e.pinned)).length;
-  toast("✓ Saved"+(unp>=HISTORY_CAP?" (history holds the newest "+HISTORY_CAP+"; pin to keep)":""));
+  toast(res.created ? "✓ Saved as a new job" : "✓ Updated “"+((st.jobName&&st.jobName.trim())||"Untitled estimate")+"”");
   renderArchive();
 }
 let ARCH_Q="";
@@ -1366,11 +1557,20 @@ function renderArchive(){
       '<button class="del" data-a="del">'+ic("trash")+'Delete</button>'+
       '</div>';
     function persistMeta(){ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.trade=m.trade; t.size=m.size; t.outcome=m.outcome; t.actualCost=m.actualCost; setArchive(arr); } }
-    div.querySelector('[data-a=oc]').onclick=()=>{ m.outcome=m.outcome==="pending"?"won":(m.outcome==="won"?"lost":"pending"); persistMeta(); renderArchive(); renderHistory(); };
+    div.querySelector('[data-a=oc]').onclick=()=>{
+      const next=m.outcome==="pending"?"won":(m.outcome==="won"?"lost":"pending");
+      if(next==="lost"){
+        const t0=getArchive().find(x=>x&&x.id===e.id);
+        if(t0 && (t0.stage==="active"||t0.stage==="complete")){
+          if(!confirm("This job is on your board as "+(t0.stage==="active"?"in progress":"complete")+". Marking it lost takes it off the board and clears its stage. Continue?")) return;
+          t0.stage=""; t0.stageChangedTs=Date.now();
+        }
+      }
+      m.outcome=next; persistMeta(); renderArchive(); renderHistory(); };
     div.querySelector('[data-a=ac]').onclick=()=>{ const v=prompt("Actual final cost for this job ($):", m.actualCost!=null?m.actualCost:""); if(v==null) return; const n=parseFloat(v); m.actualCost=(v.trim()===""?null:(isFinite(n)?n:null)); persistMeta(); renderArchive(); renderHistory(); };
-    div.querySelector('[data-a=pin]').onclick=()=>{ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.pinned=!t.pinned; e.pinned=t.pinned; setArchive(arr); renderArchive(); toast(t.pinned?"Pinned. Kept forever, exempt from the rolling history.":"Unpinned. Back in the rolling 30."); } };
-    div.querySelector('[data-a=open]').onclick=()=>openJob(e.id);
-    div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded into calculator"); maybeOutcomePrompt(e); };
+    div.querySelector('[data-a=pin]').onclick=()=>{ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.pinned=!t.pinned; e.pinned=t.pinned; setArchive(arr); renderArchive(); toast(t.pinned?"Pinned. Exempt from the rolling history on this device.":"Unpinned. Back in the rolling 30."); } };
+    div.querySelector('[data-a=open]').onclick=()=>openJob(e.id,"archive");
+    div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); EDIT_ENTRY_ID=e.id; persist(); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded. Saving updates this job."); maybeOutcomePrompt(e); };
     div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; let arr=getArchive(); arr.unshift(newEntry(st)); arr=pruneArchive(arr); setArchive(arr); renderArchive(); toast("Duplicated"); };
     div.querySelector('[data-a=rename]').onclick=()=>{ const nn=prompt("Rename estimate:", s.jobName||""); if(nn==null) return; const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.state.jobName=nn; setArchive(arr); renderArchive(); } };
     div.querySelector('[data-a=dl]').onclick=()=>downloadSummary(s);
@@ -1756,8 +1956,10 @@ $("sigConfirm").addEventListener("click",()=>{
   saveSigned(); toast("Signed & saved to archive");
 });
 function saveSigned(){
+  // Route through the same upsert as Save: signing must update the loaded job, never fork a duplicate.
   const st=getState(); st.proposal=proposalInputs();
-  let a=getArchive(); a.unshift(newEntry(st)); a=pruneArchive(a); setArchive(a); renderArchive();
+  upsertFromState(st);
+  _savedSig=stateSig(st); updateSaveStatus(); renderArchive();
 }
 
 /* ---------------- ARCHIVE BACKUP ---------------- */
@@ -1777,12 +1979,43 @@ function sanitizeRows(arr){ return Array.isArray(arr) ? arr.map(r=>({ item:Strin
 function sanitizeEntry(e){
   if(!e || typeof e!=="object" || !e.state || typeof e.state!=="object") return null;
   e.pinned=!!e.pinned;
+  e.outcome=(e.outcome==="won"||e.outcome==="lost")?e.outcome:"pending";
   e.stage=(e.stage==="active"||e.stage==="complete")?e.stage:"";
+  if(e.outcome==="lost") e.stage="";                               // a lost job cannot stay active or complete
+  e.id=txt(e.id,48)||uid("e");
+  e.createdTs=numTs(e.createdTs)||numTs(e.state.ts)||0;
+  e.updatedTs=numTs(e.updatedTs)||e.createdTs;
+  e.stageChangedTs=numTs(e.stageChangedTs)||null;
+  e.actualStart=validDateStr(e.actualStart);
+  e.completed=validDateStr(e.completed);
+  const seen={};
+  const fixId=(v,p)=>{ v=txt(v,40); if(!v||seen[v]) v=uid(p); seen[v]=1; return v; };
   const okCat={}; COST_CATS.forEach(c=>{ okCat[c[0]]=1; });
-  e.costs=Array.isArray(e.costs)
-    ? e.costs.filter(c=>c&&typeof c==="object"&&okCat[c.cat]&&isFinite(+c.amount)&&+c.amount>=0)
-        .map((c,i)=>({id:String(c.id||("c"+i)), ts:+c.ts||0, cat:c.cat, note:String(c.note==null?"":c.note), amount:+c.amount}))
-    : [];
+  e.costs=capArr(e.costs).map(c=>{ if(!c||typeof c!=="object"||!okCat[c.cat]) return null;
+    const amt=money2(c.amount); if(amt==null||amt<0) return null;
+    return {id:fixId(c.id,"c"), ts:numTs(c.ts), cat:c.cat, note:txt(c.note,200), amount:amt}; }).filter(Boolean);
+  e.tasks=capArr(e.tasks).map(t=>{ if(!t||typeof t!=="object") return null;
+    const title=txt(t.title,200).trim(); if(!title) return null;
+    const done=!!t.done;
+    return {id:fixId(t.id,"t"), ts:numTs(t.ts), title:title, due:validDateStr(t.due), done:done, doneTs:done?(numTs(t.doneTs)||0):null}; }).filter(Boolean);
+  e.sched=(e.sched&&typeof e.sched==="object")?{start:validDateStr(e.sched.start),target:validDateStr(e.sched.target)}:{start:"",target:""};
+  e.draws=capArr(e.draws).map(d=>{ if(!d||typeof d!=="object") return null;
+    const amt=money2(d.amount); if(amt==null||amt<=0) return null;
+    const st={planned:1,invoiced:1,paid:1}[d.status]?d.status:"planned";
+    let paid=money2(d.paidAmount); if(paid==null||paid<0||st==="planned") paid=0;
+    if(st==="paid"&&!(paid>0)) paid=amt;                            // paid implies a real received amount
+    return {id:fixId(d.id,"d"), ts:numTs(d.ts), label:txt(d.label,120)||"Draw", amount:amt, status:st,
+      invoicedTs:(st!=="planned")?(numTs(d.invoicedTs)||0):null, paidTs:paid>0?(numTs(d.paidTs)||0):null,
+      paidAmount:paid, note:txt(d.note,200)}; }).filter(Boolean);
+  e.changes=capArr(e.changes).map(c=>{ if(!c||typeof c!=="object") return null;
+    const amt=money2(c.amount); if(amt==null||amt===0) return null;  // signed: deductive COs are negative
+    let cost=money2(c.cost); if(cost==null) cost=0;
+    const st={pending:1,approved:1,void:1}[c.status]?c.status:"pending";
+    return {id:fixId(c.id,"o"), ts:numTs(c.ts), number:txt(c.number,20), title:txt(c.title,200)||"Change order",
+      amount:amt, cost:cost, status:st, approvedTs:st==="approved"?(numTs(c.approvedTs)||0):null, note:txt(c.note,200)}; }).filter(Boolean);
+  // Unknown vs zero: legacy entries with no ledger stay "unknown", never fake zero.
+  e.costTracking={unknown:1,tracking:1,complete:1}[e.costTracking]?e.costTracking:(e.costs.length?"tracking":"unknown");
+  e.paymentTracking={unknown:1,tracking:1,complete:1}[e.paymentTracking]?e.paymentTracking:(e.draws.length?"tracking":"unknown");
   const s=e.state;
   s.photos = sanitizePhotos(s.photos);
   if(s.rows) s.rows = sanitizeRows(s.rows);
@@ -1810,20 +2043,28 @@ $("importArchInput").addEventListener("change",e=>{
 });
 
 /* ---------------- NAV / VIEWS ---------------- */
+const _VIEWS=["dash","calc","jobs","archive","settings","proposal","job"];
+let _viewScroll={};
 function showView(name){
-  ["dash","calc","archive","settings","proposal","job"].forEach(v=>{ const el=$(v+"View"); if(el) el.classList.toggle("on", v===name); });
-  $("navDash").classList.toggle("active", name==="dash"||name==="job");
+  const cur=_VIEWS.find(v=>{ const el=$(v+"View"); return el&&el.classList.contains("on"); });
+  if(cur) _viewScroll[cur]=window.scrollY;
+  _VIEWS.forEach(v=>{ const el=$(v+"View"); if(el) el.classList.toggle("on", v===name); });
+  $("navDash").classList.toggle("active", name==="dash");
   $("navCalc").classList.toggle("active", name==="calc"||name==="proposal");
+  $("navJobs").classList.toggle("active", name==="jobs"||name==="job");
   $("navArchive").classList.toggle("active", name==="archive");
   $("navSettings").classList.toggle("active", name==="settings");
   if(name==="dash") renderDashboard();
+  if(name==="jobs") renderJobs();
   if(name==="archive") renderArchive();
   if(name==="settings"){ renderBenchSettings(); updateStorageMeter(); }
   if(name==="calc" && typeof renderSimilar==="function") renderSimilar();
-  window.scrollTo(0,0);
+  // Returning to the Jobs board restores its scroll position; everything else opens at the top.
+  window.scrollTo(0, name==="jobs"?(_viewScroll.jobs||0):0);
 }
 $("navDash").addEventListener("click",()=>showView("dash"));
 $("navCalc").addEventListener("click",()=>showView("calc"));
+$("navJobs").addEventListener("click",()=>showView("jobs"));
 $("navArchive").addEventListener("click",()=>showView("archive"));
 $("navSettings").addEventListener("click",()=>showView("settings"));
 
@@ -1865,15 +2106,17 @@ function renderDashboard(){
       '<div class="mdist">'+bands.map(c=>'<i class="'+(c?"f":"")+'" style="height:'+(c?Math.max(12,Math.round(c/maxB*100)):0)+'%"></i>').join("")+'</div>'+
       '<div class="mlbl"><span>under 20</span><span>20–35</span><span>over 35</span></div></div>'+
     '</div>';
-  /* in-progress jobs: spend vs budget */
-  const act=arr.filter(e=>e.stage==="active");
+  /* in-progress jobs: spend vs target cost + next task */
+  const act=arr.filter(e=>boardStage(e)==="active");
   if(act.length){
-    html+='<div class="bsect"><span>In progress</span></div>';
+    html+='<div class="bsect"><span>In progress</span><span class="link" id="dashJobs" style="font-size:11px">View all</span></div>';
     act.forEach(e=>{
       const s=e.state, nm=(s.jobName&&s.jobName.trim())||"Untitled job";
-      const b=jobBudget(e), sp=jobSpent(e), pct=b>0?sp/b*100:0;
-      html+='<button type="button" class="iprow" data-job="'+esc(e.id)+'"><span class="t"><span class="nm">'+esc(nm)+'</span><span class="fig">'+fmt(sp)+' / '+fmt(b)+'</span></span>'+
-        '<span class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></span></button>';
+      const b=jobBudgetTarget(e), sp=jobSpent(e), pct=b>0?sp/b*100:0;
+      const nt=nextTask(e);
+      const ntLine=nt ? '<span class="pnext">'+ic("check")+'<span>'+esc(nt.title)+(nt.due?' · '+fmtDay(nt.due):'')+(isOverdue(nt)?' <span class="od">Overdue</span>':'')+'</span></span>' : '';
+      html+='<button type="button" class="iprow" data-job="'+esc(e.id)+'" aria-label="Open job '+esc(nm)+'"><span class="t"><span class="nm">'+esc(nm)+'</span><span class="fig">'+fmt(sp)+' / '+fmt(b)+'</span></span>'+
+        '<span class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></span>'+ntLine+'</button>';
     });
   }
   /* recent jobs */
@@ -1889,85 +2132,389 @@ function renderDashboard(){
   box.innerHTML=html;
   $("dashNew").onclick=()=>showView("calc");
   const va=$("dashAll"); if(va) va.onclick=()=>showView("archive");
-  box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job); });
+  const vj=$("dashJobs"); if(vj) vj.onclick=()=>showView("jobs");
+  box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"dash"); });
 }
 
-/* ---------------- JOB PAGE (status + cost log) ---------------- */
-let CUR_JOB=null, _costFormOpen=false;
+/* ---------------- JOBS BOARD (pipeline) ---------------- */
+function renderJobs(){
+  const box=$("jobsBody"); if(!box) return;
+  const arr=getArchive();
+  const groups={bidding:[],upnext:[],active:[],complete:[]};
+  arr.forEach(e=>{ const b=boardStage(e); if(b) groups[b].push(e); });
+  groups.complete.sort((a,b)=>((b.completed||"").localeCompare(a.completed||""))||((b.stageChangedTs||0)-(a.stageChangedTs||0)));
+  /* stat strip: fixed three tiles so the layout never jumps; unknown payment records are excluded, not zeroed */
+  let outC=0, untracked=0;
+  arr.forEach(e=>{ const b=boardStage(e); if(b==="active"||b==="complete"){
+    if((e.paymentTracking||"unknown")==="unknown"){ untracked++; } else { outC+=Math.max(0,toC(contractRemaining(e))); } } });
+  const tile=(l,v,s)=>'<div class="jtile"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';
+  let html='<div class="jstrip">'
+    +tile("Outstanding", fmt(fromC(outC)), untracked? (untracked+" job"+(untracked>1?"s":"")+" not tracked") : "on tracked jobs")
+    +tile("In progress", String(groups.active.length), groups.active.length===1?"job on site":"jobs on site")
+    +tile("Bids waiting", String(groups.bidding.length), "pending decisions")
+    +'</div>';
+  const nm=e=>((e.state.jobName&&e.state.jobName.trim())||"Untitled job");
+  const cl=e=>(e.state.clientType||"");
+  if(groups.active.length){
+    html+='<div class="bsect"><span>In progress</span></div>';
+    groups.active.forEach(e=>{
+      const b=jobBudgetTarget(e), sp=jobSpent(e), pct=b>0?sp/b*100:0, nt=nextTask(e);
+      html+='<div class="pipecard"><button type="button" class="pipopen" data-job="'+esc(e.id)+'" aria-label="Open job '+esc(nm(e))+'">'
+        +'<span class="t"><span class="nm">'+esc(nm(e))+'</span><span class="fig">'+fmt(sp)+' / '+fmt(b)+'</span></span>'
+        +'<span class="pm">'+esc(cl(e))+'</span></button>'
+        +'<div class="pipbody"><span class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></span>'
+        +(nt?'<div class="pnext">'+ic("check")+'<span>'+esc(nt.title)+(nt.due?' · '+fmtDay(nt.due):'')+(isOverdue(nt)?' <span class="od">Overdue</span>':'')+'</span></div>':'<div class="pnext">'+ic("check")+'<span>No tasks yet</span></div>')
+        +'</div></div>';
+    });
+  }
+  if(groups.upnext.length){
+    html+='<div class="bsect"><span>Up next</span></div>';
+    groups.upnext.forEach(e=>{
+      const st=e.sched&&e.sched.start;
+      html+='<div class="pipecard"><button type="button" class="pipopen" data-job="'+esc(e.id)+'" aria-label="Open job '+esc(nm(e))+'">'
+        +'<span class="t"><span class="nm">'+esc(nm(e))+'</span><span class="fig">'+fmt(contractPrice(e))+'</span></span>'
+        +'<span class="pm">'+esc(cl(e))+(st?' · starts '+fmtDay(st):' · set a start date')+'</span></button>'
+        +'<div class="pipact"><button type="button" class="minibtn gold" data-start="'+esc(e.id)+'" aria-label="Start job '+esc(nm(e))+'">Start job</button></div></div>';
+    });
+  }
+  if(groups.bidding.length){
+    html+='<div class="bsect"><span>Bidding</span></div>';
+    groups.bidding.forEach(e=>{
+      const days=Math.max(0, Math.floor((Date.now()-(e.createdTs||0))/864e5));
+      const age=e.createdTs? ('bid '+(days===0?'today':days+' day'+(days===1?'':'s')+' ago')) : '';
+      html+='<div class="pipecard solo"><button type="button" class="pipopen" data-job="'+esc(e.id)+'" aria-label="Open job '+esc(nm(e))+'">'
+        +'<span class="t"><span class="nm">'+esc(nm(e))+'</span><span class="fig">'+fmt(entryPrice(e))+'</span></span>'
+        +'<span class="pm">'+esc(cl(e))+(age?' · <span'+(days>14?' style="color:var(--warnink)"':'')+'>'+age+'</span>':'')+'</span></button></div>';
+    });
+  }
+  if(groups.complete.length){
+    html+='<div class="bsect"><span>Recently completed</span></div>';
+    groups.complete.slice(0,5).forEach(e=>{
+      const ct=e.costTracking||"unknown";
+      const profTxt = ct==="unknown" ? '<span class="nottracked" style="font-size:12px">Not tracked</span>'
+        : (function(){ const v=contractLessCosts(e); return '<span style="color:var(--'+(v>=0?"good":"bad")+')">'+fmt(v)+'</span>'; })();
+      html+='<div class="pipecard solo"><button type="button" class="pipopen" data-job="'+esc(e.id)+'" aria-label="Open job '+esc(nm(e))+'">'
+        +'<span class="t"><span class="nm">'+esc(nm(e))+'</span><span class="fig">'+profTxt+'</span></span>'
+        +'<span class="pm">'+esc(cl(e))+(e.completed?' · completed '+fmtDay(e.completed):'')+'</span></button></div>';
+    });
+  }
+  if(!groups.active.length&&!groups.upnext.length&&!groups.bidding.length&&!groups.complete.length){
+    html+='<div class="dash-empty">No jobs yet. Estimates you save show up here as bids you can win, schedule, and track through completion.</div>';
+  }
+  box.innerHTML=html;
+  box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"jobs"); });
+  box.querySelectorAll("[data-start]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation(); startJob(el.dataset.start); }; });
+}
+
+/* ---------------- JOB PAGE (lifecycle + cost log + tasks + payments + COs) ---------------- */
+let CUR_JOB=null, CUR_FROM="jobs", _pmForms={};
 function jobById(id){ return getArchive().find(x=>x&&x.id===id)||null; }
-function openJob(id){ const e=jobById(id); if(!e){ toast("Job not found"); return; } CUR_JOB=id; _costFormOpen=false; renderJob(); showView("job"); }
-function setStage(st){
-  const arr=getArchive(), t=arr.find(x=>x.id===CUR_JOB); if(!t) return;
-  t.stage=st; setArchive(arr); renderJob();
-  toast(st==="complete"?"Marked complete":"Marked in progress");
+function openJob(id, from){ const e=jobById(id); if(!e){ toast("Job not found"); return; }
+  CUR_JOB=id; CUR_FROM=from||"jobs"; _pmForms={}; renderJob(); showView("job"); }
+async function _pmWrite(arr, okMsg){
+  const ok=await setArchive(arr);
+  if(CUR_JOB && $("jobView").classList.contains("on")) renderJob();
+  if($("jobsView").classList.contains("on")) renderJobs();
+  if(ok){ if(okMsg) toast(okMsg); } else { toast("Save failed. Tap Retry in the banner."); }
+  return ok;
+}
+/* Lifecycle transitions are explicit actions with timestamps, never tap-to-cycle. */
+function startJob(id){
+  const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
+  const o=(t.outcome==="won"||t.outcome==="lost")?t.outcome:"pending";
+  if(o==="lost"){ toast("This bid is marked lost. Change its outcome in the Archive first."); return; }
+  if(o==="pending"){ if(!confirm("Mark this bid won and start the job?")) return; t.outcome="won"; }
+  t.stage="active"; t.stageChangedTs=Date.now(); if(!t.actualStart) t.actualStart=todayStr();
+  _pmWrite(arr,"Job started");
+}
+function completeJob(id){
+  const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
+  if(!confirm("Mark this job complete?")) return;
+  t.stage="complete"; t.completed=todayStr(); t.stageChangedTs=Date.now();
+  _pmWrite(arr,"Marked complete");
+}
+function reopenJob(id){
+  const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
+  if(!confirm("Reopen this job? It goes back to In progress; its completion date stays on record until it is completed again.")) return;
+  t.stage="active"; t.stageChangedTs=Date.now();
+  _pmWrite(arr,"Reopened");
+}
+function finalizeTracking(id, kind){
+  const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
+  const isCost=kind==="cost";
+  if(!confirm(isCost?"Mark cost tracking final? The profit figure becomes final gross profit.":"Mark payment tracking final for this job?")) return;
+  if(isCost) t.costTracking="complete"; else t.paymentTracking="complete";
+  _pmWrite(arr, isCost?"Costs marked final":"Payments marked final");
 }
 function renderJob(){
   const box=$("jobBody"); if(!box) return;
-  const e=jobById(CUR_JOB); if(!e){ box.innerHTML=""; showView("dash"); return; }
-  if(!Array.isArray(e.costs)) e.costs=[];
-  const s=e.state;
+  const e=jobById(CUR_JOB); if(!e){ box.innerHTML=""; showView(CUR_FROM||"jobs"); return; }
+  const s=e.state, b=boardStage(e);
   const nm=(s.jobName&&s.jobName.trim())||"Untitled job";
-  const started=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
-  const sub=[(s.clientType||""),"started "+started].filter(Boolean).join(" · ");
-  const budget=jobBudget(e), spent=jobSpent(e), rem=budget-spent, pct=budget>0?spent/budget*100:0;
-  const profit=jobProfitToDate(e), stage=e.stage||"";
-  const stHtml= stage==="complete"
-    ? '<button type="button" class="stpill done" id="jobStDone">'+ic("check")+'Complete</button><button type="button" class="stpill" id="jobStAct">Reopen</button>'
-    : '<button type="button" class="stpill'+(stage==="active"?" on":"")+'" id="jobStAct">'+(stage==="active"?ic("circle"):"")+'In progress</button><button type="button" class="stpill" id="jobStDone">'+ic("check")+'Complete</button>';
-  let html='<button type="button" class="jback" id="jobBack">'+ic("chevron-left")+'Jobs</button>'+
-    '<div class="jhead"><div style="min-width:0"><div class="jtitle">'+esc(nm)+'</div><div class="jsub">'+esc(sub)+'</div></div><div class="jstage">'+stHtml+'</div></div>';
-  /* budget hero */
-  const capRem= rem>=0 ? fmt(rem)+" remaining" : fmt(Math.abs(rem))+" over budget";
-  html+='<div class="jcard"><div class="jbudget-top"><div class="jb-l"><div class="l">Spent</div><div class="v">'+fmt(spent)+'</div></div>'+
-    '<div class="jb-r"><div class="l">Budget</div><div class="v">'+fmt(budget)+'</div></div></div>'+
-    '<div class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></div>'+
-    '<div class="jcap">'+pct.toFixed(0)+'% of budget used · '+capRem+'</div>'+
-    '<div class="jdiv"></div>'+
-    '<div class="jduo"><div class="jstat"><div class="l">Bid price</div><div class="v">'+fmt(entryPrice(e))+'</div></div>'+
-    '<div class="jstat"><div class="l">Profit to date</div><div class="v" style="color:var(--'+(profit>=0?"good":"bad")+')">'+fmt(profit)+'</div></div></div></div>';
-  /* cost log */
-  html+='<div class="jsecthead"><span class="t">Cost log</span><button type="button" class="addcost" id="addCostBtn">'+ic("plus")+'Add cost</button></div>';
-  html+='<div class="costform" id="costForm" style="display:'+(_costFormOpen?"":"none")+'">'+
-    '<div class="row2"><select id="costCat">'+COST_CATS.map(c=>'<option>'+esc(c[0])+'</option>').join("")+'</select>'+
-    '<input id="costAmt" type="number" inputmode="decimal" step="any" min="0" placeholder="Amount $"></div>'+
-    '<input id="costNote" placeholder="Note (optional)">'+
-    '<div class="btns" style="margin-top:10px"><button class="btn primary wide" id="costAdd">'+ic("plus")+'Add</button></div></div>';
-  if(!e.costs.length){
-    html+='<div class="jempty">No costs logged yet. Tap <b>Add cost</b> as you buy materials, pay labor, or pull permits, and this page tracks spend against your '+fmt(budget)+' budget.</div>';
+  const sub=[(s.clientType||""), (e.createdTs?"bid "+new Date(e.createdTs).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"")].filter(Boolean).join(" · ");
+  const backLbl={jobs:"Jobs",dash:"Dashboard",archive:"Archive"}[CUR_FROM]||"Jobs";
+  /* header + explicit lifecycle actions */
+  let stHtml="";
+  if(b==="bidding") stHtml='<span class="chip">Pending bid</span><button type="button" class="minibtn gold" id="jobStart">Start job</button>';
+  else if(b==="upnext") stHtml='<span class="chip good">Won</span><button type="button" class="minibtn gold" id="jobStart">Start job</button>';
+  else if(b==="active") stHtml='<span class="chip good">In progress'+(e.actualStart?" · "+fmtDay(e.actualStart):"")+'</span><button type="button" class="minibtn" id="jobComplete">Mark complete</button>';
+  else if(b==="complete") stHtml='<span class="chip">'+ic("check")+'Complete'+(e.completed?" · "+fmtDay(e.completed):"")+'</span><button type="button" class="minibtn" id="jobReopen">Reopen</button>';
+  else stHtml='<span class="chip bad">Lost</span>';
+  let html='<button type="button" class="jback" id="jobBack" aria-label="Back to '+backLbl+'">'+ic("chevron-left")+backLbl+'</button>'
+    +'<div class="jhead"><div style="min-width:0"><div class="jtitle">'+esc(nm)+'</div><div class="jsub">'+esc(sub)+'</div></div><div class="jstage">'+stHtml+'</div></div>';
+  /* ---- budget hero: spend vs TARGET cost; analyze mode also shows the break-even ceiling ---- */
+  const target=jobBudgetTarget(e), ceiling=jobBudgetCeiling(e), spent=jobSpent(e);
+  const rem=fromC(toC(target)-toC(spent)), pct=target>0?spent/target*100:0;
+  const contract=contractPrice(e), hasCO=approvedChanges(e).length>0;
+  const ct=e.costTracking||"unknown";
+  let profLbl="Profit", profHtml='<span class="nottracked">Not tracked</span>';
+  if(ct!=="unknown"){ const v=contractLessCosts(e);
+    profLbl=(ct==="complete")?"Final gross profit":"Less logged costs";
+    profHtml='<span style="color:var(--'+(v>=0?"good":"bad")+')">'+fmt(v)+'</span>'; }
+  const capRem = rem>=0 ? fmt(rem)+" remaining" : fmt(Math.abs(rem))+" over target";
+  html+='<div class="jcard"><div class="jbudget-top"><div class="jb-l"><div class="l">Spent</div><div class="v">'+fmt(spent)+'</div></div>'
+    +'<div class="jb-r"><div class="l">Cost target</div><div class="v">'+fmt(target)+'</div></div></div>'
+    +'<div class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></div>'
+    +'<div class="jcap">'+pct.toFixed(0)+'% of cost target used · '+capRem+(ceiling!=null?' · break-even ceiling '+fmt(ceiling):'')+'</div>'
+    +'<div class="jdiv"></div>'
+    +'<div class="jduo"><div class="jstat"><div class="l">'+(hasCO?"Contract":"Bid price")+'</div><div class="v">'+fmt(contract)+'</div></div>'
+    +'<div class="jstat"><div class="l">'+profLbl+'</div><div class="v">'+profHtml+'</div></div></div>'
+    +(ct!=="complete"?'<div class="jnote">Projected gross profit at your estimate: '+fmt(projectedProfit(e))+(ct==="unknown"?'. Log costs to track the real number.':'')+'</div>':'')
+    +(b==="complete"&&ct==="tracking"?'<div style="margin-top:10px"><button type="button" class="minibtn" id="finCosts">Mark costs final</button></div>':'')
+    +'</div>';
+  /* ---- cost log ---- */
+  html+='<div class="jsecthead"><span class="t">Cost log</span><button type="button" class="addcost" id="addCostBtn" aria-expanded="'+(!!_pmForms.cost)+'">'+ic("plus")+'Add cost</button></div>';
+  html+='<div class="costform" id="costForm" style="display:'+(_pmForms.cost?"":"none")+'">'
+    +'<div class="row2"><label class="lbl" style="margin:0"><span class="lbl">Category</span><select id="costCat">'+COST_CATS.map(c=>'<option>'+esc(c[0])+'</option>').join("")+'</select></label>'
+    +'<label class="lbl" style="margin:0"><span class="lbl">Amount $</span><input id="costAmt" type="number" inputmode="decimal" step="any" min="0"></label></div>'
+    +'<label class="lbl" style="margin:0"><span class="lbl">Note (optional)</span><input id="costNote"></label>'
+    +'<div class="btns" style="margin-top:10px"><button class="btn primary wide" id="costAdd">'+ic("plus")+'Add cost</button></div></div>';
+  if(!(e.costs||[]).length){
+    html+='<div class="jempty">No costs logged yet. Tap <b>Add cost</b> as you buy materials, pay labor, or pull permits.</div>';
   } else {
     COST_CATS.forEach(c=>{
       const items=e.costs.filter(x=>x.cat===c[0]); if(!items.length) return;
-      const catSub=items.reduce((a,x)=>a+(+x.amount||0),0);
+      const catSub=fromC(sumC(items,x=>x.amount));
       html+='<div class="cgroup"><div class="cgroup-h"><span class="hl">'+ic(c[1])+esc(c[0])+'</span><span class="a">'+fmt(catSub)+'</span></div>';
       items.forEach(x=>{
-        const d=new Date(+x.ts||0).toLocaleDateString(undefined,{month:"short",day:"numeric"});
-        html+='<div class="crow" data-cost="'+esc(x.id)+'" title="Tap to delete"><span class="n">'+esc(x.note||c[0])+' <span class="m">· '+d+'</span></span><span class="a">'+fmt(+x.amount||0)+'</span></div>';
+        html+='<div class="trow"><div class="body" style="padding:2px 0"><div class="ttl">'+esc(x.note||c[0])+'</div><div class="meta">'+(x.ts?new Date(x.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"})+" · ":"")+fmt(x.amount)+'</div></div>'
+          +'<button type="button" class="rmx" data-delcost="'+esc(x.id)+'" aria-label="Delete cost '+esc(x.note||c[0])+'">'+ic("x")+'</button></div>';
       });
       html+='</div>';
     });
   }
+  /* ---- tasks ---- */
+  const tasks=e.tasks||[], doneN=tasks.filter(t=>t.done).length;
+  html+='<div class="jsecthead"><span class="t">Tasks'+(tasks.length?(' · '+doneN+' of '+tasks.length+' done'):'')+'</span><button type="button" class="addcost" id="addTaskBtn" aria-expanded="'+(!!_pmForms.task)+'">'+ic("plus")+'Add task</button></div>';
+  html+='<div class="costform" id="taskForm" style="display:'+(_pmForms.task?"":"none")+'">'
+    +'<div class="row2"><label class="lbl" style="margin:0"><span class="lbl">Task</span><input id="taskTitle" maxlength="200"></label>'
+    +'<label class="lbl" style="margin:0"><span class="lbl">Due (optional)</span><input id="taskDue" type="date"></label></div>'
+    +'<div class="btns" style="margin-top:10px"><button class="btn primary wide" id="taskAdd">'+ic("plus")+'Add task</button></div></div>';
+  if(!tasks.length){
+    html+='<div class="jempty">No tasks yet. Add your own or <button type="button" class="minibtn" id="seedPhases" style="vertical-align:middle">Add standard phases</button></div>';
+  } else {
+    html+='<div class="jcard" style="padding:6px 14px">';
+    tasks.forEach(t=>{
+      const od=isOverdue(t);
+      html+='<div class="trow'+(t.done?' done':'')+'">'
+        +'<button type="button" class="tgl'+(t.done?' done':'')+'" data-tgl="'+esc(t.id)+'" aria-pressed="'+(!!t.done)+'" aria-label="'+(t.done?'Mark not done':'Mark done')+': '+esc(t.title)+'">'+ic(t.done?"check-circle":"circle")+'</button>'
+        +'<div class="body"><div class="ttl">'+esc(t.title)+'</div>'
+        +(t.due?'<div class="meta">due '+fmtDay(t.due)+(od?' · <span class="od">Overdue</span>':'')+'</div>':'')+'</div>'
+        +'<button type="button" class="rmx" data-deltask="'+esc(t.id)+'" aria-label="Delete task '+esc(t.title)+'">'+ic("x")+'</button></div>';
+    });
+    html+='</div>';
+  }
+  /* ---- schedule ---- */
+  const sc=e.sched||{start:"",target:""};
+  let schedCap="";
+  if(sc.target){ const d=dayOrdinal(sc.target)-dayOrdinal(todayStr());
+    schedCap = d>=0 ? d+" day"+(d===1?"":"s")+" to target" : Math.abs(d)+" day"+(Math.abs(d)===1?"":"s")+" past target"; }
+  html+='<div class="jsecthead"><span class="t">Schedule</span></div><div class="jcard"><div class="schedrow">'
+    +'<label for="schedStart"><span class="lbl">Start date</span><input id="schedStart" type="date" value="'+esc(sc.start)+'"></label>'
+    +'<label for="schedTarget"><span class="lbl">Target finish</span><input id="schedTarget" type="date" value="'+esc(sc.target)+'"></label></div>'
+    +(e.actualStart?'<div class="jnote">Started on site '+fmtDay(e.actualStart)+(schedCap?' · '+schedCap:'')+'</div>':(schedCap?'<div class="jnote">'+schedCap+'</div>':''))
+    +'</div>';
+  /* ---- payments (receivables ledger) ---- */
+  const pt=e.paymentTracking||"unknown", draws=e.draws||[];
+  html+='<div class="jsecthead"><span class="t">Payments</span><button type="button" class="addcost" id="addDrawBtn" aria-expanded="'+(!!_pmForms.draw)+'">'+ic("plus")+'Add draw</button></div>';
+  html+='<div class="costform" id="drawForm" style="display:'+(_pmForms.draw?"":"none")+'">'
+    +'<div class="row2"><label class="lbl" style="margin:0"><span class="lbl">Label</span><input id="drawLabel" maxlength="120" placeholder="Deposit, Rough-in draw…"></label>'
+    +'<label class="lbl" style="margin:0"><span class="lbl">Amount $</span><input id="drawAmt" type="number" inputmode="decimal" step="any" min="0"></label></div>'
+    +'<div class="btns" style="margin-top:10px"><button class="btn primary wide" id="drawAdd">'+ic("plus")+'Add draw</button></div></div>';
+  if(!draws.length){
+    const dep=s.proposal&&+s.proposal.deposit>0;
+    html+='<div class="jempty">'+(pt==="unknown"?'Payments are not tracked for this job yet. ':'')+'Add draws to track invoicing and payments against the '+fmt(contract)+' contract.'
+      +(dep?' <button type="button" class="minibtn" id="seedDraws" style="vertical-align:middle">Seed deposit + balance</button>':'')+'</div>';
+  } else {
+    const paid=drawsPaid(e), ar=accountsReceivable(e), ub=unbilled(e), remC=contractRemaining(e), dt=drawsTotal(e);
+    const paidPct=contract>0?Math.min(100,paid/contract*100):0;
+    html+='<div class="jcard">'
+      +'<div class="paybar"><i style="width:'+paidPct.toFixed(0)+'%"></i></div>'
+      +'<div class="payline"><span>Received <b style="color:var(--ink)">'+fmt(paid)+'</b> of '+fmt(contract)+'</span>'
+      +(remC<0?'<span style="color:var(--goodink)">Credit '+fmt(Math.abs(remC))+'</span>':'<span>Remaining '+fmt(remC)+'</span>')+'</div>'
+      +'<div class="payline"><span>Receivable (invoiced, unpaid) '+fmt(ar)+'</span><span>Unbilled '+fmt(Math.max(0,ub))+'</span></div>'
+      +(toC(dt)!==toC(contract)?'<div class="jnote">Draws total '+fmt(dt)+' vs contract '+fmt(contract)+' · '+fmt(Math.abs(fromC(toC(contract)-toC(dt))))+(toC(dt)<toC(contract)?' unallocated':' over-allocated')+'</div>':'')
+      +(b==="complete"&&pt==="tracking"?'<div style="margin-top:10px"><button type="button" class="minibtn" id="finPays">Mark payments final</button></div>':'');
+    draws.forEach(d=>{
+      const partial=d.status==="invoiced"&&d.paidAmount>0;
+      let chip='<span class="chip">Planned</span>', acts='';
+      if(d.status==="planned"){ acts='<button type="button" class="minibtn" data-inv="'+esc(d.id)+'">Mark invoiced</button><button type="button" class="rmx" data-deldraw="'+esc(d.id)+'" aria-label="Delete draw '+esc(d.label)+'">'+ic("x")+'</button>'; }
+      else if(d.status==="invoiced"){ chip='<span class="chip warn">Invoiced'+(d.invoicedTs?' · '+new Date(d.invoicedTs).toLocaleDateString(undefined,{month:"short",day:"numeric"}):'')+'</span>';
+        acts='<button type="button" class="minibtn gold" data-pay="'+esc(d.id)+'">Record payment</button><button type="button" class="rmx" data-deldraw="'+esc(d.id)+'" aria-label="Delete draw '+esc(d.label)+'">'+ic("x")+'</button>'; }
+      else { chip='<span class="chip good">Paid '+fmt(d.paidAmount)+(d.paidTs?' · '+new Date(d.paidTs).toLocaleDateString(undefined,{month:"short",day:"numeric"}):'')+'</span>';
+        acts='<button type="button" class="minibtn danger" data-unpay="'+esc(d.id)+'">Reverse</button>'; }
+      html+='<div class="drow"><div class="r1"><span class="lb">'+esc(d.label)+'</span><span class="amt">'+fmt(d.amount)+'</span></div>'
+        +'<div class="r2">'+chip+(partial?'<span class="chip good">Received '+fmt(d.paidAmount)+'</span>':'')+acts+'</div>'
+        +(d.note?'<div class="note">'+esc(d.note)+'</div>':'')+'</div>';
+    });
+    html+='</div>';
+  }
+  /* ---- change orders ---- */
+  const chs=e.changes||[];
+  html+='<div class="jsecthead"><span class="t">Change orders</span><button type="button" class="addcost" id="addCoBtn" aria-expanded="'+(!!_pmForms.co)+'">'+ic("plus")+'Add CO</button></div>';
+  html+='<div class="costform" id="coForm" style="display:'+(_pmForms.co?"":"none")+'">'
+    +'<label class="lbl" style="margin:0 0 8px"><span class="lbl">What changed</span><input id="coTitle" maxlength="200"></label>'
+    +'<div class="row2"><label class="lbl" style="margin:0"><span class="lbl">Client price $ (negative = deduct)</span><input id="coAmt" type="number" inputmode="decimal" step="any"></label>'
+    +'<label class="lbl" style="margin:0"><span class="lbl">Cost impact $ (optional)</span><input id="coCost" type="number" inputmode="decimal" step="any"></label></div>'
+    +'<div class="btns" style="margin-top:10px"><button class="btn primary wide" id="coAdd">'+ic("plus")+'Add change order</button></div></div>';
+  if(!chs.length){
+    html+='<div class="jempty">No change orders. Post-start scope or price changes belong here, not in the base estimate.</div>';
+  } else {
+    html+='<div class="jcard" style="padding:6px 16px 12px">';
+    chs.forEach(c=>{
+      let chip='<span class="chip">Pending</span>', acts='';
+      if(c.status==="approved"){ chip='<span class="chip good">Approved'+(c.approvedTs?' · '+new Date(c.approvedTs).toLocaleDateString(undefined,{month:"short",day:"numeric"}):'')+'</span>';
+        acts='<button type="button" class="minibtn" data-coreopen="'+esc(c.id)+'">Reopen</button>'; }
+      else if(c.status==="void"){ chip='<span class="chip">Void</span>'; acts='<button type="button" class="rmx" data-codel="'+esc(c.id)+'" aria-label="Remove voided change order '+esc(c.title)+'">'+ic("x")+'</button>'; }
+      else { acts='<button type="button" class="minibtn gold" data-coapprove="'+esc(c.id)+'">Approve</button><button type="button" class="minibtn" data-covoid="'+esc(c.id)+'">Void</button>'; }
+      html+='<div class="drow'+(c.status==="void"?' voided':'')+'"><div class="r1"><span class="lb">'+esc(c.number?c.number+" · ":"")+esc(c.title)+'</span><span class="amt'+(c.amount<0?' neg':'')+'">'+fmtSigned(c.amount)+'</span></div>'
+        +'<div class="r2">'+chip+acts+'</div>'
+        +(c.cost?'<div class="note">Cost impact '+fmtSigned(c.cost)+'</div>':'')+'</div>';
+    });
+    const adj=fromC(changesTotalC(e));
+    if(approvedChanges(e).length) html+='<div class="jnote">Contract adjusted by '+fmtSigned(adj)+' across '+approvedChanges(e).length+' approved change order'+(approvedChanges(e).length>1?'s':'')+'. Approval here is internal tracking; keep the client\'s written approval with the job.</div>';
+    html+='</div>';
+  }
   html+='<div class="btns"><button class="btn wide" id="jobEdit">'+ic("pencil")+'Edit estimate</button></div>';
   box.innerHTML=html;
-  $("jobBack").onclick=()=>showView("dash");
-  $("jobEdit").onclick=()=>{ applyState(s); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded into calculator"); };
-  const stAct=$("jobStAct"), stDone=$("jobStDone");
-  if(stAct) stAct.onclick=()=>setStage("active");
-  if(stDone) stDone.onclick=()=>{ if(stage!=="complete") setStage("complete"); };
-  $("addCostBtn").onclick=()=>{ _costFormOpen=!_costFormOpen; $("costForm").style.display=_costFormOpen?"":"none"; if(_costFormOpen) $("costAmt").focus(); };
+  wireJobPage(e, b);
+}
+function wireJobPage(e, b){
+  const box=$("jobBody");
+  const upd=(fn,msg)=>{ const arr=getArchive(), t=arr.find(x=>x&&x.id===CUR_JOB); if(!t) return Promise.resolve(false); fn(t); return _pmWrite(arr,msg); };
+  $("jobBack").onclick=()=>showView(CUR_FROM||"jobs");
+  $("jobEdit").onclick=()=>{ applyState(e.state); EDIT_ENTRY_ID=e.id; persist(); _savedSig=stateSig(); updateSaveStatus(); showView("calc");
+    toast(b==="active"||b==="complete" ? "Loaded. This job is underway; log contract changes as change orders." : "Loaded. Saving updates this job."); };
+  const st=$("jobStart"); if(st) st.onclick=()=>startJob(CUR_JOB);
+  const cp=$("jobComplete"); if(cp) cp.onclick=()=>completeJob(CUR_JOB);
+  const ro=$("jobReopen"); if(ro) ro.onclick=()=>reopenJob(CUR_JOB);
+  const fc=$("finCosts"); if(fc) fc.onclick=()=>finalizeTracking(CUR_JOB,"cost");
+  const fp=$("finPays"); if(fp) fp.onclick=()=>finalizeTracking(CUR_JOB,"pay");
+  const formToggle=(btnId,formId,key)=>{ const btn=$(btnId); if(!btn) return;
+    btn.onclick=()=>{ _pmForms[key]=!_pmForms[key]; $(formId).style.display=_pmForms[key]?"":"none"; btn.setAttribute("aria-expanded",String(!!_pmForms[key]));
+      if(_pmForms[key]){ const f=$(formId).querySelector("input,select"); if(f) f.focus(); } }; };
+  const enterSubmits=(formId,addId)=>{ const f=$(formId); if(!f) return;
+    f.addEventListener("keydown",ev=>{ if(ev.key==="Enter"&&ev.target.tagName!=="BUTTON"){ ev.preventDefault(); $(addId).click(); } }); };
+  formToggle("addCostBtn","costForm","cost"); enterSubmits("costForm","costAdd");
+  formToggle("addTaskBtn","taskForm","task"); enterSubmits("taskForm","taskAdd");
+  formToggle("addDrawBtn","drawForm","draw"); enterSubmits("drawForm","drawAdd");
+  formToggle("addCoBtn","coForm","co"); enterSubmits("coForm","coAdd");
+  /* costs */
   $("costAdd").onclick=()=>{
-    const cat=$("costCat").value, amt=parseFloat($("costAmt").value), note=$("costNote").value.trim();
-    if(!isFinite(amt)||amt<0){ toast("Enter a valid amount"); return; }
-    const arr=getArchive(), t=arr.find(x=>x.id===CUR_JOB); if(!t) return;
-    if(!Array.isArray(t.costs)) t.costs=[];
-    t.costs.push({id:"c"+Date.now(), ts:Date.now(), cat:cat, note:note, amount:amt});
-    setArchive(arr); _costFormOpen=true; renderJob(); toast("Cost added");
+    const amt=validAmount($("costAmt").value); if(amt==null){ toast("Enter an amount above zero"); return; }
+    const cat=$("costCat").value, note=$("costNote").value.trim();
+    _pmForms.cost=true;
+    upd(t=>{ if(!Array.isArray(t.costs)) t.costs=[];
+      t.costs.push({id:uid("c"), ts:Date.now(), cat:cat, note:txt(note,200), amount:amt});
+      if(t.costTracking!=="complete") t.costTracking="tracking"; },"Cost added");
   };
-  box.querySelectorAll("[data-cost]").forEach(el=>{ el.onclick=()=>{
+  box.querySelectorAll("[data-delcost]").forEach(el=>{ el.onclick=()=>{
     if(!confirm("Delete this cost entry?")) return;
-    const arr=getArchive(), t=arr.find(x=>x.id===CUR_JOB); if(!t) return;
-    t.costs=(t.costs||[]).filter(x=>x.id!==el.dataset.cost);
-    setArchive(arr); renderJob();
-  }; });
+    upd(t=>{ t.costs=(t.costs||[]).filter(x=>x.id!==el.dataset.delcost); }); }; });
+  /* tasks */
+  const seedBtn=$("seedPhases"); if(seedBtn) seedBtn.onclick=()=>{
+    upd(t=>{ if(!Array.isArray(t.tasks)) t.tasks=[];
+      const have={}; t.tasks.forEach(x=>{ have[x.title]=1; });
+      ["Demo","Rough-in","Inspection scheduled","Finish work","Punch list walk","Final payment collected"].forEach(ti=>{
+        if(!have[ti]) t.tasks.push({id:uid("t"), ts:Date.now(), title:ti, due:"", done:false, doneTs:null}); }); },"Standard phases added"); };
+  $("taskAdd").onclick=()=>{
+    const title=$("taskTitle").value.trim(); if(!title){ toast("Give the task a name"); return; }
+    const due=validDateStr($("taskDue").value);
+    _pmForms.task=true;
+    upd(t=>{ if(!Array.isArray(t.tasks)) t.tasks=[];
+      t.tasks.push({id:uid("t"), ts:Date.now(), title:txt(title,200), due:due, done:false, doneTs:null}); },"Task added");
+  };
+  box.querySelectorAll("[data-tgl]").forEach(el=>{ el.onclick=()=>{
+    upd(t=>{ const x=(t.tasks||[]).find(y=>y.id===el.dataset.tgl); if(x){ x.done=!x.done; x.doneTs=x.done?Date.now():null; } }); }; });
+  box.querySelectorAll("[data-deltask]").forEach(el=>{ el.onclick=()=>{
+    if(!confirm("Delete this task?")) return;
+    upd(t=>{ t.tasks=(t.tasks||[]).filter(x=>x.id!==el.dataset.deltask); }); }; });
+  /* schedule */
+  const sS=$("schedStart"), sT=$("schedTarget");
+  if(sS) sS.onchange=()=>upd(t=>{ if(!t.sched||typeof t.sched!=="object") t.sched={start:"",target:""}; t.sched.start=validDateStr(sS.value); });
+  if(sT) sT.onchange=()=>upd(t=>{ if(!t.sched||typeof t.sched!=="object") t.sched={start:"",target:""}; t.sched.target=validDateStr(sT.value); });
+  /* payments */
+  const seedD=$("seedDraws"); if(seedD) seedD.onclick=()=>{
+    upd(t=>{ if(!Array.isArray(t.draws)) t.draws=[]; if(t.draws.length) return;
+      const dep=Math.max(0,Math.min(100,+((t.state.proposal||{}).deposit)||0));
+      const total=contractPrice(t), depAmt=Math.round(total*dep)/100;
+      if(depAmt>0) t.draws.push({id:uid("d"), ts:Date.now(), label:"Deposit "+dep+"%", amount:depAmt, status:"planned", invoicedTs:null, paidTs:null, paidAmount:0, note:""});
+      const bal=fromC(toC(total)-toC(depAmt));
+      if(bal>0) t.draws.push({id:uid("d"), ts:Date.now(), label:"Balance", amount:bal, status:"planned", invoicedTs:null, paidTs:null, paidAmount:0, note:""});
+      t.paymentTracking="tracking"; },"Draw schedule seeded"); };
+  $("drawAdd").onclick=()=>{
+    const amt=validAmount($("drawAmt").value); if(amt==null){ toast("Enter an amount above zero"); return; }
+    const label=$("drawLabel").value.trim();
+    _pmForms.draw=true;
+    upd(t=>{ if(!Array.isArray(t.draws)) t.draws=[];
+      t.draws.push({id:uid("d"), ts:Date.now(), label:txt(label,120)||("Draw "+(t.draws.length+1)), amount:amt, status:"planned", invoicedTs:null, paidTs:null, paidAmount:0, note:""});
+      if(t.paymentTracking!=="complete") t.paymentTracking="tracking"; },"Draw added");
+  };
+  box.querySelectorAll("[data-inv]").forEach(el=>{ el.onclick=()=>{
+    upd(t=>{ const d=(t.draws||[]).find(x=>x.id===el.dataset.inv); if(d&&d.status==="planned"){ d.status="invoiced"; d.invoicedTs=Date.now(); } },"Marked invoiced"); }; });
+  box.querySelectorAll("[data-pay]").forEach(el=>{ el.onclick=()=>{
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===CUR_JOB); if(!t) return;
+    const d=(t.draws||[]).find(x=>x.id===el.dataset.pay); if(!d||d.status!=="invoiced") return;
+    const remain=fromC(toC(d.amount)-toC(d.paidAmount||0));
+    const v=prompt("Amount received ($):", remain>0?remain:d.amount); if(v==null) return;
+    const amt=validAmount(v); if(amt==null){ toast("Enter an amount above zero"); return; }
+    d.paidAmount=fromC(toC(d.paidAmount||0)+toC(amt)); d.paidTs=Date.now();
+    if(toC(d.paidAmount)>=toC(d.amount)) d.status="paid";
+    if(t.paymentTracking!=="complete") t.paymentTracking="tracking";
+    _pmWrite(arr, toC(d.paidAmount)>=toC(d.amount)?"Payment recorded, draw paid":"Partial payment recorded"); }; });
+  box.querySelectorAll("[data-unpay]").forEach(el=>{ el.onclick=()=>{
+    if(!confirm("Reverse this payment record? The reversal is noted on the draw.")) return;
+    upd(t=>{ const d=(t.draws||[]).find(x=>x.id===el.dataset.unpay); if(d&&d.status==="paid"){
+      d.note=txt("Payment of "+fmt(d.paidAmount)+" reversed "+new Date().toLocaleDateString()+(d.note?" · "+d.note:""),200);
+      d.status="invoiced"; d.paidAmount=0; d.paidTs=null; } },"Payment reversed"); }; });
+  box.querySelectorAll("[data-deldraw]").forEach(el=>{ el.onclick=()=>{
+    if(!confirm("Delete this draw?")) return;
+    upd(t=>{ t.draws=(t.draws||[]).filter(x=>x.id!==el.dataset.deldraw); }); }; });
+  /* change orders */
+  $("coAdd").onclick=()=>{
+    const amt=validSignedAmount($("coAmt").value); if(amt==null){ toast("Enter a nonzero client price (negative to deduct)"); return; }
+    let cost=money2($("coCost").value); if(cost==null) cost=0;
+    const title=$("coTitle").value.trim(); if(!title){ toast("Describe the change"); return; }
+    _pmForms.co=true;
+    upd(t=>{ if(!Array.isArray(t.changes)) t.changes=[];
+      t.changes.push({id:uid("o"), ts:Date.now(), number:"CO-"+(t.changes.length+1), title:txt(title,200), amount:amt, cost:cost, status:"pending", approvedTs:null, note:""}); },"Change order added");
+  };
+  box.querySelectorAll("[data-coapprove]").forEach(el=>{ el.onclick=()=>{
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===CUR_JOB); if(!t) return;
+    const c=(t.changes||[]).find(x=>x.id===el.dataset.coapprove); if(!c||c.status!=="pending") return;
+    if(toC(entryPrice(t))+changesTotalC(t)+toC(c.amount)<=0){ toast("Approving this would make the contract zero or negative"); return; }
+    if(!confirm("Approve "+(c.number||"this change order")+" for "+fmtSigned(c.amount)+"? This adjusts the contract. Internal tracking only; keep the client's written approval.")) return;
+    c.status="approved"; c.approvedTs=Date.now();
+    _pmWrite(arr,"Change order approved"); }; });
+  box.querySelectorAll("[data-coreopen]").forEach(el=>{ el.onclick=()=>{
+    if(!confirm("Reopen this approved change order? Its contract adjustment is removed until it is approved again.")) return;
+    upd(t=>{ const c=(t.changes||[]).find(x=>x.id===el.dataset.coreopen); if(c&&c.status==="approved"){ c.status="pending"; c.approvedTs=null; c.note=txt("Reopened "+new Date().toLocaleDateString()+(c.note?" · "+c.note:""),200); } },"Change order reopened"); }; });
+  box.querySelectorAll("[data-covoid]").forEach(el=>{ el.onclick=()=>{
+    if(!confirm("Void this change order?")) return;
+    upd(t=>{ const c=(t.changes||[]).find(x=>x.id===el.dataset.covoid); if(c&&c.status==="pending") c.status="void"; },"Change order voided"); }; });
+  box.querySelectorAll("[data-codel]").forEach(el=>{ el.onclick=()=>{
+    if(!confirm("Remove this voided change order?")) return;
+    upd(t=>{ t.changes=(t.changes||[]).filter(x=>x.id!==el.dataset.codel); }); }; });
 }
 
 /* ---------------- APPLY STATE / AUTOSAVE / INIT ---------------- */
@@ -2054,7 +2601,8 @@ async function maybeInstallHint(){
   try{ await migrate(); }catch(e){}
   // Each storage load is isolated: one failure falls back to the empty default and boot continues.
   try{ PROFILE = (IDB_OK? await idbGet(LS_PROFILE):null) || readLS(LS_PROFILE) || {}; }catch(e){ PROFILE={}; }
-  try{ ARCH_CACHE = (IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || []; }catch(e){ ARCH_CACHE=[]; }
+  try{ const rawArch=(IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
+    ARCH_CACHE=(Array.isArray(rawArch)?rawArch:[]).map(sanitizeEntry).filter(Boolean); }catch(e){ ARCH_CACHE=[]; }
   try{ const sb = (IDB_OK? await idbGet("ea_bench"):null) || readLS("ea_bench");
     if(sb && sb.data){ const merged=JSON.parse(JSON.stringify(SEED_BENCH)); Object.keys(sb.data).forEach(k=>{ if(merged[k]&&sb.data[k]) merged[k]=sb.data[k]; }); BENCH=merged; BENCH_UPDATED=sb.updated||BENCH_UPDATED; }
   }catch(e){}
@@ -2063,7 +2611,8 @@ async function maybeInstallHint(){
   STATE_CACHE = saved;
   defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI(); renderPhotos();
   let hadState=false;
-  if(saved && saved.rows){ applyState(saved); hadState=true; }
+  if(saved && saved.rows){ applyState(saved); hadState=true;
+    EDIT_ENTRY_ID=(saved.editId && getArchive().some(x=>x&&x.id===saved.editId)) ? saved.editId : null; }
   if(!hadState){
     if(PROFILE.defOverhead!=null&&PROFILE.defOverhead!=="") $("overhead").value=PROFILE.defOverhead;
     if(PROFILE.defContingency!=null&&PROFILE.defContingency!=="") $("contingency").value=PROFILE.defContingency;
