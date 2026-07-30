@@ -138,6 +138,9 @@
   #calcView.on{display:flex;flex-direction:column}
   .col{display:flex;flex-direction:column;min-width:0}
   #calcView.mode-analyze .col-main #importCard{order:-1}   /* analyze: float upload to the top of the inputs */
+  /* Each mode shows only its own input path: Build talks costs in (voice), Analyze takes a finished bid in (upload). */
+  #calcView:not(.mode-analyze) #importCard{display:none}
+  #calcView.mode-analyze #voiceCard{display:none}
   #calcView.mode-analyze #drop{border-color:var(--accent);background:rgba(255,140,66,.11)}
   /* Desktop: two columns, inputs left, price/summary pinned on the right so they stay visible while you edit. */
   @media(min-width:900px){
@@ -1121,7 +1124,7 @@ function setMode(mode){
     $("tipMargin").dataset.tip="The profit margin already built into this bid: profit as a share of the price.";
     $("tipRec").dataset.tip="The bid's total price, with margin already included.";
     $("tipBe").dataset.tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.";
-    $("modeHint").innerHTML="You have a <b>priced bid</b>. Enter the line items below. I'll show the margin, profit &amp; break-even at the bottom.";
+    $("modeHint").innerHTML="You have a <b>priced bid</b>. Upload it above or enter the line items below. I'll show the margin, profit &amp; break-even at the bottom.";
     $("margin").value=45;
   }
   calc();
