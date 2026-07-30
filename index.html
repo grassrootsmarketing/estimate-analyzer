@@ -938,7 +938,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 const fmt = n => (n<0?"-$":"$") + Math.abs(Math.round(n)).toLocaleString();
 const fmt2 = n => "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1189,8 +1188,21 @@ $("benchCat").addEventListener("change",function(){ syncQtyLabel(); calc(); });
 $("modeAnalyze").addEventListener("click",()=>setMode("analyze"));
 $("modeCost").addEventListener("click",()=>setMode("cost"));
 
-/* ---------------- PDF / OCR IMPORT ---------------- */
-if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+/* ---------------- PDF / OCR IMPORT ----------------
+   PDF.js and Tesseract are vendored same-origin under /vendor (pinned copies,
+   no CDN at runtime) and loaded lazily on first use. The service worker caches
+   them after first load, so imports keep working offline. */
+let _pdfPromise=null;
+function loadPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(true);
+  if(_pdfPromise) return _pdfPromise;
+  _pdfPromise=new Promise((res,rej)=>{ const s=document.createElement("script");
+    s.src="/vendor/pdfjs/pdf.min.js";
+    s.onload=()=>{ try{ pdfjsLib.GlobalWorkerOptions.workerSrc="/vendor/pdfjs/pdf.worker.min.js"; }catch(e){} res(true); };
+    s.onerror=()=>{ _pdfPromise=null; rej(new Error("PDF reader load failed")); }; document.head.appendChild(s); });
+  return _pdfPromise;
+}
+const TESS_OPTS={ workerPath:"/vendor/tesseract/worker.min.js", corePath:"/vendor/tesseract", langPath:"/vendor/tesseract/lang" };
 const AMT_RE=/\$\s?\d[\d,]*(?:\.\d{2})?|\b\d[\d,]*\.\d{2}\b/g;
 function parseAmount(s){ const n=parseFloat(String(s).replace(/[^0-9.]/g,"")); return isFinite(n)?n:0; }
 function categorize(desc){
@@ -1248,12 +1260,12 @@ function loadTesseract(){
   if(window.Tesseract) return Promise.resolve(true);
   if(_tessPromise) return _tessPromise;
   _tessPromise=new Promise((res,rej)=>{ const s=document.createElement("script");
-    s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
-    s.onload=()=>res(true); s.onerror=()=>rej(new Error("OCR load failed")); document.head.appendChild(s); });
+    s.src="/vendor/tesseract/tesseract.min.js";
+    s.onload=()=>res(true); s.onerror=()=>{ _tessPromise=null; rej(new Error("OCR load failed")); }; document.head.appendChild(s); });
   return _tessPromise;
 }
 function ocrToLines(t){ return (t||"").split(/\r?\n+/).map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean); }
-async function ocrImageSrc(src,label){ const r=await Tesseract.recognize(src,"eng",{logger:m=>{ if(m.status==="recognizing text") setMsg((label||"Reading")+", OCR "+Math.round((m.progress||0)*100)+"%"); }}); return r.data.text; }
+async function ocrImageSrc(src,label){ const r=await Tesseract.recognize(src,"eng",Object.assign({logger:m=>{ if(m.status==="recognizing text") setMsg((label||"Reading")+", OCR "+Math.round((m.progress||0)*100)+"%"); }},TESS_OPTS)); return r.data.text; }
 async function ocrPdf(file){
   const buf=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:buf}).promise; const n=Math.min(pdf.numPages,8); let text="";
   for(let p=1;p<=n;p++){ const page=await pdf.getPage(p); const vp=page.getViewport({scale:2});
@@ -1270,7 +1282,8 @@ async function handleFile(file){
   try{
     let lines=[], usedOcr=false;
     if(isPdf){
-      if(!window.pdfjsLib){ setMsg("PDF reader didn't load. Check your connection.","bad"); return; }
+      setMsg("Loading PDF reader…");
+      try{ await loadPdfJs(); }catch(e){ setMsg("PDF reader didn't load. Check your connection, then retry.","bad"); return; }
       lines=await extractLines(file);
       if(lines.join("").replace(/\s/g,"").length<20){
         setMsg("No text layer, loading OCR…");

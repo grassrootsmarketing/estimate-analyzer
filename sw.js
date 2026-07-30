@@ -1,5 +1,5 @@
-/* Estimate Analyzer service worker — offline shell */
-const CACHE = "ea-shell-v1";
+/* Estimate Analyzer service worker — offline shell + vendored libraries */
+const CACHE = "ea-shell-v2";
 self.addEventListener("install", e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["/","/index.html"])).then(()=>self.skipWaiting()).catch(()=>{}));
 });
@@ -10,15 +10,21 @@ self.addEventListener("fetch", e=>{
   const req = e.request;
   if(req.method !== "GET") return;                 // never touch POST (/api)
   const url = new URL(req.url);
-  if(url.origin !== location.origin) return;        // CDN + /api go straight to network
+  if(url.origin !== location.origin) return;        // cross-origin goes straight to network
   if(req.mode === "navigate"){
-    // network-first for the page so new deploys flow; fall back to cached shell offline
-    e.respondWith(fetch(req).catch(()=> caches.match("/index.html").then(r=> r || caches.match("/"))));
+    // Network-first for the page so new deploys flow. On success, refresh the
+    // cached shell so the offline fallback is always the latest deployed page
+    // (the old worker cached index.html once at install and never updated it).
+    e.respondWith(fetch(req).then(resp=>{
+      if(resp && resp.ok){ const cp = resp.clone(); caches.open(CACHE).then(c=>{ c.put("/index.html", cp.clone()); c.put("/", cp); }).catch(()=>{}); }
+      return resp;
+    }).catch(()=> caches.match("/index.html").then(r=> r || caches.match("/"))));
     return;
   }
-  // cache-first for same-origin assets
+  // Cache-first for same-origin assets (icons, /vendor libraries). A miss while
+  // offline fails honestly; index.html is never returned in place of an asset.
   e.respondWith(caches.match(req).then(r => r || fetch(req).then(resp=>{
-    if(resp && resp.status === 200){ const cp = resp.clone(); caches.open(CACHE).then(c=>c.put(req, cp)); }
+    if(resp && resp.status === 200){ const cp = resp.clone(); caches.open(CACHE).then(c=>c.put(req, cp)).catch(()=>{}); }
     return resp;
-  }).catch(()=> caches.match("/index.html"))));
+  })));
 });
