@@ -121,6 +121,10 @@
   .tip:active{transform:scale(.9)}
   .tip::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);background:#0d141b;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:12px;font-weight:500;line-height:1.38;width:190px;max-width:62vw;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .16s ease,transform .16s ease;z-index:40;white-space:normal}
   .tip:hover::after,.tip:focus::after{opacity:1;transform:translateX(-50%) translateY(0)}
+  .tip.eleft::after{left:-4px;transform:translateX(0) translateY(-4px)}
+  .tip.eleft:hover::after,.tip.eleft:focus::after{transform:translateX(0) translateY(0)}
+  .tip.eright::after{left:auto;right:-4px;transform:translateX(0) translateY(-4px)}
+  .tip.eright:hover::after,.tip.eright:focus::after{transform:translateX(0) translateY(0)}
   .tip:focus{outline:none}
   .savednote{font-size:12.5px;color:var(--good);margin-top:10px;min-height:15px;line-height:1.4}
   .savednote.unsaved{color:#ffcf8f;background:#352c12;border:1px solid #6b561a;border-radius:9px;padding:8px 11px}
@@ -776,9 +780,9 @@
       <summary><span>Rates</span><span class="fold-hint" id="ratesHint">contingency · overhead · material tax</span></summary>
       <div class="foldbody">
         <div class="row g3">
-          <div><span class="lbl">Contingency %</span><input id="contingency" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
-          <div><span class="lbl">Overhead %</span><input id="overhead" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
-          <div><span class="lbl">Mat. tax %</span><input id="tax" type="number" inputmode="decimal" value="0" min="0" step="0.1" /></div>
+          <div><span class="lbl">Contingency %<span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="A cushion added to your costs for surprises: found rot, price jumps, an extra dump run. 5 to 10% is typical.">i</span></span><input id="contingency" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
+          <div><span class="lbl">Overhead %<span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="What it costs to run the business itself: truck, insurance, phone, tools, your time quoting. Drives break-even and net profit.">i</span></span><input id="overhead" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
+          <div><span class="lbl">Mat. tax %<span class="tip eright" tabindex="0" role="button" aria-label="What is this?" data-tip="Sales tax applied only to Materials lines. LA County is 9.5%. Labor and subs are not taxed here.">i</span></span><input id="tax" type="number" inputmode="decimal" value="0" min="0" step="0.1" /></div>
         </div>
       </div>
     </details>
@@ -799,8 +803,8 @@
           <div><span class="lbl">Email</span><input id="contactEmail" type="email" inputmode="email" autocapitalize="off" placeholder="name@email.com" /></div>
         </div>
         <div class="row g2">
-          <div><span class="lbl">Benchmark check</span><select id="benchCat"></select></div>
-          <div><span class="lbl" id="qtyLbl">Project size</span>
+          <div><span class="lbl">Benchmark check<span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="Checks your price per unit against your saved market ranges. Once you have 3+ won jobs of a trade, it uses YOUR real numbers instead.">i</span></span><select id="benchCat"></select></div>
+          <div><span class="lbl"><span id="qtyLbl">Project size</span><span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="The job's size in the benchmark's unit (square feet or hours). Needed to work out your price per unit.">i</span></span>
             <select id="benchQty">
               <option value="">Select size…</option>
               <option value="1000">1,000+</option>
@@ -837,7 +841,7 @@
       <div class="totline"><span class="muted">Direct</span><span id="sDirect">$0</span></div>
       <div class="totline"><span class="muted">+ Material tax</span><span id="sTax">$0</span></div>
       <div class="totline"><span class="muted">+ Contingency</span><span id="sCont">$0</span></div>
-      <div class="totline big"><span id="sTrueLbl">True job cost</span><span id="sTrue">$0</span></div>
+      <div class="totline big"><span><span id="sTrueLbl">True job cost</span><span class="tip" id="tipTrue" tabindex="0" role="button" aria-label="What is this?" data-tip="Direct costs plus material tax plus contingency. What the job really costs you before any profit.">i</span></span><span id="sTrue">$0</span></div>
       <div class="totline"><span class="muted">Markup</span><span id="sMarkup">-</span></div>
       <details><summary>How the math works</summary>
         <p><b>Markup</b> (Build-from-cost mode) adds % on top of your cost: $1,000 +10% = $1,100. <b>Margin</b> (Analyze mode) is profit as a % of the final price. <b>Break-even</b> covers true cost + overhead. Quote below it and you lose money. LA 2026 benchmarks are built into the over/under check.</p>
@@ -931,7 +935,7 @@
       <div class="field"><span class="lbl">Address</span><input id="coAddress" placeholder="7908 Moorcroft Ave, Canoga Park, CA" /></div>
     </div>
     <div class="card">
-      <h2>Default rates</h2>
+      <h2>Default rates<span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="These prefill every NEW estimate. Adjusting rates on one job in the Estimate screen never changes these defaults.">i</span></h2>
       <p class="sub">Applied to new estimates automatically.</p>
       <div class="row g2">
         <div><span class="lbl">Default markup %</span><input id="defMarkup" type="number" inputmode="decimal" value="40" min="0" step="1" /></div>
@@ -1217,11 +1221,13 @@ function paintResults(s, r){
     $("recSub").textContent="+"+r.markupPct.toFixed(0)+"% markup · profit "+fmt(r.grossProfit)+" · "+r.marginPct.toFixed(0)+"% true margin";
     $("sDirect").textContent=fmt(r.direct); $("sTax").textContent=fmt(r.taxAmt); $("sCont").textContent=fmt(r.contAmt);
     $("sTrueLbl").textContent="True job cost"; $("sTrue").textContent=fmt(r.trueCost); $("sMarkup").textContent=r.markupPct.toFixed(0)+"% on cost";
+    if($("tipTrue")) $("tipTrue").dataset.tip="Direct costs plus material tax plus contingency. What the job really costs you before any profit.";
     benchmarkCheck(r.price); quoteCheck(r.trueCost, r.breakeven, r.oh, r.price);
   } else {
     $("recSub").textContent="Bid total · assuming "+r.marginPct.toFixed(0)+"% margin baked in → profit "+fmt(r.grossProfit);
     $("sDirect").textContent=fmt(r.price); $("sTax").textContent="-"; $("sCont").textContent="-";
     $("sTrueLbl").textContent="Break-even cost"; $("sTrue").textContent=fmt(r.breakeven); $("sMarkup").textContent=r.marginPct.toFixed(0)+"% margin assumed";
+    if($("tipTrue")) $("tipTrue").dataset.tip="The most this job can cost you (with overhead) before the bid loses money. Keep real costs under it.";
     benchmarkCheck(r.price);
     const qBe=r.oh<1?r.impliedCost/(1-r.oh):Infinity;   // implied cost basis for "test a price"
     quoteCheck(r.impliedCost, qBe, r.oh, r.price);
@@ -2223,7 +2229,7 @@ function renderDashboard(){
   const bands=[[0,20],[20,35],[35,1e9]].map(b=>margs.filter(v=>v>=b[0]&&v<b[1]).length);
   const maxB=Math.max.apply(null,bands.concat([1]));
   html+='<div class="bgrid">'+
-    '<div class="bcard"><div class="blabel">Win rate</div><div class="ringwrap"><svg viewBox="0 0 96 96" aria-hidden="true">'+
+    '<div class="bcard"><div class="blabel">Win rate <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="Counts only bids you have marked won or lost in the Archive. Pending bids do not move this number.">i</span></div><div class="ringwrap"><svg viewBox="0 0 96 96" aria-hidden="true">'+
       '<circle cx="48" cy="48" r="44" fill="none" stroke="var(--line)" stroke-width="2.5" stroke-dasharray="1.5 21.5" transform="rotate(-90 48 48)"/>'+
       '<circle cx="48" cy="48" r="36" fill="none" stroke="var(--panel2)" stroke-width="10"/>'+
       (winRate!=null?'<circle cx="48" cy="48" r="36" fill="none" stroke="var(--accent2)" stroke-width="10" stroke-linecap="round" stroke-dasharray="226.2" stroke-dashoffset="'+off+'" transform="rotate(-90 48 48)"/>':'')+
@@ -2276,7 +2282,7 @@ function renderJobs(){
     if((e.paymentTracking||"unknown")==="unknown"){ untracked++; } else { outC+=Math.max(0,toC(contractRemaining(e))); } } });
   const tile=(l,v,s)=>'<div class="jtile"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';
   let html='<div class="jstrip">'
-    +tile("Outstanding", fmt(fromC(outC)), untracked? (untracked+" job"+(untracked>1?"s":"")+" not tracked") : "on tracked jobs")
+    +tile('Outstanding <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="Contract money not collected yet across active and complete jobs. Jobs without payment tracking are left out, never counted as zero.">i</span>', fmt(fromC(outC)), untracked? (untracked+" job"+(untracked>1?"s":"")+" not tracked") : "on tracked jobs")
     +tile("In progress", String(groups.active.length), groups.active.length===1?"job on site":"jobs on site")
     +tile("Bids waiting", String(groups.bidding.length), "pending decisions")
     +'</div>';
@@ -2400,7 +2406,7 @@ function renderJob(){
     profHtml='<span style="color:var(--'+(v>=0?"good":"bad")+')">'+fmt(v)+'</span>'; }
   const capRem = rem>=0 ? fmt(rem)+" remaining" : fmt(Math.abs(rem))+" over target";
   html+='<div class="jcard"><div class="jbudget-top"><div class="jb-l"><div class="l">Spent</div><div class="v">'+fmt(spent)+'</div></div>'
-    +'<div class="jb-r"><div class="l">Cost target</div><div class="v">'+fmt(target)+'</div></div></div>'
+    +'<div class="jb-r"><div class="l">Cost target <span class="tip eright" tabindex="0" role="button" aria-label="What is this?" data-tip="What you estimated the work would cost you, adjusted by approved change orders. The spend bar measures against this, not the price.">i</span></div><div class="v">'+fmt(target)+'</div></div></div>'
     +'<div class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></div>'
     +'<div class="jcap">'+pct.toFixed(0)+'% of cost target used · '+capRem+(ceiling!=null?' · break-even ceiling '+fmt(ceiling):'')+'</div>'
     +'<div class="jdiv"></div>'
@@ -2479,7 +2485,7 @@ function renderJob(){
       +'<div class="paybar"><i style="width:'+paidPct.toFixed(0)+'%"></i></div>'
       +'<div class="payline"><span>Received <b style="color:var(--ink)">'+fmt(paid)+'</b> of '+fmt(contract)+'</span>'
       +(remC<0?'<span style="color:var(--goodink)">Credit '+fmt(Math.abs(remC))+'</span>':'<span>Remaining '+fmt(remC)+'</span>')+'</div>'
-      +'<div class="payline"><span>Receivable (invoiced, unpaid) '+fmt(ar)+'</span><span>Unbilled '+fmt(Math.max(0,ub))+'</span></div>'
+      +'<div class="payline"><span>Receivable (invoiced, unpaid) '+fmt(ar)+' <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="Receivable is invoiced and waiting on the client. Unbilled is contract value you have not invoiced yet. Together they are what is still owed.">i</span></span><span>Unbilled '+fmt(Math.max(0,ub))+'</span></div>'
       +(toC(dt)!==toC(contract)?'<div class="jnote">Draws total '+fmt(dt)+' vs contract '+fmt(contract)+' · '+fmt(Math.abs(fromC(toC(contract)-toC(dt))))+(toC(dt)<toC(contract)?' unallocated':' over-allocated')+'</div>':'')
       +(b==="complete"&&pt==="tracking"?'<div style="margin-top:10px"><button type="button" class="minibtn" id="finPays">Mark payments final</button></div>':'');
     draws.forEach(d=>{
