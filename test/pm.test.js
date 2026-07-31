@@ -201,5 +201,21 @@ const guarded = S.compute({ mode: "cost", margin: 10, contingency: S.clampNum(-5
 eq(guarded.trueCost, 1000, "negative qty line contributes nothing after cleaning");
 ok(isFinite(guarded.breakeven), "capped overhead keeps break-even finite");
 
+// 19. Leads: a stage before pricing, with the same lost-first rule
+eq(S.boardStage(job({ isLead: true })), "lead", "unpriced lead sits in the lead stage");
+eq(S.boardStage(job({ isLead: true, outcome: "lost" })), null, "dismissed lead leaves the board");
+eq(S.boardStage(job({ isLead: true, outcome: "won" })), "upnext", "a lead marked won jumps to up next");
+eq(S.boardStage(job({ isLead: true, outcome: "won", stage: "active" })), "active", "started lead behaves like any job");
+eq(S.boardStage(job({})), "bidding", "non-lead entries are untouched by the lead stage");
+const leadE = S.sanitizeEntry({ state: { ts: 1 }, isLead: true,
+  lead: { desc: "kitchen remodel", src: "form", key: "leads/abc/l1.json", receivedTs: 5, area: "Highland Park", timing: "ASAP" } });
+eq(leadE.isLead, true, "sanitize keeps the lead flag");
+eq(leadE.lead.desc, "kitchen remodel", "sanitize keeps the lead note");
+eq(leadE.lead.src, "form", "sanitize keeps the lead source");
+eq(leadE.lead.key, "leads/abc/l1.json", "sanitize keeps the dedupe key");
+const leadDefaults = S.sanitizeEntry({ state: { ts: 1 }, isLead: true });
+ok(leadDefaults.lead && leadDefaults.lead.src === "manual", "lead without details gets safe defaults");
+ok(S.isManagedJob(leadDefaults), "leads count as managed: pruning never drops them");
+
 if (failures) { console.error("\n" + failures + " PM test(s) failed."); process.exit(1); }
 console.log("\nAll PM invariants passed.");
