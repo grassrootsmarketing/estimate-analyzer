@@ -1601,9 +1601,10 @@ function boardStage(e){ if(!e) return null; const o=(e.outcome==="won"||e.outcom
   if(e.stage==="complete") return "complete";
   if(e.stage==="active") return "active";
   if(o==="won") return "upnext";
+  if(e.isLead) return "lead";                                       // captured interest, not yet priced
   return "bidding"; }
 function hasPmActivity(e){ return !!((e.costs&&e.costs.length)||(e.tasks&&e.tasks.length)||(e.draws&&e.draws.length)||(e.changes&&e.changes.length)||(e.sched&&(e.sched.start||e.sched.target))); }
-function isManagedJob(e){ return !!e && (e.stage==="active"||e.stage==="complete"||e.outcome==="won"||hasPmActivity(e)); }
+function isManagedJob(e){ return !!e && (e.isLead===true||e.stage==="active"||e.stage==="complete"||e.outcome==="won"||hasPmActivity(e)); }
 function approvedChanges(e){ return (e.changes||[]).filter(c=>c&&c.status==="approved"); }
 function changesTotalC(e){ return sumC(approvedChanges(e),c=>c.amount); }
 function contractPrice(e){ return fromC(toC(entryPrice(e))+changesTotalC(e)); }
@@ -1672,6 +1673,8 @@ function upsertFromState(st){
   if(t){
     const m=deriveMeta(st);
     t.state=st; t.results=compute(st); t.trade=m.trade; t.size=m.size; t.updatedTs=Date.now();
+    // Pricing a lead graduates it into a real bid.
+    if(t.isLead && (st.rows||[]).some(r=>((+r.qty||0)*(+r.unit||0))>0)) t.isLead=false;
     setArchive(a);
     return {entry:t, created:false};
   }
@@ -2185,6 +2188,11 @@ function sanitizeEntry(e){
     const st={pending:1,approved:1,void:1}[c.status]?c.status:"pending";
     return {id:fixId(c.id,"o"), ts:numTs(c.ts), number:txt(c.number,20), title:txt(c.title,200)||"Change order",
       amount:amt, cost:cost, status:st, approvedTs:st==="approved"?(numTs(c.approvedTs)||0):null, note:txt(c.note,200)}; }).filter(Boolean);
+  // Lead fields: a captured lead keeps its note, source, and dedupe key.
+  e.isLead=e.isLead===true;
+  e.lead=(e.lead&&typeof e.lead==="object")?{desc:txt(e.lead.desc,600),area:txt(e.lead.area,120),timing:txt(e.lead.timing,40),
+    src:(e.lead.src==="form"?"form":"manual"),key:txt(e.lead.key,120),receivedTs:numTs(e.lead.receivedTs)}:null;
+  if(e.isLead&&!e.lead) e.lead={desc:"",area:"",timing:"",src:"manual",key:"",receivedTs:0};
   // Unknown vs zero: legacy entries with no ledger stay "unknown", never fake zero.
   e.costTracking={unknown:1,tracking:1,complete:1}[e.costTracking]?e.costTracking:(e.costs.length?"tracking":"unknown");
   e.paymentTracking={unknown:1,tracking:1,complete:1}[e.paymentTracking]?e.paymentTracking:(e.draws.length?"tracking":"unknown");
@@ -2346,6 +2354,79 @@ function renderCloud(){
   }
 }
 
+/* ---------------- LEAD CAPTURE (public request link + inbox) ----------------
+   The share link carries only a SHA-256 inbox id. Reading or clearing the inbox
+   requires the raw lead code, which never leaves this device. */
+const LEAD_LS="ea_leadkey";
+let LEADKEY=null, _leadPollTs=0, _leadBusy=false;
+async function leadId(code){ const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("ea-lead-id-v1:"+normCode(code)));
+  return Array.from(new Uint8Array(d)).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+function newLeadEntry(f){ const now=Date.now();
+  const st={ts:now, mode:"cost", jobName:txt(f.name,80)||"New lead", clientType:"Individual homeowner",
+    contactName:txt(f.name,80), contactPhone:txt(f.phone,40), contactEmail:txt(f.email,80),
+    benchCat:"", benchQty:"", margin:40, contingency:0, overhead:0, tax:0, proposed:"", photos:[], rows:[]};
+  const e=newEntry(st); e.isLead=true;
+  e.lead={desc:txt(f.desc,600), area:txt(f.area,120), timing:txt(f.timing,40),
+    src:(f.src==="form"?"form":"manual"), key:txt(f.key,120), receivedTs:numTs(f.ts)||now};
+  return e; }
+async function addManualLead(name,phone,desc){
+  if(!(name||"").trim()){ toast("A lead needs at least a name"); return false; }
+  const arr=getArchive(); arr.unshift(newLeadEntry({name:name,phone:phone,desc:desc,src:"manual"}));
+  await setArchive(pruneArchive(arr)); renderJobs(); toast("Lead added"); return true; }
+function estimateLead(id){ const e=jobById(id); if(!e) return;
+  applyState(e.state); EDIT_ENTRY_ID=e.id; persist(); _savedSig=null; updateSaveStatus();
+  showView("calc"); toast("Lead loaded. Price it and hit Save; it becomes a bid."); }
+function dismissLead(id){ const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
+  if(!confirm("Dismiss this lead? It moves to history as lost; you can change that later in the Archive.")) return;
+  t.outcome="lost"; t.updatedTs=Date.now(); setArchive(arr).then(()=>renderJobs()); }
+function leadShareLink(idHex){
+  return location.origin+"/request.html?to="+idHex+(PROFILE.name?("&c="+encodeURIComponent(PROFILE.name)):""); }
+async function fetchLeads(manual){
+  if(!LEADKEY||_leadBusy||!navigator.onLine) return;
+  if(!manual && Date.now()-_leadPollTs<60000) return;   // poll at most once a minute
+  _leadBusy=true; _leadPollTs=Date.now();
+  try{
+    const r=await fetch("/api/lead",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({op:"list", key:normCode(LEADKEY)})});
+    const d=await r.json().catch(()=>null) || {};
+    if(!r.ok) throw new Error(d.error||("HTTP "+r.status));
+    const items=Array.isArray(d.leads)?d.leads:[];
+    if(items.length){
+      const arr=getArchive();
+      const seen={}; arr.forEach(e=>{ if(e&&e.lead&&e.lead.key) seen[e.lead.key]=1; });
+      const fresh=items.filter(l=>l&&l.key&&!seen[l.key]);
+      fresh.forEach(l=>arr.unshift(newLeadEntry({name:l.name,phone:l.phone,email:l.email,desc:l.desc,area:l.area,timing:l.timing,src:"form",key:l.key,ts:l.ts})));
+      if(fresh.length){ await setArchive(pruneArchive(arr)); renderJobs();
+        toast(fresh.length+" new lead"+(fresh.length>1?"s":"")+" from your request link"); }
+      // clear the cloud inbox once everything is safely imported
+      try{ await fetch("/api/lead",{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({op:"remove", key:normCode(LEADKEY), names:items.map(l=>l.key)})}); }catch(e){}
+    } else if(manual){ toast("No new leads"); }
+  }catch(err){ if(manual) toast("Couldn't check for leads: "+(err&&err.message||"error")); }
+  finally{ _leadBusy=false; }
+}
+async function renderLeadCapture(){
+  const box=$("leadCapBody"); if(!box) return;
+  if(LEADKEY){
+    const idHex=await leadId(LEADKEY), link=leadShareLink(idHex);
+    box.innerHTML='<p class="sub" style="margin-top:0">Anyone with this link can send you a job request. New requests land in your Leads column.</p>'+
+      '<div style="font-size:12.5px;word-break:break-all;padding:9px 11px;border:1px dashed var(--line);border-radius:10px;color:var(--ink)">'+esc(link)+'</div>'+
+      '<div class="arch-tools" style="margin-top:9px">'+
+        '<button class="btn" id="leadCopy">Copy link</button>'+
+        '<button class="btn" id="leadCheck">Check now</button>'+
+        '<button class="btn ghost" id="leadOff">Turn off</button>'+
+      '</div>';
+    $("leadCopy").onclick=()=>{ try{ navigator.clipboard.writeText(link); toast("Link copied. Text it, put it on your card, anywhere."); }catch(e){ toast("Couldn't copy. Long-press the link to copy it."); } };
+    $("leadCheck").onclick=()=>fetchLeads(true);
+    $("leadOff").onclick=()=>{ if(!confirm("Turn off the request link? The link stops working for new requests until you turn it back on."))return;
+      LEADKEY=null; saveKey(LEAD_LS,null); renderLeadCapture(); };
+  } else {
+    box.innerHTML='<p class="sub" style="margin-top:0">Get a shareable link where anyone can request an estimate: name, phone, and what they need. Requests show up here as leads.</p>'+
+      '<div class="btns" style="margin-top:6px"><button class="btn primary wide" id="leadOn">Create my request link</button></div>';
+    $("leadOn").onclick=async ()=>{ LEADKEY=makeSyncCode(); saveKey(LEAD_LS,LEADKEY); await renderLeadCapture(); toast("Request link created"); };
+  }
+}
+
 /* ---------------- NAV / VIEWS ---------------- */
 const _VIEWS=["dash","calc","jobs","archive","settings","proposal","job"];
 let _viewScroll={};
@@ -2422,7 +2503,8 @@ function renderDashboard(){
   const decided=arr.filter(e=>{ const o=entryMeta(e).outcome; return o==="won"||o==="lost"; });
   const won=decided.filter(e=>entryMeta(e).outcome==="won").length;
   const winRate=decided.length?Math.round(won/decided.length*100):null;
-  /* funnel stages: every estimate flows bids -> won -> in progress -> completed */
+  /* funnel stages: leads -> bids -> won -> in progress -> completed */
+  const stLeads=arr.filter(e=>boardStage(e)==="lead");
   const stBids=arr.filter(e=>boardStage(e)==="bidding");
   const stWon=arr.filter(e=>entryMeta(e).outcome==="won");
   const stAct=arr.filter(e=>boardStage(e)==="active");
@@ -2435,11 +2517,11 @@ function renderDashboard(){
   html+='<div class="bgrid">'+
     '<div class="bcard"><div class="blabel">Funnel <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="How work flows: bids out, marked won, started, completed. Mark outcomes in the Archive or move jobs on the board to keep this true.">i</span></div>'+
       '<div class="funl">'+(function(){
-        const stages=[["Bids out",stBids,entryPrice,.4],["Won",stWon,contractPrice,.62],["In progress",stAct,contractPrice,.82],["Completed",stDone,contractPrice,1]];
+        const stages=[["Leads",stLeads,function(){return 0;},.3],["Bids out",stBids,entryPrice,.45],["Won",stWon,contractPrice,.62],["In progress",stAct,contractPrice,.82],["Completed",stDone,contractPrice,1]];
         const maxC=Math.max.apply(null,stages.map(s=>s[1].length).concat([1]));
         return stages.map(s=>{
           const c=s[1].length, sum=s[1].reduce((a,e)=>a+s[2](e),0);
-          return '<div class="fr"><span class="fn">'+s[0]+'</span><span class="fv">'+c+(c?' · '+kfmt(sum):'')+'</span></div>'+
+          return '<div class="fr"><span class="fn">'+s[0]+'</span><span class="fv">'+c+(c&&sum>0?' · '+kfmt(sum):'')+'</span></div>'+
             '<div class="fbar"><i style="width:'+(c?Math.max(8,Math.round(c/maxC*100)):0)+'%;opacity:'+s[3]+'"></i></div>';
         }).join("");
       })()+'</div>'+
@@ -2482,7 +2564,7 @@ function renderDashboard(){
 function renderJobs(){
   const box=$("jobsBody"); if(!box) return;
   const arr=getArchive();
-  const groups={bidding:[],upnext:[],active:[],complete:[]};
+  const groups={lead:[],bidding:[],upnext:[],active:[],complete:[]};
   arr.forEach(e=>{ const b=boardStage(e); if(b) groups[b].push(e); });
   groups.complete.sort((a,b)=>((b.completed||"").localeCompare(a.completed||""))||((b.stageChangedTs||0)-(a.stageChangedTs||0)));
   /* stat strip: fixed three tiles so the layout never jumps; unknown payment records are excluded, not zeroed */
@@ -2497,6 +2579,31 @@ function renderJobs(){
     +'</div>';
   const nm=e=>((e.state.jobName&&e.state.jobName.trim())||"Untitled job");
   const cl=e=>(e.state.clientType||"");
+  /* Leads: captured interest, not yet priced */
+  html+='<div class="bsect"><span>Leads</span><span class="link" id="leadAddBtn" style="font-size:11px">+ Add lead</span></div>';
+  html+='<div id="leadForm" style="display:none" class="pipecard solo"><div style="padding:11px 12px">'+
+    '<div class="row g2"><div><span class="lbl">Name</span><input id="leadNameIn" placeholder="Who called?" /></div>'+
+    '<div><span class="lbl">Phone</span><input id="leadPhoneIn" type="tel" inputmode="tel" placeholder="(323) 555-0134" /></div></div>'+
+    '<div class="field" style="margin-top:8px"><span class="lbl">What do they need?</span><input id="leadDescIn" placeholder="e.g. kitchen remodel, wants a quote next week" /></div>'+
+    '<div class="btns" style="margin-top:9px"><button class="btn primary" id="leadSaveBtn">Save lead</button><button class="btn ghost" id="leadCancelBtn">Cancel</button></div>'+
+    '</div></div>';
+  if(groups.lead.length){
+    groups.lead.forEach(e=>{
+      const L=e.lead||{}, tel=(e.state.contactPhone||"").replace(/[^\d+]/g,"");
+      const recd=L.receivedTs?new Date(L.receivedTs).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"";
+      html+='<div class="pipecard"><div class="pipopen" style="cursor:default">'+
+        '<span class="t"><span class="nm">'+esc(nm(e))+'</span><span class="fig" style="font-size:12px;color:var(--muted)">'+(L.src==="form"?"from your link":"phone lead")+(recd?" · "+recd:"")+'</span></span>'+
+        (L.desc?'<span class="pm">'+esc(L.desc.slice(0,140))+'</span>':'')+
+        ((e.state.contactPhone||e.state.contactEmail)?'<span class="pm">'+esc([e.state.contactPhone,e.state.contactEmail].filter(Boolean).join(" · "))+(L.timing?' · '+esc(L.timing):'')+(L.area?' · '+esc(L.area):'')+'</span>':'')+
+        '</div><div class="pipact">'+
+        '<button type="button" class="minibtn gold" data-est="'+esc(e.id)+'">Estimate it</button>'+
+        (tel?'<a class="minibtn" href="tel:'+esc(tel)+'">Call</a>':'')+
+        '<button type="button" class="minibtn" data-dismiss="'+esc(e.id)+'">Dismiss</button>'+
+        '</div></div>';
+    });
+  } else {
+    html+='<div class="pipecard solo"><div class="pipopen" style="cursor:default"><span class="pm">No leads waiting. Add one when the phone rings, or share your request link below.</span></div></div>';
+  }
   if(groups.active.length){
     html+='<div class="bsect"><span>In progress</span></div>';
     groups.active.forEach(e=>{
@@ -2540,12 +2647,19 @@ function renderJobs(){
         +'<span class="pm">'+esc(cl(e))+(e.completed?' · completed '+fmtDay(e.completed):'')+'</span></button></div>';
     });
   }
-  if(!groups.active.length&&!groups.upnext.length&&!groups.bidding.length&&!groups.complete.length){
+  if(!groups.lead.length&&!groups.active.length&&!groups.upnext.length&&!groups.bidding.length&&!groups.complete.length){
     html+='<div class="dash-empty">'+emptyArt()+'No jobs yet. Estimates you save show up here as bids you can win, schedule, and track through completion.</div>';
   }
+  html+='<div class="card" id="leadCapCard" style="margin-top:14px"><h2>Request link <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="A public page where anyone can ask you for an estimate. Only this device can read the requests; the link itself cannot.">i</span></h2><div id="leadCapBody"></div></div>';
   box.innerHTML=html;
   box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"jobs"); });
   box.querySelectorAll("[data-start]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation(); startJob(el.dataset.start); }; });
+  box.querySelectorAll("[data-est]").forEach(el=>{ el.onclick=()=>estimateLead(el.dataset.est); });
+  box.querySelectorAll("[data-dismiss]").forEach(el=>{ el.onclick=()=>dismissLead(el.dataset.dismiss); });
+  if($("leadAddBtn")) $("leadAddBtn").onclick=()=>{ const f=$("leadForm"); f.style.display=f.style.display==="none"?"":"none"; if(f.style.display!=="none") $("leadNameIn").focus(); };
+  if($("leadSaveBtn")) $("leadSaveBtn").onclick=async ()=>{ const ok=await addManualLead($("leadNameIn").value,$("leadPhoneIn").value,$("leadDescIn").value); if(!ok) return; };
+  if($("leadCancelBtn")) $("leadCancelBtn").onclick=()=>{ $("leadForm").style.display="none"; };
+  renderLeadCapture(); fetchLeads(false);
 }
 
 /* ---------------- JOB PAGE (lifecycle + cost log + tasks + payments + COs) ---------------- */
@@ -2951,6 +3065,8 @@ async function maybeInstallHint(){
   try{ const sy=(IDB_OK? await idbGet(SYNC_LS):null) || readLS(SYNC_LS) || null;
     SYNC=(sy&&typeof sy==="object"&&typeof sy.code==="string"&&sy.code)?sy:null; }catch(e){ SYNC=null; }
   if(SYNC && (!SYNC.lastTs || Date.now()-SYNC.lastTs>3600000)) queueCloudBackup();   // catch up if the last backup is stale
+  try{ const lk=(IDB_OK? await idbGet(LEAD_LS):null) || readLS(LEAD_LS) || null;
+    LEADKEY=(typeof lk==="string"&&lk.length>=12)?lk:null; }catch(e){ LEADKEY=null; }
   let saved=null;
   try{ saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null; }catch(e){ saved=null; }
   STATE_CACHE = saved;

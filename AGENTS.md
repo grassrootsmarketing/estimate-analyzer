@@ -19,10 +19,11 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 1. **Never change the pricing math.** The formulas in `compute()` are the product.
    Any change that alters a documented result is a regression. See "Pricing model" below.
 2. **Run the tests before every commit:** `node test/math.test.js`,
-   `node test/pm.test.js`, `node test/api.test.js`, and `node test/backup.test.js`
-   (backup.test.js needs `npm install` once, for @vercel/blob). A nonzero exit
-   means a pricing, project-management, API-guard, or cloud-sync invariant
-   broke. Do not push until all pass.
+   `node test/pm.test.js`, `node test/api.test.js`, `node test/backup.test.js`,
+   and `node test/lead.test.js` (the last two need `npm install` once, for
+   @vercel/blob). A nonzero exit means a pricing, project-management,
+   API-guard, cloud-sync, or lead-capture invariant broke. Do not push until
+   all pass.
 3. **No em dashes in user-facing copy.** Use commas, parentheses, or "to". This is a
    house style rule and it also protects a few load-bearing characters (see "Protected code").
 4. **Keep it a single file with no build step.** All HTML, CSS, and JS live in
@@ -39,9 +40,8 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 
 - **Run locally:** open `index.html` in a browser, or serve the folder statically
   (e.g. `npx serve`). No install step.
-- **Test:** `node test/math.test.js`, `node test/pm.test.js`,
-  `node test/api.test.js`, and `node test/backup.test.js` (all four required
-  before every commit; run `npm install` once for the backup test).
+- **Test:** all five suites in `test/` (math, pm, api, backup, lead) are
+  required before every commit; run `npm install` once first.
 - **Deploy:** Vercel auto-deploys the `main` branch. Push to `main` and the live
   site updates in about a minute. There is no manual deploy step.
 - **Deploy from a Cowork session:** commit through the github.com web UI via the
@@ -72,6 +72,10 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 - `test/backup.test.js` — cloud-sync test: client crypto pipeline (PBKDF2 +
   AES-GCM roundtrip, merge rules) extracted from index.html, plus /api/backup
   guard rails with mocked req/res. No network. Needs `npm install` once.
+- `api/lead.js` + `request.html` — public estimate-request intake. The share
+  link carries only sha256(lead code); submitting needs the link, reading or
+  clearing the inbox needs the raw code (owner's device only). Honeypot +
+  strict rate limits; leads import into the Jobs board as the Leads stage.
 - `api/backup.js` + `package.json` — encrypted cloud backup on Vercel Blob
   (@vercel/blob is a server-side dependency only; the client stays
   zero-dependency). Requires a Blob store connected to the Vercel project
