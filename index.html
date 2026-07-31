@@ -932,9 +932,13 @@
         <input id="importArchInput" type="file" accept="application/json,.json" hidden>
       </div>
     </div>
+    <div class="card" id="cloudCard">
+      <h2>Cloud backup <span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="Your jobs and photos, encrypted on this device with your sync code, backed up to your own cloud storage. Without the code, the stored data is unreadable scrambled bytes.">i</span></h2>
+      <div id="cloudBody"></div>
+    </div>
     <div class="card"><h2>Your history</h2><div id="historyBox"></div></div>
     <div id="archiveList"></div>
-    <p class="muted" style="font-size:12px">History keeps your newest 30 estimates; older ones roll off automatically. Jobs you manage (won, in progress, complete, or with costs, tasks, or payments logged) are kept automatically, and <b>Keep</b> protects anything else. Estimates live on this device; use <b>Backup</b> to export a file you can restore elsewhere.</p>
+    <p class="muted" style="font-size:12px">History keeps your newest 30 estimates; older ones roll off automatically. Jobs you manage (won, in progress, complete, or with costs, tasks, or payments logged) are kept automatically, and <b>Keep</b> protects anything else. Estimates live on this device; <b>Backup</b> exports a file, and <b>Cloud backup</b> above keeps an encrypted copy online automatically.</p>
   </section>
 
   <!-- ============ JOB (dashboard sub-view: status + cost log) ============ -->
@@ -1539,7 +1543,8 @@ async function _writeArch(v){
   if(IDB_OK){ ok=await idbSet(LS_ARCH,v); }
   else { try{ localStorage.setItem(LS_ARCH,JSON.stringify(v)); ok=true; }catch(e){ ok=false; } }
   const w=$("persistWarn");
-  if(ok){ if(w) w.style.display="none"; if(_bc){ try{ _bc.postMessage({src:_bcSelf}); }catch(e){} } }
+  if(ok){ if(w) w.style.display="none"; if(_bc){ try{ _bc.postMessage({src:_bcSelf}); }catch(e){} }
+    if(typeof queueCloudBackup==="function") queueCloudBackup(); }   // every saved change schedules an encrypted cloud backup
   else if(w){ w.style.display=""; }
   return ok;
 }
@@ -2205,6 +2210,138 @@ $("importArchInput").addEventListener("change",e=>{
   rd.readAsText(f); e.target.value="";
 });
 
+/* ---------------- CLOUD SYNC (encrypted, sync-code keyed) ----------------
+   The sync code never leaves this device in usable form: the storage path is
+   its SHA-256 hash and the payload is AES-GCM ciphertext under a PBKDF2 key.
+   Server + storage only ever see scrambled bytes. */
+const SYNC_LS="ea_sync", SYNC_PART=3000000;
+let SYNC=null, _syncTimer=null, _syncBusy=false;
+function makeSyncCode(){ const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s=""; const u=new Uint8Array(16); crypto.getRandomValues(u);
+  for(let i=0;i<16;i++){ s+=A[u[i]%A.length]; if(i%4===3&&i<15) s+="-"; } return s; }
+function normCode(c){ return String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
+function b64FromBuf(buf){ const u=new Uint8Array(buf); let s=""; const CH=32768;
+  for(let i=0;i<u.length;i+=CH) s+=String.fromCharCode.apply(null,u.subarray(i,i+CH)); return btoa(s); }
+function bufFromB64(b64){ const s=atob(b64), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
+function splitB64(b64,size){ const out=[]; for(let i=0;i<b64.length;i+=size) out.push(b64.slice(i,i+size)); return out; }
+async function syncKey(code){ const enc=new TextEncoder();
+  const base=await crypto.subtle.importKey("raw",enc.encode(normCode(code)),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt:enc.encode("ea-sync-v1"),iterations:120000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]); }
+async function syncId(code){ const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("ea-sync-id-v1:"+normCode(code)));
+  return Array.from(new Uint8Array(d)).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+async function encryptBackup(code,obj){ const key=await syncKey(code); const iv=new Uint8Array(12); crypto.getRandomValues(iv);
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,new TextEncoder().encode(JSON.stringify(obj)));
+  const all=new Uint8Array(12+ct.byteLength); all.set(iv,0); all.set(new Uint8Array(ct),12); return b64FromBuf(all.buffer); }
+async function decryptBackup(code,b64){ const key=await syncKey(code); const all=bufFromB64(b64);
+  const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:all.slice(0,12)},key,all.slice(12));
+  return JSON.parse(new TextDecoder().decode(pt)); }
+function mergeArchives(local, incoming){ const by={};
+  (Array.isArray(local)?local:[]).forEach(e=>{ if(e&&e.id) by[e.id]=e; });
+  (Array.isArray(incoming)?incoming:[]).forEach(e=>{ if(!e||!e.id) return; const cur=by[e.id];
+    if(!cur || (+e.updatedTs||0) > (+cur.updatedTs||0)) by[e.id]=e; });
+  return Object.values(by); }
+function cloudPayload(){ return {v:1, exported:new Date().toISOString(), archive:getArchive(), profile:getProfile(), benchmarks:{updated:BENCH_UPDATED,data:BENCH}}; }
+async function syncApi(bodyObj){
+  const r=await fetch("/api/backup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(bodyObj)});
+  let d=null; try{ d=await r.json(); }catch(e){}
+  if(!r.ok) throw new Error((d&&d.error)||("HTTP "+r.status)); return d; }
+function setSyncStatus(msg){ const el=$("cloudStatus"); if(el) el.textContent=msg||cloudStatusLine(); }
+function cloudStatusLine(){
+  if(!SYNC||!SYNC.code) return "";
+  if(SYNC.lastErr) return "Last attempt failed: "+SYNC.lastErr;
+  if(!SYNC.lastTs) return "On. First backup is queued.";
+  const mb=SYNC.lastBytes?(SYNC.lastBytes/1048576):0;
+  return "Last backup "+new Date(SYNC.lastTs).toLocaleString()+(mb?(" · "+(mb<0.1?"under 0.1":mb.toFixed(1))+" MB"):"");
+}
+async function cloudBackupNow(manual){
+  if(!SYNC||!SYNC.code||_syncBusy) return;
+  if(!navigator.onLine){ if(manual) toast("You're offline. It'll back up next time you're online."); return; }
+  _syncBusy=true; setSyncStatus("Backing up…");
+  try{
+    const id=await syncId(SYNC.code);
+    const b64=await encryptBackup(SYNC.code, cloudPayload());
+    const parts=splitB64(b64, SYNC_PART);
+    if(parts.length>16) throw new Error("backup is over the ~35MB cloud limit");
+    for(let n=0;n<parts.length;n++){ await syncApi({op:"put",id:id,n:n,of:parts.length,data:parts[n]}); }
+    const done=await syncApi({op:"commit",id:id,of:parts.length,bytes:b64.length,ts:Date.now()});
+    SYNC.lastTs=done.ts||Date.now(); SYNC.lastBytes=b64.length; SYNC.lastErr=""; saveKey(SYNC_LS,SYNC);
+    setSyncStatus(); if(manual) toast("Backed up to cloud");
+  }catch(err){
+    SYNC.lastErr=String(err&&err.message||"error"); saveKey(SYNC_LS,SYNC); setSyncStatus();
+    if(manual) toast("Cloud backup failed: "+SYNC.lastErr);
+  }finally{ _syncBusy=false; }
+}
+function queueCloudBackup(){ if(!SYNC||!SYNC.code) return; clearTimeout(_syncTimer); _syncTimer=setTimeout(()=>cloudBackupNow(false), 20000); }
+async function cloudRestore(codeInput){
+  const code=normCode(codeInput);
+  if(code.length<12){ toast("That code looks too short. It's 16 characters, like EA12-CD34-EF56-GH78."); return; }
+  setSyncStatus("Checking the cloud…");
+  try{
+    const id=await syncId(code);
+    const st=await syncApi({op:"status",id:id});
+    if(!st.exists){ setSyncStatus(); toast("No cloud backup found for that code."); return; }
+    let b64="";
+    for(let n=0;n<st.parts;n++){ const d=await syncApi({op:"get",id:id,n:n}); b64+=d.data; }
+    let payload=null;
+    try{ payload=await decryptBackup(code,b64); }
+    catch(e){ setSyncStatus(); toast("That code doesn't match this backup."); return; }
+    const raw=Array.isArray(payload.archive)?payload.archive:[];
+    const inc=[]; let skipped=0; raw.forEach(en=>{ const c=sanitizeEntry(en); if(c) inc.push(c); else skipped++; });
+    if(!confirm("Cloud backup from "+new Date(st.ts).toLocaleString()+" has "+inc.length+" estimate(s). Merge into this device? Newer versions win; nothing here gets deleted.")){ setSyncStatus(); return; }
+    await setArchive(mergeArchives(getArchive(), inc).slice(0,500));
+    if(payload.profile && typeof payload.profile==="object" && confirm("Also bring over the company profile from the backup?")){
+      payload.profile.logo=safeImg(payload.profile.logo); PROFILE=payload.profile; saveKey(LS_PROFILE,PROFILE); loadProfileIntoForm(); }
+    if(payload.benchmarks && payload.benchmarks.data){ BENCH=payload.benchmarks.data; BENCH_UPDATED=payload.benchmarks.updated||BENCH_UPDATED; saveKey("ea_bench",payload.benchmarks); calc(); }
+    SYNC={code:code, lastTs:Date.now(), lastBytes:b64.length, lastErr:""}; saveKey(SYNC_LS,SYNC);
+    renderArchive(); renderDashboard(); renderCloud();
+    toast("Restored "+inc.length+" estimate(s) from cloud"+(skipped?", skipped "+skipped+" invalid":"")+". Cloud backup is now on for this device.");
+  }catch(err){ setSyncStatus(); toast("Cloud restore failed: "+(err&&err.message||"error")); }
+}
+function renderCloud(){
+  const box=$("cloudBody"); if(!box) return;
+  if(SYNC&&SYNC.code){
+    box.innerHTML=
+      '<div class="bench" id="cloudStatus" style="margin:2px 0 10px">'+esc(cloudStatusLine())+'</div>'+
+      '<div class="arch-tools">'+
+        '<button class="btn" id="cloudNow">Back up now</button>'+
+        '<button class="btn" id="cloudShow">Show my code</button>'+
+        '<button class="btn ghost" id="cloudOff">Turn off</button>'+
+      '</div>'+
+      '<div id="cloudCodeBox" style="display:none;margin-top:10px">'+
+        '<div style="font-family:var(--numfont,monospace);font-size:18px;letter-spacing:1px;padding:10px 12px;border:1px dashed var(--line);border-radius:10px;text-align:center" id="cloudCodeText"></div>'+
+        '<p class="muted" style="font-size:12px;margin:8px 0 0">This code is the only key to your backup. Write it down somewhere safe (notes app, wallet card). Anyone with it can restore your data; without it, nobody can, including you.</p>'+
+        '<div class="btns" style="margin-top:8px"><button class="btn" id="cloudCopy">Copy code</button></div>'+
+      '</div>';
+    $("cloudNow").onclick=()=>cloudBackupNow(true);
+    $("cloudShow").onclick=()=>{ const b=$("cloudCodeBox"); const show=b.style.display==="none";
+      b.style.display=show?"":"none"; $("cloudCodeText").textContent=show?SYNC.code:""; $("cloudShow").textContent=show?"Hide my code":"Show my code"; };
+    $("cloudCopy").onclick=()=>{ try{ navigator.clipboard.writeText(SYNC.code); toast("Code copied"); }catch(e){ toast("Couldn't copy. Long-press the code to copy it."); } };
+    $("cloudOff").onclick=async ()=>{
+      if(!confirm("Turn off cloud backup on this device?")) return;
+      const wipe=confirm("Also delete the backup stored in the cloud?\n\nOK deletes the cloud copy. Cancel keeps it there so you can restore later with your code.");
+      const old=SYNC; SYNC=null; saveKey(SYNC_LS,null); clearTimeout(_syncTimer); renderCloud();
+      if(wipe){ try{ await syncApi({op:"wipe",id:await syncId(old.code)}); toast("Cloud copy deleted"); }catch(e){ toast("Couldn't delete the cloud copy: "+(e.message||"error")); } }
+    };
+  } else {
+    box.innerHTML=
+      '<p class="sub" style="margin-top:0">Automatic, encrypted backup of your jobs, photos, and settings. You get a 16-character code; it’s the only key. Lose the phone, keep the code, keep your business.</p>'+
+      '<div class="btns" style="margin-top:6px"><button class="btn primary wide" id="cloudOn">Turn on cloud backup</button></div>'+
+      '<div style="margin-top:14px"><span class="lbl">Already have a code? Restore this device</span>'+
+        '<div class="arch-tools" style="margin-top:6px">'+
+          '<input id="cloudCodeIn" placeholder="EA12-CD34-EF56-GH78" autocapitalize="characters" autocomplete="off" style="flex:1;min-width:180px" />'+
+          '<button class="btn" id="cloudRestoreBtn">Restore</button>'+
+        '</div></div>'+
+      '<div class="bench" id="cloudStatus" style="margin-top:8px"></div>';
+    $("cloudOn").onclick=()=>{
+      SYNC={code:makeSyncCode(), lastTs:0, lastBytes:0, lastErr:""}; saveKey(SYNC_LS,SYNC);
+      renderCloud();
+      const b=$("cloudCodeBox"); if(b){ b.style.display=""; $("cloudCodeText").textContent=SYNC.code; $("cloudShow").textContent="Hide my code"; }
+      toast("Cloud backup is on. Save that code somewhere safe.");
+      cloudBackupNow(true);
+    };
+    $("cloudRestoreBtn").onclick=()=>cloudRestore($("cloudCodeIn").value);
+  }
+}
+
 /* ---------------- NAV / VIEWS ---------------- */
 const _VIEWS=["dash","calc","jobs","archive","settings","proposal","job"];
 let _viewScroll={};
@@ -2219,7 +2356,7 @@ function showView(name){
   $("navSettings").classList.toggle("active", name==="settings");
   if(name==="dash") renderDashboard();
   if(name==="jobs") renderJobs();
-  if(name==="archive") renderArchive();
+  if(name==="archive"){ renderArchive(); if(typeof renderCloud==="function") renderCloud(); }
   if(name==="settings"){ renderBenchSettings(); updateStorageMeter(); }
   if(name==="calc" && typeof renderSimilar==="function") renderSimilar();
   // Returning to the Jobs board restores its scroll position; everything else opens at the top.
@@ -2797,6 +2934,9 @@ async function maybeInstallHint(){
   try{ const sb = (IDB_OK? await idbGet("ea_bench"):null) || readLS("ea_bench");
     if(sb && sb.data){ const merged=JSON.parse(JSON.stringify(SEED_BENCH)); Object.keys(sb.data).forEach(k=>{ if(merged[k]&&sb.data[k]) merged[k]=sb.data[k]; }); BENCH=merged; BENCH_UPDATED=sb.updated||BENCH_UPDATED; }
   }catch(e){}
+  try{ const sy=(IDB_OK? await idbGet(SYNC_LS):null) || readLS(SYNC_LS) || null;
+    SYNC=(sy&&typeof sy==="object"&&typeof sy.code==="string"&&sy.code)?sy:null; }catch(e){ SYNC=null; }
+  if(SYNC && (!SYNC.lastTs || Date.now()-SYNC.lastTs>3600000)) queueCloudBackup();   // catch up if the last backup is stale
   let saved=null;
   try{ saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null; }catch(e){ saved=null; }
   STATE_CACHE = saved;

@@ -19,9 +19,10 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 1. **Never change the pricing math.** The formulas in `compute()` are the product.
    Any change that alters a documented result is a regression. See "Pricing model" below.
 2. **Run the tests before every commit:** `node test/math.test.js`,
-   `node test/pm.test.js`, and `node test/api.test.js`. They have no dependencies
-   and are not loaded by the app. A nonzero exit means a pricing,
-   project-management, or API-guard invariant broke. Do not push until all pass.
+   `node test/pm.test.js`, `node test/api.test.js`, and `node test/backup.test.js`
+   (backup.test.js needs `npm install` once, for @vercel/blob). A nonzero exit
+   means a pricing, project-management, API-guard, or cloud-sync invariant
+   broke. Do not push until all pass.
 3. **No em dashes in user-facing copy.** Use commas, parentheses, or "to". This is a
    house style rule and it also protects a few load-bearing characters (see "Protected code").
 4. **Keep it a single file with no build step.** All HTML, CSS, and JS live in
@@ -38,8 +39,9 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 
 - **Run locally:** open `index.html` in a browser, or serve the folder statically
   (e.g. `npx serve`). No install step.
-- **Test:** `node test/math.test.js`, `node test/pm.test.js`, and
-  `node test/api.test.js` (all three required before every commit).
+- **Test:** `node test/math.test.js`, `node test/pm.test.js`,
+  `node test/api.test.js`, and `node test/backup.test.js` (all four required
+  before every commit; run `npm install` once for the backup test).
 - **Deploy:** Vercel auto-deploys the `main` branch. Push to `main` and the live
   site updates in about a minute. There is no manual deploy step.
 - **Deploy from a Cowork session:** commit through the github.com web UI via the
@@ -67,6 +69,14 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
 - `test/api.test.js` — zero-dependency guard test for `/api/structure` (origin
   allowlist, burst and daily rate limits, payload checks, output clamps). It
   requires the module directly with mocked req/res; no network is touched.
+- `test/backup.test.js` — cloud-sync test: client crypto pipeline (PBKDF2 +
+  AES-GCM roundtrip, merge rules) extracted from index.html, plus /api/backup
+  guard rails with mocked req/res. No network. Needs `npm install` once.
+- `api/backup.js` + `package.json` — encrypted cloud backup on Vercel Blob
+  (@vercel/blob is a server-side dependency only; the client stays
+  zero-dependency). Requires a Blob store connected to the Vercel project
+  (env BLOB_READ_WRITE_TOKEN). The server stores only AES-GCM ciphertext at a
+  path derived from SHA-256 of the user's sync code; it can never read backups.
 - `README.md`, `HANDOFF.md`, `AUDIT.md` — background docs. HANDOFF.md has the
   deepest architecture and data-model notes.
 
