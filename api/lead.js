@@ -85,7 +85,7 @@ async function handler(req, res){
       if(lead.desc.length < 5){ res.status(400).json({ error: "Tell them a little about the job." }); return; }
       const existing = await list({ prefix: PREFIX + to + "/", limit: INBOX_CAP + 1, token: token });
       if((existing.blobs || []).length >= INBOX_CAP){ res.status(429).json({ error: "This inbox is full. Try again later." }); return; }
-      const name = PREFIX + to + "/l" + lead.ts + "-" + nodeCrypto.randomBytes(4).toString("hex") + ".json";
+      const name = PREFIX + to + "/l" + lead.ts + "-" + nodeCrypto.randomBytes(16).toString("hex") + ".json";
       await put(name, JSON.stringify(lead), { access: "public", addRandomSuffix: false, contentType: "application/json", token: token });
       res.status(200).json({ ok: true });
       return;
