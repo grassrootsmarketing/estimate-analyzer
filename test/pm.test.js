@@ -35,8 +35,9 @@ const FNS = ["roundUp","compute","uid","numTs","txt","capArr","validDateStr","da
   "isManagedJob","approvedChanges","changesTotalC","contractPrice","jobBudgetTarget","jobBudgetCeiling",
   "jobSpent","projectedProfit","contractLessCosts","rowPaidC","rowInvoicedC","drawsPaid","drawsInvoiced",
   "drawsTotal","contractRemaining","accountsReceivable","unbilled","nextTask","isOverdue","barTone",
-  "pruneArchive","entryPrice","safeImg","sanitizePhotos","sanitizeRows","sanitizeEntry"];
-const CONSTS = ["COST_CATS","HISTORY_CAP"];
+  "pruneArchive","entryPrice","safeImg","sanitizePhotos","sanitizeRows","sanitizeEntry",
+  "clampNum","boundVal","cleanRows"];
+const CONSTS = ["COST_CATS","HISTORY_CAP","QTY_CAP","PCT_BOUNDS"];
 
 const srcParts = CONSTS.map(c => extractConst(html, c)).concat(FNS.map(f => extractFn(html, f)));
 const sandbox = new Function(srcParts.join("\n") + "\nreturn {" + FNS.concat(CONSTS).join(",") + "};")();
@@ -177,6 +178,28 @@ const prof = job({ outcome: "won", stage: "active", costTracking: "tracking",
   changes: [{ id: "o1", ts: 1, title: "add", amount: 1000, cost: 400, status: "approved" }] });
 eq(S.contractLessCosts(prof), 8500, "contract less logged costs uses the adjusted contract");
 eq(S.projectedProfit(prof), 3600, "projected gross profit = contract minus adjusted cost target");
+
+// 17. Input boundary guards (Codex audit): clamp at the edges, never inside compute()
+eq(S.clampNum(-5, 0, 100), 0, "clampNum blocks negative values");
+eq(S.clampNum("abc", 0, 100), 0, "clampNum treats junk as zero");
+eq(S.clampNum(250, 0, 99), 99, "clampNum caps overhead-style percentages");
+eq(S.boundVal("", 0, 100), "", "boundVal leaves an empty field empty");
+eq(S.boundVal("150", 0, 99), 99, "boundVal clamps out-of-range strings");
+const dirty = S.cleanRows([{ item: "Demo", desc: "", qty: -3, unit: 400 },
+  { item: "Materials", desc: "", qty: 2, unit: -50 },
+  { item: "Sub", desc: "", qty: 1e9, unit: 100 }]);
+eq(dirty[0].qty, 0, "cleanRows zeroes a negative qty");
+eq(dirty[1].unit, 0, "cleanRows zeroes a negative unit price");
+eq(dirty[2].qty, S.QTY_CAP, "cleanRows caps an absurd qty");
+ok(dirty[1].item === "Materials", "cleanRows preserves row identity fields");
+eq(S.PCT_BOUNDS.overhead[1], 99, "overhead is bounded below 100% so break-even stays finite");
+
+// 18. The guards feed compute() clean input and never change its math
+const guarded = S.compute({ mode: "cost", margin: 10, contingency: S.clampNum(-5, 0, 100),
+  overhead: S.clampNum(120, 0, 99), tax: 0,
+  rows: S.cleanRows([{ item: "Materials", desc: "", qty: -2, unit: 500 }, { item: "Sub", desc: "", qty: 1, unit: 1000 }]) });
+eq(guarded.trueCost, 1000, "negative qty line contributes nothing after cleaning");
+ok(isFinite(guarded.breakeven), "capped overhead keeps break-even finite");
 
 if (failures) { console.error("\n" + failures + " PM test(s) failed."); process.exit(1); }
 console.log("\nAll PM invariants passed.");
