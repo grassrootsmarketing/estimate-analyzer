@@ -810,9 +810,9 @@
       <summary><span>Rates</span><span class="fold-hint" id="ratesHint">contingency · overhead · material tax</span></summary>
       <div class="foldbody">
         <div class="row g3">
-          <div><span class="lbl">Contingency %<span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="A cushion added to your costs for surprises: found rot, price jumps, an extra dump run. 5 to 10% is typical.">i</span></span><input id="contingency" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
-          <div><span class="lbl">Overhead %<span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="What it costs to run the business itself: truck, insurance, phone, tools, your time quoting. Drives break-even and net profit.">i</span></span><input id="overhead" type="number" inputmode="decimal" value="0" min="0" step="0.5" /></div>
-          <div><span class="lbl">Mat. tax %<span class="tip eright" tabindex="0" role="button" aria-label="What is this?" data-tip="Sales tax applied only to Materials lines. LA County is 9.5%. Labor and subs are not taxed here.">i</span></span><input id="tax" type="number" inputmode="decimal" value="0" min="0" step="0.1" /></div>
+          <div><span class="lbl">Contingency %<span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="A cushion added to your costs for surprises: found rot, price jumps, an extra dump run. 5 to 10% is typical.">i</span></span><input id="contingency" type="number" inputmode="decimal" value="0" min="0" max="100" step="0.5" /></div>
+          <div><span class="lbl">Overhead %<span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="What it costs to run the business itself: truck, insurance, phone, tools, your time quoting. Drives break-even and net profit.">i</span></span><input id="overhead" type="number" inputmode="decimal" value="0" min="0" max="99" step="0.5" /></div>
+          <div><span class="lbl">Mat. tax %<span class="tip eright" tabindex="0" role="button" aria-label="What is this?" data-tip="Sales tax applied only to Materials lines. LA County is 9.5%. Labor and subs are not taxed here.">i</span></span><input id="tax" type="number" inputmode="decimal" value="0" min="0" max="30" step="0.1" /></div>
         </div>
       </div>
     </details>
@@ -1090,6 +1090,16 @@ let rows = [];
 function defaultRows(){ rows=[{item:"Subcontractor",desc:"",qty:1,unit:0},{item:"Materials",desc:"",qty:1,unit:0},{item:"Permits / fees",desc:"",qty:1,unit:0}]; }
 function isTaxable(it){ return /material/i.test(it); }
 
+/* ---- input boundary guards (Codex audit): clamp at the edges, never inside compute() ---- */
+const QTY_CAP=100000, UNIT_CAP=5000000, PROPOSED_CAP=100000000;
+const PCT_BOUNDS={contingency:[0,100], overhead:[0,99], tax:[0,30]};
+function clampNum(v,min,max){ let n=parseFloat(v); if(!isFinite(n)) n=0; return Math.min(max,Math.max(min,n)); }
+function boundVal(v,min,max){ if(v===""||v==null) return v; return clampNum(v,min,max); }
+function cleanRows(list){ return (Array.isArray(list)?list:[]).map(function(r){ return Object.assign({},r,{qty:clampNum(r.qty,0,QTY_CAP), unit:clampNum(r.unit,0,UNIT_CAP)}); }); }
+function snapRow(el,i,k){ if(!rows[i]||el.value==="") return;
+  const n=rows[i][k], t=parseFloat(el.value);
+  if(!isFinite(t)||t!==n){ el.value=n; if(isFinite(t)&&t<0) toast("Negative amounts aren't allowed"); else if(isFinite(t)) toast("Capped at a realistic amount"); } }
+
 function render(){
   const tb=$("rows"); tb.innerHTML="";
   rows.forEach((r,i)=>{
@@ -1101,8 +1111,8 @@ function render(){
       </div>
       <input class="litem-desc" value="${esc(r.desc)}" placeholder="description (optional)" oninput="upd(${i},'desc',this.value)">
       <div class="litem-r2">
-        <label class="fld"><span>Qty</span><input type="number" inputmode="decimal" step="any" value="${r.qty}" oninput="upd(${i},'qty',this.value)"></label>
-        <label class="fld"><span>Unit $</span><input type="number" inputmode="decimal" step="any" value="${r.unit}" oninput="upd(${i},'unit',this.value)"></label>
+        <label class="fld"><span>Qty</span><input type="number" inputmode="decimal" step="any" min="0" value="${r.qty}" oninput="upd(${i},'qty',this.value)" onchange="snapRow(this,${i},'qty')"></label>
+        <label class="fld"><span>Unit $</span><input type="number" inputmode="decimal" step="any" min="0" value="${r.unit}" oninput="upd(${i},'unit',this.value)" onchange="snapRow(this,${i},'unit')"></label>
         <div class="litem-cost"><span>Line</span><b>${fmt(r.qty*r.unit)}</b></div>
       </div>
       ${r.review?`<div class="reviewbar"><span class="revbadge">${r.flag?("⚠ "+esc(r.flag||"needs a number")):"Review, from voice"}</span><button class="revok" onclick="confirmRow(${i})">✓ Looks right</button></div>`:""}`;
@@ -1113,7 +1123,7 @@ function render(){
 }
 function upd(i,k,v){
   if(k==='qty'||k==='unit'){
-    rows[i][k]=parseFloat(v)||0;
+    rows[i][k]=clampNum(v, 0, k==='qty'?QTY_CAP:UNIT_CAP);
     const li=$("rows").children[i];
     if(rows[i].review){ rows[i].review=false; rows[i].flag=null; if(li){ li.classList.remove('review'); const rb=li.querySelector('.reviewbar'); if(rb) rb.remove(); } }
     if(li){ const b=li.querySelector('.litem-cost b'); if(b) b.textContent=fmt(rows[i].qty*rows[i].unit); }
@@ -1181,7 +1191,7 @@ async function structureVoice(){
     if(!data || !Array.isArray(data.lines) || !data.lines.length){ $("voiceMsg").textContent="Couldn't pull line items from that. Add amounts and try again, or enter lines manually."; return; }
     const built = data.lines.slice(0,40).map(voiceLine);
     if(!built.length){ $("voiceMsg").textContent="Nothing to add. Try again or enter lines manually."; return; }
-    setMode("cost"); rows=built; render(); showView("calc");
+    setMode("cost"); rows=cleanRows(built); render(); showView("calc");
     const flagged=built.filter(r=>r.flag).length;
     toast(built.length+" line"+(built.length>1?"s":"")+" added. Review the amber ones"+(flagged?" ("+flagged+" need a number)":""));
     $("voiceMsg").textContent=""; $("transcript").value=""; $("transcript").style.display="none"; $("voiceSubmitRow").style.display="none";
@@ -1212,6 +1222,7 @@ function setMode(mode){
     $("tipRec").dataset.tip="Your suggested price: true cost plus markup, rounded up to a clean $50.";
     $("tipBe").dataset.tip="Your break-even floor: true cost plus overhead. Price below this and you lose money.";
     $("modeHint").innerHTML="You have your <b>costs</b>. Enter what the job costs you below. I'll add your markup and show the price, break-even &amp; profit at the bottom.";
+    $("margin").max="120";   // markup on cost can reasonably exceed 100%
     $("margin").value = (PROFILE.defMarkup!=null && PROFILE.defMarkup!=="") ? PROFILE.defMarkup : 40;
   } else {
     $("costsTitle").textContent="Estimate line items (priced)";
@@ -1225,6 +1236,7 @@ function setMode(mode){
     $("tipRec").dataset.tip="The bid's total price, with margin already included.";
     $("tipBe").dataset.tip="The most the job can cost you (including overhead) before it loses money. Keep your real costs under this.";
     $("modeHint").innerHTML="You have a <b>priced bid</b>. Upload it above or enter the line items below. I'll show the margin, profit &amp; break-even at the bottom.";
+    $("margin").max="90";    // a bid's baked-in margin can't reach 100% of its price
     $("margin").value=45;
   }
   calc();
@@ -1278,6 +1290,10 @@ function benchmarkCheck(rec){
 }
 function quoteCheck(trueCost, be, oh, rec){
   const box=$("quoteFlags"); box.innerHTML=""; const flags=[];
+  /* boundary advisories: extreme but technically valid rates */
+  if(oh>=0.5) flags.push(["warn","Overhead is set to <b>"+(oh*100).toFixed(0)+"%</b> of the price. That's unusually high; double-check the Rates fold."]);
+  if(MODE==="cost"){ const cv=parseFloat($("contingency").value)||0;
+    if(cv>25) flags.push(["warn","Contingency of <b>"+cv+"%</b> is a very big cushion. Most jobs carry 5 to 10%."]); }
   const b=activeBench(), qty=parseFloat($("benchQty").value)||0;
   if(b && qty>0 && isFinite(rec)){
     const implied=rec/qty;
@@ -1306,6 +1322,17 @@ Object.keys(BENCH).forEach(k=>{ const o=document.createElement("option"); o.text
 function syncQtyLabel(){ const b=currentBench(); $("qtyLbl").textContent=b?(b.unit==='hr'?"Labor hours":"Square feet"):"Project size"; }
 $("benchCat").addEventListener("change",function(){ syncQtyLabel(); calc(); });
 ["margin","contingency","overhead","tax","benchQty","proposed"].forEach(id=>$(id).addEventListener("input",calc));
+/* Snap out-of-range typed values back into bounds when the field is left. */
+["contingency","overhead","tax","proposed"].forEach(id=>{ const el=$(id); if(!el) return;
+  el.addEventListener("change",function(){
+    if(el.value==="") return;
+    const b=PCT_BOUNDS[id]||[0,PROPOSED_CAP];
+    const t=parseFloat(el.value), n=clampNum(el.value,b[0],b[1]);
+    if(!isFinite(t)||t!==n){ el.value=n;
+      toast(isFinite(t)&&t<0 ? "Negative values aren't allowed" : "Capped at "+n+(id==="proposed"?"":"%"));
+      calc(); }
+  });
+});
 $("modeAnalyze").addEventListener("click",()=>setMode("analyze"));
 $("modeCost").addEventListener("click",()=>setMode("cost"));
 
@@ -1421,7 +1448,7 @@ async function handleFile(file){
     const {items, totals}=parseEstimateLines(lines);
     if(!items.length){ setMsg(usedOcr?"OCR couldn't find priced line items. Try a sharper, straight-on photo, or enter costs manually.":"Couldn't read line items from this PDF. Enter costs manually.","bad"); return; }
     setMode("analyze");   // an imported estimate is a priced bid, switch to Analyze mode
-    rows=items; render();
+    rows=cleanRows(items); render();
     let total=0; const strong=totals.find(t=>t.strong);
     if(strong) total=strong.amt; else if(totals.length) total=Math.max.apply(null,totals.map(t=>t.amt));
     let loaded=false;
@@ -1465,7 +1492,8 @@ function getState(){
   return { ts:Date.now(), mode:MODE, jobName:$("jobName").value, clientType:$("clientType").value,
     contactName:$("contactName").value, contactPhone:$("contactPhone").value, contactEmail:$("contactEmail").value,
     benchCat:$("benchCat").value, benchQty:$("benchQty").value, margin:$("margin").value,
-    contingency:$("contingency").value, overhead:$("overhead").value, tax:$("tax").value, proposed:$("proposed").value,
+    contingency:boundVal($("contingency").value,0,100), overhead:boundVal($("overhead").value,0,99),
+    tax:boundVal($("tax").value,0,30), proposed:boundVal($("proposed").value,0,PROPOSED_CAP),
     editId: EDIT_ENTRY_ID||null,
     photos: PHOTOS.slice(),
     rows: rows.map(r=>({item:r.item,desc:r.desc,qty:r.qty,unit:r.unit})) };
@@ -2691,7 +2719,7 @@ function applyState(s){
   if(s.contingency!=null) $("contingency").value=s.contingency;
   if(s.overhead!=null) $("overhead").value=s.overhead; if(s.tax!=null) $("tax").value=s.tax;
   $("proposed").value=s.proposed||"";
-  if(s.rows&&s.rows.length) rows=s.rows.map(r=>({item:r.item||"",desc:r.desc||"",qty:+r.qty||0,unit:+r.unit||0}));
+  if(s.rows&&s.rows.length) rows=s.rows.map(r=>({item:r.item||"",desc:r.desc||"",qty:clampNum(r.qty,0,QTY_CAP),unit:clampNum(r.unit,0,UNIT_CAP)}));
   PHOTOS = sanitizePhotos(s.photos); if(typeof renderPhotos==="function") renderPhotos();
   if(s.proposal){ const pr=s.proposal;
     $("clientName").value=pr.client||""; $("clientAddress").value=pr.clientAddr||""; $("projScope").value=pr.scope||"";
@@ -2777,9 +2805,9 @@ async function maybeInstallHint(){
   if(saved && saved.rows){ applyState(saved); hadState=true;
     EDIT_ENTRY_ID=(saved.editId && getArchive().some(x=>x&&x.id===saved.editId)) ? saved.editId : null; }
   if(!hadState){
-    if(PROFILE.defOverhead!=null&&PROFILE.defOverhead!=="") $("overhead").value=PROFILE.defOverhead;
-    if(PROFILE.defContingency!=null&&PROFILE.defContingency!=="") $("contingency").value=PROFILE.defContingency;
-    if(PROFILE.defTax!=null&&PROFILE.defTax!=="") $("tax").value=PROFILE.defTax;
+    if(PROFILE.defOverhead!=null&&PROFILE.defOverhead!=="") $("overhead").value=boundVal(PROFILE.defOverhead,0,99);
+    if(PROFILE.defContingency!=null&&PROFILE.defContingency!=="") $("contingency").value=boundVal(PROFILE.defContingency,0,100);
+    if(PROFILE.defTax!=null&&PROFILE.defTax!=="") $("tax").value=boundVal(PROFILE.defTax,0,30);
   }
   // Always open in Build-from-cost (analyze is a deliberate choice / the PDF-import path). Preserve restored numbers.
   const _savedMargin = hadState && saved && saved.margin;
