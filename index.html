@@ -1994,15 +1994,57 @@ function loadProfileIntoForm(){
 }
 function applyBrand(){
   if(PROFILE.name){ $("brandName").textContent=PROFILE.name; }
-  if(safeImg(PROFILE.logo)){ $("brandLogo").style.background="#0000"; $("brandLogo").innerHTML='<img src="'+safeImg(PROFILE.logo)+'" style="width:30px;height:30px;border-radius:8px;object-fit:cover">'; }
+  if(safeImg(PROFILE.logo)){
+    const el=$("brandLogo");
+    el.style.background="#0000"; el.style.width="auto"; el.style.borderRadius="0";
+    // contain, never cover: a wide wordmark keeps its shape instead of being cropped into a square
+    el.innerHTML='<img src="'+safeImg(PROFILE.logo)+'" style="height:30px;width:auto;max-width:96px;object-fit:contain;border-radius:6px;display:block" alt="">';
+  }
 }
+/* High-quality logo resize: step the image down by halves (never one giant jump),
+   cap at 512px on the long side, keep transparency for PNG/SVG sources. */
+function processLogo(file){ return new Promise(function(res,rej){
+  const rd=new FileReader();
+  rd.onload=function(){ const img=new Image();
+    img.onload=function(){ try{
+      let cw=img.naturalWidth, ch=img.naturalHeight;
+      if(!cw||!ch){ res(rd.result); return; }
+      const MAX=512;
+      let cur=document.createElement("canvas"); cur.width=cw; cur.height=ch;
+      cur.getContext("2d").drawImage(img,0,0);
+      while(Math.max(cw,ch)>MAX*2){
+        const nw=Math.round(cw/2), nh=Math.round(ch/2);
+        const nxt=document.createElement("canvas"); nxt.width=nw; nxt.height=nh;
+        const nx=nxt.getContext("2d"); nx.imageSmoothingEnabled=true; nx.imageSmoothingQuality="high";
+        nx.drawImage(cur,0,0,nw,nh); cur=nxt; cw=nw; ch=nh;
+      }
+      if(Math.max(cw,ch)>MAX){
+        const sc=MAX/Math.max(cw,ch), nw=Math.max(1,Math.round(cw*sc)), nh=Math.max(1,Math.round(ch*sc));
+        const nxt=document.createElement("canvas"); nxt.width=nw; nxt.height=nh;
+        const nx=nxt.getContext("2d"); nx.imageSmoothingEnabled=true; nx.imageSmoothingQuality="high";
+        nx.drawImage(cur,0,0,nw,nh); cur=nxt;
+      }
+      const keepAlpha=/png|svg|webp|gif/i.test(file.type||"");
+      res(keepAlpha? cur.toDataURL("image/png") : cur.toDataURL("image/jpeg",.92));
+    }catch(e){ res(rd.result); } };
+    img.onerror=function(){ res(rd.result); };
+    img.src=rd.result; };
+  rd.onerror=rej;
+  rd.readAsDataURL(file);
+}); }
 $("pickLogo").addEventListener("click",()=>$("coLogo").click());
-$("coLogo").addEventListener("change",e=>{
+$("coLogo").addEventListener("change",async e=>{
   const f=e.target.files[0]; if(!f) return;
-  if(f.size>1200000){ toast("Logo too big. Use one under ~1 MB"); return; }
-  const rd=new FileReader(); rd.onload=()=>{ PROFILE.logo=rd.result; $("coLogoPrev").style.backgroundImage="url("+rd.result+")"; }; rd.readAsDataURL(f);
+  if(f.size>6000000){ toast("Logo too big. Use one under ~6 MB"); return; }
+  try{
+    const out=await processLogo(f);
+    PROFILE.logo=out; $("coLogoPrev").style.backgroundImage="url("+out+")";
+    applyBrand(); toast("Logo updated. Hit Save to keep it.");
+  }catch(err){ toast("Couldn't read that image. Try a PNG or JPG."); }
 });
-$("clearLogo").addEventListener("click",()=>{ PROFILE.logo=""; $("coLogoPrev").style.backgroundImage=""; });
+$("clearLogo").addEventListener("click",()=>{ PROFILE.logo=""; $("coLogoPrev").style.backgroundImage="";
+  const el=$("brandLogo"); el.style.background=""; el.style.width=""; el.style.borderRadius="";
+  el.innerHTML='<svg class="ic"><use href="#i-ruler"/></svg>'; });
 $("saveSettings").addEventListener("click",()=>{
   PROFILE.name=$("coName").value.trim(); PROFILE.license=$("coLicense").value.trim(); PROFILE.phone=$("coPhone").value.trim();
   PROFILE.email=$("coEmail").value.trim(); PROFILE.address=$("coAddress").value.trim();
