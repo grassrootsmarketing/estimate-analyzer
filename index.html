@@ -538,6 +538,13 @@
   .brrow .mt{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
   .brrow .br{text-align:right;flex:0 0 auto}
   .brrow .pr{display:block;font-size:15px;font-weight:500;color:var(--accent2);font-variant-numeric:tabular-nums}
+  /* recent-list bid delete: row + trash side by side; only bids get the trash */
+  .brwrap{display:flex;align-items:stretch;gap:7px}
+  .brwrap .brrow{flex:1;min-width:0}
+  .brdel{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:12px;width:40px;margin-bottom:8px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:color .16s ease,border-color .16s ease,background .16s ease,transform .12s ease}
+  .brdel .ic{width:16px;height:16px}
+  .brdel:hover{color:var(--badink);border-color:var(--badbd);background:var(--badbg)}
+  .brdel:active{transform:scale(.92)}
   @media(min-width:900px){ #dashBody,#jobBody,#jobsBody{max-width:680px;margin:0 auto} #schedView .calcard{max-width:860px;margin:0 auto} }
 
   /* ================= JOBS TAB (pipeline board) + PM hardening ================= */
@@ -2616,6 +2623,9 @@ function portalSnapshot(e, opts, photoList){
       schedStart:validDateStr(e.sched&&e.sched.start), schedTarget:validDateStr(e.sched&&e.sched.target)},
     progress:{done:tasks.filter(t=>t&&t.done).length, total:tasks.length},
     money:null, changes:[], photos:Array.isArray(photoList)?photoList.slice(0,12):[]};
+  /* the client's KPI: what is happening now, and what comes next (title + due only; no notes) */
+  const nt=(stage==="active")?nextTask(e):null;
+  snap.job.next=nt?{title:txt(nt.title,120), due:validDateStr(nt.due)}:null;
   if(opts.money!==false){
     const contract=contractPrice(e), paid=drawsPaid(e);
     snap.money={contract:contract, paid:paid, balance:fromC(toC(contract)-toC(paid)),
@@ -2807,14 +2817,25 @@ function renderDashboard(){
     const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
     const meta=[(s.clientType||""),when].filter(Boolean).join(" · ");
-    html+='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nm">'+esc(nm)+' '+stageBadge(e)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
+    const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nm">'+esc(nm)+' '+stageBadge(e)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
       '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
+    /* bids can be cleared right from the homepage; won/active/complete jobs cannot */
+    html+= boardStage(e)==="bidding"
+      ? '<div class="brwrap">'+row+'<button type="button" class="brdel" data-delbid="'+esc(e.id)+'" aria-label="Delete bid '+esc(nm)+'">'+ic("x")+'</button></div>'
+      : row;
   });
   box.innerHTML=html;
   $("dashNew").onclick=()=>showView("calc");
   const va=$("dashAll"); if(va) va.onclick=()=>showView("archive");
   const vj=$("dashJobs"); if(vj) vj.onclick=()=>showView("jobs");
   box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"dash"); });
+  box.querySelectorAll("[data-delbid]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
+    const t=jobById(el.dataset.delbid); if(!t) return;
+    const bnm=((t.state&&t.state.jobName)||"").trim()||"this bid";
+    if(!confirm('Delete "'+bnm+'"? This removes the estimate for good.')) return;
+    setArchive(getArchive().filter(x=>x&&x.id!==t.id));
+    renderDashboard(); toast("Bid deleted");
+  }; });
 }
 
 /* ---------------- JOBS BOARD (pipeline) ---------------- */
@@ -2845,6 +2866,19 @@ function calLane(placed,s,e){
 }
 const CAL_COLORS=["#2e7a44","#7a5ad6","#b9821c","#2b6ea8","#bf5a2f","#3f8f8a","#a84f7c","#5d7a2c"];
 function calColor(id){ let h=0; const s=String(id||""); for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return CAL_COLORS[h%CAL_COLORS.length]; }
+/* Two jobs can hash to the same palette slot; on the visible calendar that reads as one
+   job. Resolve collisions by walking to the next free slot, in stable sorted order, so
+   every job on screen gets its own color and keeps it between renders. */
+function calAssignColors(items){
+  const map={}, used={};
+  (items||[]).forEach(b=>{ if(!b||map[b.id]!=null) return;
+    let h=0; const s=String(b.id||""); for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+    let k=h%CAL_COLORS.length, tries=0;
+    while(used[CAL_COLORS[k]]&&tries<CAL_COLORS.length){ k=(k+1)%CAL_COLORS.length; tries++; }
+    map[b.id]=CAL_COLORS[k]; used[CAL_COLORS[k]]=true;
+  });
+  return map;
+}
 
 let CAL_MONTH=null;      // "YYYY-MM" being shown
 let CAL_TMP=null;        // {id,start,end} live preview while dragging
@@ -2854,6 +2888,7 @@ function renderCal(){
   const box=$("calBody"); if(!box) return;
   if(!CAL_MONTH) CAL_MONTH=todayStr().slice(0,7);
   const data=calJobs(getArchive()), today=todayStr();
+  const colors=calAssignColors(data.bars.concat(data.unscheduled));
   const y=+CAL_MONTH.slice(0,4), m=+CAL_MONTH.slice(5,7);
   const first=new Date(y,m-1,1);
   const gridStart=dayAdd(CAL_MONTH+"-01",-first.getDay());
@@ -2878,7 +2913,7 @@ function renderCal(){
     html+='<div class="calbars">';
     segs.forEach(sg=>{
       html+='<div class="calbar'+(sg.opl?' opl':'')+(sg.opr?' opr':'')+(CAL_TMP&&CAL_TMP.id===sg.b.id?' drag':'')
-        +'" data-bar="'+esc(sg.b.id)+'" style="--c:'+calColor(sg.b.id)+';grid-column:'+(sg.c0+1)+' / '+(sg.c1+2)+';grid-row:'+(sg.b.lane+1)+'" role="button" aria-label="'+esc(sg.b.name)+', '+esc(fmtDay(sg.b.start))+' to '+esc(fmtDay(sg.b.end))+'">'
+        +'" data-bar="'+esc(sg.b.id)+'" style="--c:'+(colors[sg.b.id]||calColor(sg.b.id))+';grid-column:'+(sg.c0+1)+' / '+(sg.c1+2)+';grid-row:'+(sg.b.lane+1)+'" role="button" aria-label="'+esc(sg.b.name)+', '+esc(fmtDay(sg.b.start))+' to '+esc(fmtDay(sg.b.end))+'">'
         +(sg.opl?'':'<span class="h l" data-h="l"></span>')
         +'<span class="bn">'+esc(sg.b.name)+'</span>'
         +(sg.opr?'':'<span class="h r" data-h="r"></span>')+'</div>';
@@ -2886,7 +2921,7 @@ function renderCal(){
     html+='</div></div>';
   }
   if(data.unscheduled.length){
-    html+='<div class="calun">'+data.unscheduled.map(u=>'<button type="button" class="unchip'+(CAL_ARM===u.id?' arm':'')+'" data-un="'+esc(u.id)+'" style="--c:'+calColor(u.id)+'">'+esc(u.name)+'</button>').join("")+'</div>';
+    html+='<div class="calun">'+data.unscheduled.map(u=>'<button type="button" class="unchip'+(CAL_ARM===u.id?' arm':'')+'" data-un="'+esc(u.id)+'" style="--c:'+(colors[u.id]||calColor(u.id))+'">'+esc(u.name)+'</button>').join("")+'</div>';
     html+='<div class="calhint">'+(CAL_ARM?'Now tap a day to put it on the calendar.':'Tap a job below, then tap a day to place it. Drag a bar to move it; drag its ends to stretch.')+'</div>';
   } else if(placed.length){
     html+='<div class="calhint">Drag a bar to move it. Drag its ends to stretch. Tap a bar to open the job.</div>';

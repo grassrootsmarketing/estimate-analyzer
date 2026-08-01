@@ -84,7 +84,8 @@
     html+='<div class="card"><h2>Where things stand</h2><div class="steps">'+STEPS.map(function(st,i){
       return '<div class="step'+(i<idx?' on':'')+(i===idx?' now':'')+'"><div class="bar"></div><div class="t">'+st[1]+'</div></div>';
     }).join("")+'</div><div class="bignow">'+esc(job.stageLabel||"")+'</div>'+
-    (prog.total?'<div class="prog">'+prog.done+' of '+prog.total+' work items complete</div>':'')+'</div>';
+    (prog.total?'<div class="prog">'+prog.done+' of '+prog.total+' work items complete</div>':'')+
+    (job.next&&job.next.title?'<div class="prog" style="margin-top:4px;color:var(--accent2);font-weight:600">Up next: '+esc(job.next.title)+(job.next.due?' · '+day(job.next.due):'')+'</div>':'')+'</div>';
     /* schedule */
     if(job.schedStart||job.schedTarget||job.started||job.completed){
       html+='<div class="card"><h2>Schedule</h2>';
