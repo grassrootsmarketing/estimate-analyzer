@@ -619,6 +619,35 @@
   .jnote{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45}
   @media(max-width:379px){ .nav button{font-size:10px} .jstrip{gap:7px} .jtile{padding:10px 10px} .jtile .v{font-size:16px} }
 
+  /* ---- Schedule calendar: month grid with draggable job bars ---- */
+  .calcard{margin:0 0 14px}
+  .calhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .calmon{flex:1;font-family:var(--dfont);font-size:15.5px;font-weight:700;letter-spacing:-.2px}
+  .calnav{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:9px;min-width:34px;min-height:32px;padding:0 10px;font-size:13px;font-weight:600;cursor:pointer;transition:border-color .16s ease}
+  .calnav:hover{border-color:var(--accent2)}
+  .caldow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:9.5px;font-weight:600;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+  .calweek{position:relative;display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line)}
+  .calweek:last-of-type{border-bottom:1px solid var(--line)}
+  .calday{min-height:calc(30px + var(--lanes,0)*22px);padding:3px 0 2px;border-left:1px solid var(--line);text-align:center}
+  .calday:first-child{border-left:none}
+  .calday .dn{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:10px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
+  .calday.out .dn{opacity:.4}
+  .calday.tdy .dn{background:var(--accent);color:var(--primink);font-weight:700}
+  .calbars{position:absolute;left:0;right:0;top:27px;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:20px;row-gap:2px;pointer-events:none}
+  .calbar{pointer-events:auto;position:relative;margin:0 1px;border-radius:7px;background:var(--c);color:#fff;font-size:10.5px;font-weight:600;line-height:20px;padding:0 8px;overflow:hidden;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 1px 2px rgba(10,26,15,.28)}
+  .calbar .bn{pointer-events:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .calbar.opl{border-top-left-radius:2px;border-bottom-left-radius:2px;margin-left:0}
+  .calbar.opr{border-top-right-radius:2px;border-bottom-right-radius:2px;margin-right:0}
+  .calbar.drag{opacity:.88;box-shadow:0 3px 10px rgba(10,26,15,.4);cursor:grabbing}
+  .calbar .h{position:absolute;top:0;bottom:0;width:15px;cursor:ew-resize}
+  .calbar .h.l{left:0}.calbar .h.r{right:0}
+  .calbar .h::after{content:"";position:absolute;top:5px;bottom:5px;width:3px;border-radius:2px;background:rgba(255,255,255,.7)}
+  .calbar .h.l::after{left:4px}.calbar .h.r::after{right:4px}
+  .calun{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+  .unchip{background:var(--chip);border:1px dashed var(--line);border-left:3px solid var(--c);color:var(--ink);border-radius:9px;padding:7px 11px;font-size:12px;font-weight:500;cursor:pointer;transition:border-color .16s ease}
+  .unchip.arm{border-color:var(--accent2);border-style:solid;background:var(--goodbg)}
+  .calhint{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.45}
+
   /* ================= TEN-ROUND POLISH PASS ================= */
   /* Type system: Space Grotesk carries the brand voice (titles + money), system UI carries the reading text */
   :root{--dfont:"Space Grotesk",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--numfont:var(--dfont)}
@@ -2734,6 +2763,151 @@ function renderDashboard(){
 }
 
 /* ---------------- JOBS BOARD (pipeline) ---------------- */
+/* ---------------- SCHEDULE CALENDAR (month grid, drag bars like Google Calendar) ---------------- */
+/* Pure date math on local YYYY-MM-DD strings; never Date.parse (timezone-safe). */
+function dayAdd(s,n){ const p=String(s).split("-"), d=new Date(+p[0],+p[1]-1,+p[2]+(+n||0));
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dayDiff(a,b){ const pa=String(a).split("-"), pb=String(b).split("-");
+  return Math.round((new Date(+pb[0],+pb[1]-1,+pb[2])-new Date(+pa[0],+pa[1]-1,+pa[2]))/864e5); }
+/* Which jobs belong on the calendar: active + up next. Start falls back to the
+   actual start date; a missing target shows a one-day bar; end never precedes start. */
+function calJobs(arr){
+  const bars=[], un=[];
+  (arr||[]).forEach(e=>{ if(!e) return; const b=boardStage(e); if(b!=="active"&&b!=="upnext") return;
+    const name=((e.state&&e.state.jobName)||"").trim()||"Untitled job";
+    const start=validDateStr(e.sched&&e.sched.start)||validDateStr(e.actualStart);
+    if(!start){ un.push({id:e.id,name:name,stage:b}); return; }
+    let end=validDateStr(e.sched&&e.sched.target)||start;
+    if(dayDiff(start,end)<0) end=start;
+    bars.push({id:e.id,name:name,start:start,end:end,stage:b});
+  });
+  bars.sort((a,b)=>a.start.localeCompare(b.start)||a.end.localeCompare(b.end)||String(a.id).localeCompare(String(b.id)));
+  return {bars:bars,unscheduled:un};
+}
+/* Lane packing: lowest lane with no date overlap (string compare is safe on YYYY-MM-DD) */
+function calLane(placed,s,e){
+  for(let lane=0;;lane++){ if(!placed.some(p=>p.lane===lane&&!(e<p.start||s>p.end))) return lane; }
+}
+const CAL_COLORS=["#2e7a44","#7a5ad6","#b9821c","#2b6ea8","#bf5a2f","#3f8f8a","#a84f7c","#5d7a2c"];
+function calColor(id){ let h=0; const s=String(id||""); for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return CAL_COLORS[h%CAL_COLORS.length]; }
+
+let CAL_MONTH=null;      // "YYYY-MM" being shown
+let CAL_TMP=null;        // {id,start,end} live preview while dragging
+let CAL_ARM=null;        // unscheduled job armed for tap-to-place
+let CAL_DRAG=null, CAL_RECTS=[];
+function renderCal(){
+  const box=$("calBody"); if(!box) return;
+  if(!CAL_MONTH) CAL_MONTH=todayStr().slice(0,7);
+  const data=calJobs(getArchive()), today=todayStr();
+  const y=+CAL_MONTH.slice(0,4), m=+CAL_MONTH.slice(5,7);
+  const first=new Date(y,m-1,1);
+  const gridStart=dayAdd(CAL_MONTH+"-01",-first.getDay());
+  const bars=data.bars.map(b=>(CAL_TMP&&CAL_TMP.id===b.id)?Object.assign({},b,{start:CAL_TMP.start,end:CAL_TMP.end}):b)
+    .sort((a,b)=>a.start.localeCompare(b.start)||b.end.localeCompare(a.end));
+  const placed=[]; bars.forEach(b=>{ b.lane=calLane(placed,b.start,b.end); placed.push(b); });
+  let html='<div class="calhead"><button type="button" class="calnav" id="calPrev" aria-label="Previous month">&#8249;</button>'
+    +'<span class="calmon">'+esc(first.toLocaleDateString(undefined,{month:"long",year:"numeric"}))+'</span>'
+    +'<button type="button" class="calnav" id="calNow">Today</button>'
+    +'<button type="button" class="calnav" id="calNext" aria-label="Next month">&#8250;</button></div>';
+  html+='<div class="caldow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>';
+  for(let w=0;w<6;w++){
+    const wkS=dayAdd(gridStart,w*7), wkE=dayAdd(wkS,6);
+    const segs=[];
+    placed.forEach(b=>{ if(b.end<wkS||b.start>wkE) return;
+      const s=b.start<wkS?wkS:b.start, e=b.end>wkE?wkE:b.end;
+      segs.push({b:b,c0:dayDiff(wkS,s),c1:dayDiff(wkS,e),opl:b.start<wkS,opr:b.end>wkE}); });
+    const lanes=segs.reduce((x,s)=>Math.max(x,s.b.lane),-1)+1;
+    html+='<div class="calweek" style="--lanes:'+lanes+'">';
+    for(let d=0;d<7;d++){ const ds=dayAdd(wkS,d);
+      html+='<div class="calday'+(ds.slice(0,7)===CAL_MONTH?'':' out')+(ds===today?' tdy':'')+'" data-day="'+ds+'"><span class="dn">'+(+ds.slice(8,10))+'</span></div>'; }
+    html+='<div class="calbars">';
+    segs.forEach(sg=>{
+      html+='<div class="calbar'+(sg.opl?' opl':'')+(sg.opr?' opr':'')+(CAL_TMP&&CAL_TMP.id===sg.b.id?' drag':'')
+        +'" data-bar="'+esc(sg.b.id)+'" style="--c:'+calColor(sg.b.id)+';grid-column:'+(sg.c0+1)+' / '+(sg.c1+2)+';grid-row:'+(sg.b.lane+1)+'" role="button" aria-label="'+esc(sg.b.name)+', '+esc(fmtDay(sg.b.start))+' to '+esc(fmtDay(sg.b.end))+'">'
+        +(sg.opl?'':'<span class="h l" data-h="l"></span>')
+        +'<span class="bn">'+esc(sg.b.name)+'</span>'
+        +(sg.opr?'':'<span class="h r" data-h="r"></span>')+'</div>';
+    });
+    html+='</div></div>';
+  }
+  if(data.unscheduled.length){
+    html+='<div class="calun">'+data.unscheduled.map(u=>'<button type="button" class="unchip'+(CAL_ARM===u.id?' arm':'')+'" data-un="'+esc(u.id)+'" style="--c:'+calColor(u.id)+'">'+esc(u.name)+'</button>').join("")+'</div>';
+    html+='<div class="calhint">'+(CAL_ARM?'Now tap a day to put it on the calendar.':'Tap a job below, then tap a day to place it. Drag a bar to move it; drag its ends to stretch.')+'</div>';
+  } else if(placed.length){
+    html+='<div class="calhint">Drag a bar to move it. Drag its ends to stretch. Tap a bar to open the job.</div>';
+  } else {
+    html+='<div class="calhint">Jobs you win land here so you can block out their weeks. Win a bid and it shows up ready to schedule.</div>';
+  }
+  box.innerHTML=html;
+  wireCal(box);
+}
+function wireCal(box){
+  const pv=$("calPrev"), nx=$("calNext"), td=$("calNow");
+  if(pv) pv.onclick=()=>{ CAL_MONTH=dayAdd(CAL_MONTH+"-01",-1).slice(0,7); renderCal(); };
+  if(nx) nx.onclick=()=>{ CAL_MONTH=dayAdd(CAL_MONTH+"-01",31).slice(0,7); renderCal(); };
+  if(td) td.onclick=()=>{ CAL_MONTH=todayStr().slice(0,7); renderCal(); };
+  box.querySelectorAll("[data-un]").forEach(el=>{ el.onclick=()=>{ CAL_ARM=(CAL_ARM===el.dataset.un)?null:el.dataset.un; renderCal(); }; });
+  box.querySelectorAll(".calday").forEach(el=>{ el.onclick=()=>{ if(!CAL_ARM) return; const id=CAL_ARM; CAL_ARM=null; calPlace(id,el.dataset.day); }; });
+  box.querySelectorAll("[data-bar]").forEach(el=>{
+    el.addEventListener("pointerdown",ev=>{ calDown(ev,el.dataset.bar,(ev.target&&ev.target.dataset&&ev.target.dataset.h)||"move"); });
+  });
+}
+function calRects(){ CAL_RECTS=Array.from(document.querySelectorAll("#calBody .calday")).map(el=>({day:el.dataset.day,r:el.getBoundingClientRect()})); }
+function calDayAt(x,y){
+  let best=null, bd=Infinity;
+  CAL_RECTS.forEach(c=>{ const cx=Math.max(c.r.left,Math.min(x,c.r.right)), cy=Math.max(c.r.top,Math.min(y,c.r.bottom));
+    const d=(cx-x)*(cx-x)+(cy-y)*(cy-y); if(d<bd){ bd=d; best=c.day; } });
+  return best;
+}
+/* Window-level listeners on purpose: the preview re-render replaces the bar node,
+   so element-level capture would drop the drag mid-gesture. */
+function calDown(ev,id,mode){
+  if(CAL_DRAG) return;
+  ev.preventDefault();
+  const b=calJobs(getArchive()).bars.find(x=>x.id===id); if(!b) return;
+  calRects();
+  const grab=calDayAt(ev.clientX,ev.clientY);
+  CAL_DRAG={id:id,mode:mode,x0:ev.clientX,y0:ev.clientY,moved:false,s0:b.start,e0:b.end,off:grab?dayDiff(b.start,grab):0};
+  window.addEventListener("pointermove",calMove);
+  window.addEventListener("pointerup",calUp);
+  window.addEventListener("pointercancel",calUp);
+}
+function calMove(ev){
+  if(!CAL_DRAG) return;
+  if(Math.abs(ev.clientX-CAL_DRAG.x0)+Math.abs(ev.clientY-CAL_DRAG.y0)>5) CAL_DRAG.moved=true;
+  if(!CAL_DRAG.moved) return;
+  const day=calDayAt(ev.clientX,ev.clientY); if(!day) return;
+  let s=CAL_DRAG.s0, e=CAL_DRAG.e0;
+  if(CAL_DRAG.mode==="l"){ s=(day<=e)?day:e; }
+  else if(CAL_DRAG.mode==="r"){ e=(day>=s)?day:s; }
+  else { const dur=dayDiff(s,e); s=dayAdd(day,-CAL_DRAG.off); e=dayAdd(s,dur); }
+  if(CAL_TMP&&CAL_TMP.start===s&&CAL_TMP.end===e) return;
+  CAL_TMP={id:CAL_DRAG.id,start:s,end:e};
+  renderCal(); calRects();
+}
+function calUp(){
+  window.removeEventListener("pointermove",calMove);
+  window.removeEventListener("pointerup",calUp);
+  window.removeEventListener("pointercancel",calUp);
+  const d=CAL_DRAG, t=CAL_TMP; CAL_DRAG=null; CAL_TMP=null;
+  if(!d) return;
+  if(!d.moved){ if(d.mode==="move") openJob(d.id,"jobs"); else renderCal(); return; }
+  if(t&&t.id===d.id&&(t.start!==d.s0||t.end!==d.e0)) calCommit(d.id,t.start,t.end);
+  else renderCal();
+}
+function calCommit(id,start,end){
+  const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t){ renderCal(); return; }
+  if(!t.sched||typeof t.sched!=="object") t.sched={start:"",target:""};
+  t.sched.start=validDateStr(start); t.sched.target=validDateStr(end);
+  _pmWrite(arr,"Schedule updated");
+}
+function calPlace(id,day){
+  const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t||!validDateStr(day)){ renderCal(); return; }
+  if(!t.sched||typeof t.sched!=="object") t.sched={start:"",target:""};
+  t.sched.start=day; t.sched.target=dayAdd(day,6);
+  _pmWrite(arr,"On the calendar. Drag the ends to fit the job.");
+}
+
 function renderJobs(){
   const box=$("jobsBody"); if(!box) return;
   const arr=getArchive();
@@ -2750,6 +2924,7 @@ function renderJobs(){
     +tile("In progress", String(groups.active.length), groups.active.length===1?"job on site":"jobs on site")
     +tile("Bids waiting", String(groups.bidding.length), "pending decisions")
     +'</div>';
+  html+='<div class="card calcard"><h2>Schedule <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="Every active and scheduled job as a block across the month. Drag a block to move it, drag its ends to stretch it, tap it to open the job.">i</span></h2><div id="calBody"></div></div>';
   const nm=e=>((e.state.jobName&&e.state.jobName.trim())||"Untitled job");
   const cl=e=>(e.state.clientType||"");
   /* Leads: captured interest, not yet priced */
@@ -2832,7 +3007,7 @@ function renderJobs(){
   if($("leadAddBtn")) $("leadAddBtn").onclick=()=>{ const f=$("leadForm"); f.style.display=f.style.display==="none"?"":"none"; if(f.style.display!=="none") $("leadNameIn").focus(); };
   if($("leadSaveBtn")) $("leadSaveBtn").onclick=async ()=>{ const ok=await addManualLead($("leadNameIn").value,$("leadPhoneIn").value,$("leadDescIn").value); if(!ok) return; };
   if($("leadCancelBtn")) $("leadCancelBtn").onclick=()=>{ $("leadForm").style.display="none"; };
-  renderLeadCapture(); fetchLeads(false);
+  renderCal(); renderLeadCapture(); fetchLeads(false);
 }
 
 /* ---------------- JOB PAGE (lifecycle + cost log + tasks + payments + COs) ---------------- */
