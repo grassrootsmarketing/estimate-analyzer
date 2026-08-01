@@ -36,8 +36,8 @@ const FNS = ["roundUp","compute","uid","numTs","txt","capArr","validDateStr","da
   "jobSpent","projectedProfit","contractLessCosts","rowPaidC","rowInvoicedC","drawsPaid","drawsInvoiced",
   "drawsTotal","contractRemaining","accountsReceivable","unbilled","nextTask","isOverdue","barTone",
   "pruneArchive","entryPrice","safeImg","sanitizePhotos","sanitizeRows","sanitizeEntry",
-  "clampNum","boundVal","cleanRows"];
-const CONSTS = ["COST_CATS","HISTORY_CAP","QTY_CAP","PCT_BOUNDS"];
+  "clampNum","boundVal","cleanRows","dayAdd","dayDiff","calJobs","calLane","calColor"];
+const CONSTS = ["COST_CATS","HISTORY_CAP","QTY_CAP","PCT_BOUNDS","CAL_COLORS"];
 
 const srcParts = CONSTS.map(c => extractConst(html, c)).concat(FNS.map(f => extractFn(html, f)));
 const sandbox = new Function(srcParts.join("\n") + "\nreturn {" + FNS.concat(CONSTS).join(",") + "};")();
@@ -216,6 +216,41 @@ eq(leadE.lead.key, "leads/abc/l1.json", "sanitize keeps the dedupe key");
 const leadDefaults = S.sanitizeEntry({ state: { ts: 1 }, isLead: true });
 ok(leadDefaults.lead && leadDefaults.lead.src === "manual", "lead without details gets safe defaults");
 ok(S.isManagedJob(leadDefaults), "leads count as managed: pruning never drops them");
+
+// 20. Schedule calendar: date math, job selection, lane packing
+eq(S.dayAdd("2026-07-31", 1), "2026-08-01", "dayAdd rolls over a month boundary");
+eq(S.dayAdd("2026-12-31", 1), "2027-01-01", "dayAdd rolls over a year boundary");
+eq(S.dayAdd("2026-03-01", -1), "2026-02-28", "dayAdd handles February going backward");
+eq(S.dayAdd("2024-02-28", 1), "2024-02-29", "dayAdd knows leap years");
+eq(S.dayDiff("2026-07-01", "2026-07-15"), 14, "dayDiff counts forward");
+eq(S.dayDiff("2026-08-01", "2026-07-25"), -7, "dayDiff is signed");
+eq(S.dayDiff("2026-11-01", "2026-11-08"), 7, "dayDiff is DST-proof (November fall-back week)");
+eq(S.dayDiff("2026-03-07", "2026-03-09"), 2, "dayDiff is DST-proof (March spring-forward)");
+const calArr = [
+  job({ id: "a", outcome: "won", stage: "active", state: { ts: 1, jobName: "Reyes bath" }, sched: { start: "2026-07-10", target: "2026-07-24" } }),
+  job({ id: "b", outcome: "won", state: { ts: 1, jobName: "Deck" }, sched: { start: "", target: "" } }),
+  job({ id: "c", outcome: "won", stage: "active", state: { ts: 1, jobName: "Fence" }, sched: { start: "", target: "" }, actualStart: "2026-07-20" }),
+  job({ id: "d", state: { ts: 1, jobName: "Bid only" } }),
+  job({ id: "e", outcome: "lost", stage: "active", sched: { start: "2026-07-01", target: "2026-07-30" } }),
+  job({ id: "f", outcome: "won", stage: "active", state: { ts: 1, jobName: "Backward" }, sched: { start: "2026-07-20", target: "2026-07-05" } })
+];
+const cj = S.calJobs(calArr);
+eq(cj.bars.length, 3, "calendar shows active and scheduled jobs only");
+ok(!cj.bars.some(b => b.id === "d") && !cj.bars.some(b => b.id === "e"), "bids and lost jobs stay off the calendar");
+eq(cj.unscheduled.length, 1, "won job with no dates is offered for placement");
+eq(cj.unscheduled[0].id, "b", "the unscheduled job is the dateless one");
+eq(cj.bars.find(b => b.id === "c").start, "2026-07-20", "actual start date stands in for a missing schedule");
+eq(cj.bars.find(b => b.id === "c").end, "2026-07-20", "no target = one-day bar, not an invalid range");
+eq(cj.bars.find(b => b.id === "f").end, "2026-07-20", "an end before the start is clamped to the start");
+const lanes = [];
+eq(S.calLane(lanes, "2026-07-01", "2026-07-10"), 0, "first bar takes lane 0");
+lanes.push({ start: "2026-07-01", end: "2026-07-10", lane: 0 });
+eq(S.calLane(lanes, "2026-07-05", "2026-07-15"), 1, "overlapping bar drops to lane 1");
+lanes.push({ start: "2026-07-05", end: "2026-07-15", lane: 1 });
+eq(S.calLane(lanes, "2026-07-11", "2026-07-20"), 0, "bar starting after lane 0 clears reuses lane 0");
+eq(S.calLane(lanes, "2026-07-10", "2026-07-20"), 2, "shared edge day counts as overlap on both lanes");
+ok(S.calColor("abc") === S.calColor("abc"), "bar colors are deterministic per job");
+ok(S.CAL_COLORS.includes(S.calColor("anything")), "bar colors come from the fixed palette");
 
 if (failures) { console.error("\n" + failures + " PM test(s) failed."); process.exit(1); }
 console.log("\nAll PM invariants passed.");
