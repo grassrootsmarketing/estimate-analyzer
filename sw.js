@@ -1,5 +1,7 @@
-/* Estimate Analyzer service worker — offline shell + vendored libraries */
-const CACHE = "ea-shell-v2";
+/* Homestead service worker — offline shell + vendored libraries */
+/* Cache name bumped at the Homestead rebrand so every device picks up the new
+   icons, manifest, and shell instead of serving the old cached copy. */
+const CACHE = "homestead-shell-v3";
 self.addEventListener("install", e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["/","/index.html"])).then(()=>self.skipWaiting()).catch(()=>{}));
 });

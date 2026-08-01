@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta name="theme-color" content="#f6f2e9" />
+<meta name="theme-color" content="#e4ece2" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Estimator" />
+<meta name="apple-mobile-web-app-title" content="Homestead" />
 <link rel="manifest" href="/manifest.json" />
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
-<title>Estimate Analyzer, LA Contractor Pricing</title>
+<title>Homestead, contractor pricing and job management</title>
 <style>
   /* Vendored display face (OFL): Space Grotesk, served same-origin, cached by the SW */
   @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:500;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-500-normal.woff2") format("woff2")}
@@ -769,6 +769,7 @@
        rounded strokes, so icons read as drawn shapes with ink depth, not bare wire.
        Both themes inherit color; keep every path stroke/fill-attribute free. -->
   <symbol id="i-dashboard" viewBox="0 0 24 24"><rect class="fl" x="3" y="3" width="8.4" height="8.4" rx="2.6"/><rect class="fl" x="14.2" y="10.4" width="6.8" height="10.6" rx="2.6"/><rect x="3" y="3" width="8.4" height="8.4" rx="2.6"/><rect x="14.2" y="3" width="6.8" height="4.8" rx="2.2"/><rect x="14.2" y="10.4" width="6.8" height="10.6" rx="2.6"/><rect x="3" y="14" width="8.4" height="7" rx="2.4"/><circle cx="7.2" cy="7.2" r="1.15" fill="currentColor" stroke="none"/><path d="M5.4 17.6l1.7 1.7 2.6-2.9"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path class="fl" d="M5.2 9.6h13.6v9.9a1.5 1.5 0 0 1-1.5 1.5H6.7a1.5 1.5 0 0 1-1.5-1.5Z"/><path d="M2.8 10.4 12 3.1l9.2 7.3"/><path d="M5.2 9.4v10.1a1.5 1.5 0 0 0 1.5 1.5h10.6a1.5 1.5 0 0 0 1.5-1.5V9.4"/><path d="M9.7 21v-5.1a2.3 2.3 0 0 1 4.6 0V21"/></symbol>
   <symbol id="i-ruler" viewBox="0 0 24 24"><path class="fl" d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></symbol>
   <symbol id="i-folder" viewBox="0 0 24 24"><rect class="fl" x="3" y="8.6" width="18" height="12.4" rx="2.6"/><rect x="3" y="8.6" width="18" height="12.4" rx="2.6"/><path d="M4 8.6 5.6 4.6A2 2 0 0 1 7.46 3.3h9.08a2 2 0 0 1 1.86 1.3L20 8.6"/><path d="M9.4 13.2h5.2"/><circle cx="17.6" cy="6" r="1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><circle class="fl" cx="14" cy="4" r="3.2"/><circle class="fl" cx="8" cy="12" r="3.2"/><circle class="fl" cx="16" cy="20" r="3.2"/><path d="M3 4h7.6"/><path d="M17.4 4H21"/><path d="M3 12h1.6"/><path d="M11.4 12H21"/><path d="M3 20h9.6"/><path d="M19.4 20H21"/><circle cx="14" cy="4" r="2.3"/><circle cx="8" cy="12" r="2.3"/><circle cx="16" cy="20" r="2.3"/></symbol>
@@ -815,10 +816,10 @@
 
 <header>
   <button class="homebtn" id="homeBtn" type="button" aria-label="Go to the dashboard">
-    <div class="logo" id="brandLogo"><svg class="ic"><use href="#i-ruler"/></svg></div>
+    <div class="logo" id="brandLogo"><svg class="ic"><use href="#i-home"/></svg></div>
     <div style="min-width:0;text-align:left">
-      <div class="ttl" id="brandName">Estimate Analyzer</div>
-      <div class="sub">LA contractor pricing</div>
+      <div class="ttl" id="brandName">Homestead</div>
+      <div class="sub">Contractor operations</div>
     </div>
   </button>
   <button class="hicon" id="themeToggle" aria-label="Toggle dark or light mode"><svg class="ic"><use href="#i-sun"/></svg></button>
@@ -2000,7 +2001,7 @@ function buildSummary(s){
   } else {
     res="<tr><td>Bid total</td><td class=r><b>"+fmt(r.price)+"</b></td></tr><tr><td>Assumed baked-in margin</td><td class=r>"+r.assumed.toFixed(0)+"%</td></tr><tr><td>Break-even cost</td><td class=r>"+fmt(r.breakeven!=null?r.breakeven:r.impliedCost)+"</td></tr><tr><td>Gross profit</td><td class=r>"+fmt(r.grossProfit)+"</td></tr><tr><td>Net profit</td><td class=r>"+fmt(r.net)+"</td></tr>";
   }
-  return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(name)+" Summary</title><style>body{font:14px Arial,sans-serif;color:#1a2330;max-width:740px;margin:26px auto;padding:0 18px}h1{font-size:20px;margin:0}.s{color:#667;font-size:12px;margin:2px 0 16px}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}.r{text-align:right}th{text-align:left;background:#f3f5f8}h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9a4a11;margin:16px 0 4px}.f{color:#889;font-size:11px;border-top:1px solid #dde;padding-top:10px;margin-top:22px}</style></head><body><h1>Estimate, internal summary</h1><div class=s>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+"</div><h2>Line items</h2><table><tr><th>Item</th><th>Description</th><th class=r>Qty</th><th class=r>Unit</th><th class=r>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr>"+(rowsHtml||"<tr><td colspan=5>(none)</td></tr>")+"</table><h2>Result</h2><table>"+res+"</table><div class=f>Internal worksheet, not for the client. estimate-analyzer-atb.vercel.app</div></body></html>";
+  return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(name)+" Summary</title><style>body{font:14px Arial,sans-serif;color:#1a2330;max-width:740px;margin:26px auto;padding:0 18px}h1{font-size:20px;margin:0}.s{color:#667;font-size:12px;margin:2px 0 16px}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}.r{text-align:right}th{text-align:left;background:#f3f5f8}h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9a4a11;margin:16px 0 4px}.f{color:#889;font-size:11px;border-top:1px solid #dde;padding-top:10px;margin-top:22px}</style></head><body><h1>Estimate, internal summary</h1><div class=s>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+"</div><h2>Line items</h2><table><tr><th>Item</th><th>Description</th><th class=r>Qty</th><th class=r>Unit</th><th class=r>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr>"+(rowsHtml||"<tr><td colspan=5>(none)</td></tr>")+"</table><h2>Result</h2><table>"+res+"</table><div class=f>Internal worksheet, not for the client. Made with Homestead.</div></body></html>";
 }
 function downloadHTML(html, filename){
   const blob=new Blob([html],{type:"text/html"}), url=URL.createObjectURL(blob), a=document.createElement("a");
@@ -2099,7 +2100,7 @@ function _estimatePdf(s){
     ["Net profit", fmt(r.net)]
   ];
   for(const kv of res){ need(16); T("F1",10,ML,kv[0]); Tr(10,558,kv[1]); y-=15; }
-  y-=10; need(20); T("F1",8,ML,"Internal worksheet, not for the client. estimate-analyzer-atb.vercel.app","0.5 0.5 0.5");
+  y-=10; need(20); T("F1",8,ML,"Internal worksheet, not for the client. Made with Homestead.","0.5 0.5 0.5");
   flush();
   return _mkPDF(pages);
 }
@@ -2178,7 +2179,7 @@ $("coLogo").addEventListener("change",async e=>{
 });
 $("clearLogo").addEventListener("click",()=>{ PROFILE.logo=""; $("coLogoPrev").style.backgroundImage="";
   const el=$("brandLogo"); el.style.background=""; el.style.width=""; el.style.borderRadius="";
-  el.innerHTML='<svg class="ic"><use href="#i-ruler"/></svg>'; });
+  el.innerHTML='<svg class="ic"><use href="#i-home"/></svg>'; });
 $("saveSettings").addEventListener("click",()=>{
   PROFILE.name=$("coName").value.trim(); PROFILE.license=$("coLicense").value.trim(); PROFILE.phone=$("coPhone").value.trim();
   PROFILE.email=$("coEmail").value.trim(); PROFILE.address=$("coAddress").value.trim();
@@ -2318,7 +2319,7 @@ $("archSearch").addEventListener("input",e=>{ ARCH_Q=(e.target.value||"").toLowe
 $("exportArch").addEventListener("click",()=>{
   const data=JSON.stringify({exported:new Date().toISOString(), archive:getArchive(), profile:getProfile(), benchmarks:{updated:BENCH_UPDATED,data:BENCH}},null,2);
   downloadHTML.length; const blob=new Blob([data],{type:"application/json"}), url=URL.createObjectURL(blob), a=document.createElement("a");
-  a.href=url; a.download="estimate-analyzer-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  a.href=url; a.download="homestead-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
   toast("Backup downloaded");
 });
 $("importArch").addEventListener("click",()=>$("importArchInput").click());

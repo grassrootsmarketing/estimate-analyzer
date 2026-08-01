@@ -1,6 +1,7 @@
-# Estimate Analyzer
+# Homestead
 
-Phone-first pricing tool for an LA general contractor. Single self-contained `index.html` (vanilla JS, no build step), one serverless function in `/api`, and a service worker `sw.js`. Vercel auto-deploys from `main`.
+Contractor operations platform (formerly Estimate Analyzer): pricing, job
+tracking, scheduling, lead capture, and a read-only client portal. Single self-contained `index.html` (vanilla JS, no build step), one serverless function in `/api`, and a service worker `sw.js`. Vercel auto-deploys from `main`.
 
 - Live: https://estimate-analyzer-atb.vercel.app
 - See `HANDOFF.md` for architecture, the pricing math, the data model, and known issues.

@@ -1,5 +1,5 @@
 {
-  "name": "estimate-analyzer",
+  "name": "homestead",
   "private": true,
   "description": "Static PWA + Vercel serverless functions. No build step; dependencies are for /api functions only.",
   "dependencies": {

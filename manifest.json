@@ -1,13 +1,13 @@
 {
-  "name": "Estimate Analyzer",
-  "short_name": "Estimator",
-  "description": "Price contractor jobs from your costs and check your margins.",
+  "name": "Homestead",
+  "short_name": "Homestead",
+  "description": "Price contractor jobs, track them through completion, and keep clients in the loop.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f1419",
-  "theme_color": "#0f1419",
+  "background_color": "#e4ece2",
+  "theme_color": "#e4ece2",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

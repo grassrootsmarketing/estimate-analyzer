@@ -1,4 +1,7 @@
-# Estimate Analyzer — Handoff & Audit Brief
+# Homestead — Handoff & Audit Brief
+
+> Renamed from "Estimate Analyzer" at the Homestead rebrand. The product name
+> changed; storage keys, blob prefixes, and the deployment hostname did not.
 
 _Written for a UX + code audit (Fable). Candid about the current state, not a sales pitch. Last updated after the "Build-from-cost default + save indicator + robustness" round._
 

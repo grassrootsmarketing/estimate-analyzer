@@ -5,8 +5,8 @@ Codex loads this file automatically. Read it fully before making changes.
 
 ## What this is
 
-Estimate Analyzer is a phone-first pricing tool for a Los Angeles general
-contractor. It helps price a job two ways:
+Homestead (renamed from Estimate Analyzer) is a phone-first operations app for a
+Los Angeles general contractor. It helps price a job two ways:
 
 - **Build mode (from cost):** enter your costs, get a recommended price from a markup.
 - **Analyze mode:** enter a bid you already have, see the margin and break-even baked into it.
@@ -34,6 +34,21 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
    PDF export was deliberately written by hand for this reason.)
 6. **Never touch `#rows` in the results-painting path.** Rewriting that container
    while the user types destroys input focus on mobile. See "Gotchas".
+7. **The rebrand to Homestead was cosmetic only. Never rename identifiers.**
+   The product name changed; the plumbing did not. These strings are load-bearing,
+   and renaming any of them silently destroys live user data or breaks live links:
+   - localStorage / IndexedDB keys (`ea_state`, `ea_archive`, `ea_profile`,
+     `ea_theme`, and friends). Renaming orphans every saved estimate on the device.
+   - Cloud sync derivations (the `ea-sync-v1` salt, the `ea-sync-id-v1` id prefix)
+     and the `ea-backups/` blob prefix. Renaming makes existing sync codes restore
+     nothing.
+   - The `ea-lead-id-v1` inbox derivation and the `leads/` prefix. Renaming kills
+     every request link already handed out.
+   - The `estimate-analyzer-atb.vercel.app` hostnames in every `hostAllowed()`.
+     That is the real deployment origin; changing it 403s the whole API.
+   If the deployment is ever renamed, the host allowlist, every shared request
+   link, and every published portal token move together. Treat that as its own
+   project, not a find-and-replace.
 
 ## Run, test, deploy
 
