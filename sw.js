@@ -1,7 +1,6 @@
-/* Homestead service worker — offline shell + vendored libraries */
-/* Cache name bumped at the Homestead rebrand so every device picks up the new
-   icons, manifest, and shell instead of serving the old cached copy. */
-const CACHE = "homestead-shell-v3";
+/* Service worker — offline shell + vendored libraries */
+/* Cache bumped again so every device drops the briefly-shipped Homestead shell. */
+const CACHE = "ea-shell-v4";
 self.addEventListener("install", e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["/","/index.html"])).then(()=>self.skipWaiting()).catch(()=>{}));
 });

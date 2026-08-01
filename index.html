@@ -7,12 +7,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Homestead" />
+<meta name="apple-mobile-web-app-title" content="Jobs" />
 <link rel="manifest" href="/manifest.json" />
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
-<title>Homestead, contractor pricing and job management</title>
+<title>Jobs and estimates</title>
 <style>
   /* Vendored display face (OFL): Space Grotesk, served same-origin, cached by the SW */
   @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:500;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-500-normal.woff2") format("woff2")}
@@ -816,10 +816,10 @@
 
 <header>
   <button class="homebtn" id="homeBtn" type="button" aria-label="Go to the dashboard">
-    <div class="logo" id="brandLogo"><svg class="ic"><use href="#i-brand"/></svg></div>
+    <div class="logo" id="brandLogo"><svg class="ic"><use href="#i-ruler"/></svg></div>
     <div style="min-width:0;text-align:left">
-      <div class="ttl" id="brandName">Homestead</div>
-      <div class="sub">Contractor operations</div>
+      <div class="ttl" id="brandName">Your company</div>
+      <div class="sub">Jobs and estimates</div>
     </div>
   </button>
   <button class="hicon" id="themeToggle" aria-label="Toggle dark or light mode"><svg class="ic"><use href="#i-sun"/></svg></button>
@@ -2001,7 +2001,7 @@ function buildSummary(s){
   } else {
     res="<tr><td>Bid total</td><td class=r><b>"+fmt(r.price)+"</b></td></tr><tr><td>Assumed baked-in margin</td><td class=r>"+r.assumed.toFixed(0)+"%</td></tr><tr><td>Break-even cost</td><td class=r>"+fmt(r.breakeven!=null?r.breakeven:r.impliedCost)+"</td></tr><tr><td>Gross profit</td><td class=r>"+fmt(r.grossProfit)+"</td></tr><tr><td>Net profit</td><td class=r>"+fmt(r.net)+"</td></tr>";
   }
-  return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(name)+" Summary</title><style>body{font:14px Arial,sans-serif;color:#1a2330;max-width:740px;margin:26px auto;padding:0 18px}h1{font-size:20px;margin:0}.s{color:#667;font-size:12px;margin:2px 0 16px}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}.r{text-align:right}th{text-align:left;background:#f3f5f8}h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9a4a11;margin:16px 0 4px}.f{color:#889;font-size:11px;border-top:1px solid #dde;padding-top:10px;margin-top:22px}</style></head><body><h1>Estimate, internal summary</h1><div class=s>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+"</div><h2>Line items</h2><table><tr><th>Item</th><th>Description</th><th class=r>Qty</th><th class=r>Unit</th><th class=r>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr>"+(rowsHtml||"<tr><td colspan=5>(none)</td></tr>")+"</table><h2>Result</h2><table>"+res+"</table><div class=f>Internal worksheet, not for the client. Made with Homestead.</div></body></html>";
+  return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(name)+" Summary</title><style>body{font:14px Arial,sans-serif;color:#1a2330;max-width:740px;margin:26px auto;padding:0 18px}h1{font-size:20px;margin:0}.s{color:#667;font-size:12px;margin:2px 0 16px}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #dde;padding:7px 8px;font-size:13px}.r{text-align:right}th{text-align:left;background:#f3f5f8}h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9a4a11;margin:16px 0 4px}.f{color:#889;font-size:11px;border-top:1px solid #dde;padding-top:10px;margin-top:22px}</style></head><body><h1>Estimate, internal summary</h1><div class=s>"+esc(name)+" · "+esc(s.clientType||"")+" · "+when+"</div><h2>Line items</h2><table><tr><th>Item</th><th>Description</th><th class=r>Qty</th><th class=r>Unit</th><th class=r>"+(r.mode==="cost"?"Cost":"Price")+"</th></tr>"+(rowsHtml||"<tr><td colspan=5>(none)</td></tr>")+"</table><h2>Result</h2><table>"+res+"</table><div class=f>Internal worksheet, not for the client.</div></body></html>";
 }
 function downloadHTML(html, filename){
   const blob=new Blob([html],{type:"text/html"}), url=URL.createObjectURL(blob), a=document.createElement("a");
@@ -2100,7 +2100,7 @@ function _estimatePdf(s){
     ["Net profit", fmt(r.net)]
   ];
   for(const kv of res){ need(16); T("F1",10,ML,kv[0]); Tr(10,558,kv[1]); y-=15; }
-  y-=10; need(20); T("F1",8,ML,"Internal worksheet, not for the client. Made with Homestead.","0.5 0.5 0.5");
+  y-=10; need(20); T("F1",8,ML,"Internal worksheet, not for the client.","0.5 0.5 0.5");
   flush();
   return _mkPDF(pages);
 }
@@ -2128,7 +2128,8 @@ function loadProfileIntoForm(){
   applyBrand();
 }
 function applyBrand(){
-  if(PROFILE.name){ $("brandName").textContent=PROFILE.name; }
+  /* the contractor's own business is the brand inside the app, never a product name */
+  if(PROFILE.name){ $("brandName").textContent=PROFILE.name; document.title=PROFILE.name+" · Jobs and estimates"; }
   if(safeImg(PROFILE.logo)){
     const el=$("brandLogo");
     el.style.background="#0000"; el.style.width="auto"; el.style.borderRadius="0";
@@ -2179,7 +2180,7 @@ $("coLogo").addEventListener("change",async e=>{
 });
 $("clearLogo").addEventListener("click",()=>{ PROFILE.logo=""; $("coLogoPrev").style.backgroundImage="";
   const el=$("brandLogo"); el.style.background=""; el.style.width=""; el.style.borderRadius="";
-  el.innerHTML='<svg class="ic"><use href="#i-brand"/></svg>'; });
+  el.innerHTML='<svg class="ic"><use href="#i-ruler"/></svg>'; });
 $("saveSettings").addEventListener("click",()=>{
   PROFILE.name=$("coName").value.trim(); PROFILE.license=$("coLicense").value.trim(); PROFILE.phone=$("coPhone").value.trim();
   PROFILE.email=$("coEmail").value.trim(); PROFILE.address=$("coAddress").value.trim();
@@ -2319,7 +2320,7 @@ $("archSearch").addEventListener("input",e=>{ ARCH_Q=(e.target.value||"").toLowe
 $("exportArch").addEventListener("click",()=>{
   const data=JSON.stringify({exported:new Date().toISOString(), archive:getArchive(), profile:getProfile(), benchmarks:{updated:BENCH_UPDATED,data:BENCH}},null,2);
   downloadHTML.length; const blob=new Blob([data],{type:"application/json"}), url=URL.createObjectURL(blob), a=document.createElement("a");
-  a.href=url; a.download="homestead-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  a.href=url; a.download="jobs-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
   toast("Backup downloaded");
 });
 $("importArch").addEventListener("click",()=>$("importArchInput").click());
@@ -2444,12 +2445,31 @@ function cloudStatusLine(){
   const mb=SYNC.lastBytes?(SYNC.lastBytes/1048576):0;
   return "Last backup "+new Date(SYNC.lastTs).toLocaleString()+(mb?(" · "+(mb<0.1?"under 0.1":mb.toFixed(1))+" MB"):"");
 }
+/* A backup carrying no estimates is only safe to upload when the cloud has nothing
+   substantial to lose. Pure, so the test suite can pin the rule down. */
+const EMPTY_GUARD_BYTES=2048;
+function emptyBackupOk(arch){ return Array.isArray(arch) && arch.length>0; }
 async function cloudBackupNow(manual){
   if(!SYNC||!SYNC.code||_syncBusy) return;
   if(!navigator.onLine){ if(manual) toast("You're offline. It'll back up next time you're online."); return; }
   _syncBusy=true; setSyncStatus("Backing up…");
   try{
     const id=await syncId(SYNC.code);
+    /* Wipe guard: never let an empty (or near-empty) device overwrite a healthy cloud
+       backup. If this device has no estimates but the cloud copy is substantial, the
+       likely story is local data loss, not a real deletion. Stop and tell the owner to
+       restore instead. An automatic backup stays silent; a manual one explains itself. */
+    if(!emptyBackupOk(getArchive())){
+      let cloud=null; try{ cloud=await syncApi({op:"status",id:id}); }catch(e){ cloud=null; }
+      if(cloud && cloud.exists && (cloud.bytes||0) > EMPTY_GUARD_BYTES){
+        SYNC.lastErr="held back: this device has no estimates but the cloud backup does";
+        saveKey(SYNC_LS,SYNC); setSyncStatus();
+        if(manual) alert("Backup stopped on purpose.\n\nThis device has no estimates, but your cloud backup from "
+          +new Date(cloud.ts).toLocaleString()+" still has "+Math.round((cloud.bytes||0)/1024)
+          +" KB of them. Backing up now would erase that copy.\n\nUse Restore instead to bring this device back, then backups resume normally.");
+        return;
+      }
+    }
     const b64=await encryptBackup(SYNC.code, cloudPayload());
     const parts=splitB64(b64, SYNC_PART);
     if(parts.length>16) throw new Error("backup is over the ~35MB cloud limit");

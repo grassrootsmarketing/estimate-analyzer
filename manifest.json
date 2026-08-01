@@ -1,7 +1,7 @@
 {
-  "name": "Homestead",
-  "short_name": "Homestead",
-  "description": "Price contractor jobs, track them through completion, and keep clients in the loop.",
+  "name": "Jobs and Estimates",
+  "short_name": "Jobs",
+  "description": "Price jobs, track them through completion, and keep clients in the loop.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -9,8 +9,23 @@
   "background_color": "#e4ece2",
   "theme_color": "#e4ece2",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

@@ -89,7 +89,7 @@
   var to=(q.get("to")||"").toLowerCase();
   var co=(q.get("c")||"").slice(0,60);
   if(co){ document.getElementById("who").textContent="Request an estimate from "+co; document.title="Request an estimate · "+co;
-    document.getElementById("brandFoot").textContent=co+" · powered by Homestead";
+    document.getElementById("brandFoot").textContent=co;
     document.getElementById("doneSub").textContent="Thanks! "+co+" will call or text you back soon."; }
   var f=document.getElementById("f"), msg=document.getElementById("msg"), go=document.getElementById("go");
   if(!/^[0-9a-f]{64}$/.test(to)){
