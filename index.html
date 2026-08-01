@@ -17,10 +17,8 @@
   /* Vendored display face (OFL): Space Grotesk, served same-origin, cached by the SW */
   @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:500;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-500-normal.woff2") format("woff2")}
   @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:700;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-700-normal.woff2") format("woff2")}
-  @font-face{font-family:"Instrument Serif";font-style:normal;font-weight:400;font-display:swap;src:url("/vendor/fonts/instrument-serif-latin-400-normal.woff2") format("woff2")}
-  @font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:400;font-display:swap;src:url("/vendor/fonts/plus-jakarta-sans-latin-400-normal.woff2") format("woff2")}
-  @font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:600;font-display:swap;src:url("/vendor/fonts/plus-jakarta-sans-latin-600-normal.woff2") format("woff2")}
-  @font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:700;font-display:swap;src:url("/vendor/fonts/plus-jakarta-sans-latin-700-normal.woff2") format("woff2")}
+  @font-face{font-family:"Inter";font-style:normal;font-weight:400;font-display:swap;src:url("/vendor/fonts/inter-latin-400-normal.woff2") format("woff2")}
+  @font-face{font-family:"Inter";font-style:normal;font-weight:600;font-display:swap;src:url("/vendor/fonts/inter-latin-600-normal.woff2") format("woff2")}
   :root{
     --bg:#0b1f11; --panel:#12291a; --panel2:#183321; --line:#274830;
     --ink:#fdf9ee; --muted:#c5d8c8; --accent:#7bd98f; --accent2:#9fe6ae;
@@ -29,7 +27,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0}
-  body{background:var(--bg);color:var(--ink);font:16px/1.55 "Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  body{background:var(--bg);color:var(--ink);font:16px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
   input,select,textarea,button{font-family:inherit}
   b,strong{font-weight:600}
@@ -329,9 +327,9 @@
     --shadow:rgba(0,0,0,.45); --shadowsoft:rgba(0,0,0,.30);
   }
   :root[data-theme="light"]{
-    --bg:#f2f6ec; --panel:#fffdf7; --panel2:#e9f0dc; --line:#d7e1c8;
-    --ink:#0f2c17; --muted:#5b7057; --accent:#1f4a26; --accent2:#2e7a44;
-    --good:#217a4b; --warn:#b9831c; --bad:#bf432f; --chip:#e7efdb;
+    --bg:#edf6dd; --panel:#fffef9; --panel2:#e2efcc; --line:#cfdfb4;
+    --ink:#12301a; --muted:#54704e; --accent:#1f4a26; --accent2:#2e7a44;
+    --good:#217a4b; --warn:#b9831c; --bad:#bf432f; --chip:#e2efcc;
     --resultbg:#f6faf1; --resultbd:#c9dcc0;
     --goodbg:#e7f3e9; --goodbd:#b9dcc4; --goodink:#1b5e39;
     --warnbg:#fdf3d7; --warnbd:#ecd08a; --warnink:#7a531a;
@@ -623,11 +621,7 @@
 
   /* ================= TEN-ROUND POLISH PASS ================= */
   /* Type system: Space Grotesk carries the brand voice (titles + money), system UI carries the reading text */
-  :root{--dfont:"Instrument Serif",Georgia,"Times New Roman",serif;--numfont:"Space Grotesk",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  /* Instrument Serif ships one weight: keep display text at 400 and let size carry the drama */
-  header .ttl,.titlein,.th-head,.bhi,.jtitle,.sightitle{font-weight:400;letter-spacing:-.01em}
-  .bhi{font-size:30px}
-  .th-head{font-size:27px}
+  :root{--dfont:"Space Grotesk",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--numfont:var(--dfont)}
   .recbox .v,.bbig,.jb-l .v,.jtile .v,.fold-num,.jstat .v,.kpi .k-v,.proj-price,.brrow .pr,.marg-head .big,.stat .v,#margVal,.sc .p,.litem-cost b,.totline.big,.pipopen .fig,.iprow .fig,.drow .amt,.payline{font-family:var(--numfont);letter-spacing:-.3px;font-weight:500}
   header .ttl,.titlein,.th-head,.bhi,.jtitle,.sightitle{font-family:var(--dfont)}
   header .ttl{font-weight:700;letter-spacing:-.2px}
@@ -1095,9 +1089,9 @@ function ic(n,cls){ return '<svg class="ic'+(cls?' '+cls:'')+'" aria-hidden="tru
 /* Theme: dark by default, light optional, remembered on the device */
 function applyTheme(t){ if(t==="light") document.documentElement.setAttribute("data-theme","light"); else document.documentElement.removeAttribute("data-theme");
   const tg=$("themeToggle"); if(tg) tg.innerHTML='<svg class="ic"><use href="#i-'+(t==="light"?"moon":"sun")+'"/></svg>';
-  const mt=document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute("content", t==="light"?"#f6f2e9":"#0f1311"); }
+  const mt=document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute("content", t==="light"?"#edf6dd":"#0b1f11"); }
 function currentTheme(){ return document.documentElement.getAttribute("data-theme")==="light"?"light":"dark"; }
-function initTheme(){ let t="dark"; try{ t=localStorage.getItem("ea_theme")||"dark"; }catch(e){} applyTheme(t); }
+function initTheme(){ let t="light"; try{ t=localStorage.getItem("ea_theme")||"light"; }catch(e){} applyTheme(t); }
 function toggleTheme(){ const next=currentTheme()==="light"?"dark":"light"; try{ localStorage.setItem("ea_theme",next); }catch(e){} applyTheme(next); }
 initTheme();
 if($("themeToggle")) $("themeToggle").addEventListener("click", toggleTheme);
