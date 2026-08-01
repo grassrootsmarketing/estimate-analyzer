@@ -1,4 +1,4 @@
-// /api/portal.js — read-only client portal snapshots for the Estimate Analyzer.
+// /api/portal.js — read-only client portal snapshots for Homestead.
 // The owner's app publishes a client-safe snapshot (built by portalSnapshot();
 // costs and margins are structurally excluded) to a random 128-bit capability
 // token. Anyone with the link can read that one snapshot; nothing else.

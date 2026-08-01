@@ -1,4 +1,4 @@
-// /api/backup.js — encrypted cloud backup for the Estimate Analyzer.
+// /api/backup.js — encrypted cloud backup for Homestead.
 // Storage: Vercel Blob (connect a Blob store to this project; it injects
 // BLOB_READ_WRITE_TOKEN). The server only ever sees AES-GCM ciphertext: the
 // client encrypts with a key derived from the user's sync code, and the

@@ -1,4 +1,4 @@
-// /api/lead.js — public estimate-request inbox for the Estimate Analyzer.
+// /api/lead.js — public estimate-request inbox for Homestead.
 // Anyone with the share link can SUBMIT a request (the link carries only a
 // SHA-256 inbox id). Reading or clearing the inbox requires the raw lead code,
 // which lives only on the owner's device; the server verifies sha256(code)
