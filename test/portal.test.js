@@ -51,7 +51,8 @@ const job = {
           { id: "t2", ts: 1, title: "Tile", due: "", done: false, doneTs: null }],
   draws: [{ id: "d1", ts: 1, label: "Deposit", amount: 3000, status: "paid", paidAmount: 3000, invoicedTs: 1, paidTs: 2, note: "paid cash, no receipt" }],
   changes: [{ id: "o1", ts: 1, number: "CO-1", title: "Add shower niche", amount: 500, cost: 200, status: "approved", approvedTs: 2, note: "client asked twice" },
-            { id: "o2", ts: 1, number: "CO-2", title: "Rejected idea", amount: 900, cost: 400, status: "void", approvedTs: null, note: "" }],
+            { id: "o2", ts: 1, number: "CO-2", title: "Rejected idea", amount: 900, cost: 400, status: "void", approvedTs: null, note: "" },
+            { id: "o3", ts: 1, number: "CO-3", title: "Upgrade fixtures", amount: 750, cost: 310, status: "pending", approvedTs: null, note: "haggling with supplier" }],
   costTracking: "tracking", paymentTracking: "tracking", createdTs: 1
 };
 
@@ -76,8 +77,12 @@ eq(snap.progress.done + "/" + snap.progress.total, "1/2", "task progress is show
 eq(snap.money.contract, 10500, "contract includes approved change orders");
 eq(snap.money.paid, 3000, "paid to date is shown");
 eq(snap.money.balance, 7500, "balance owed is correct");
-eq(snap.changes.length, 1, "only APPROVED change orders are shown");
+eq(snap.changes.length, 2, "approved and pending change orders are shown, voided are not");
 eq(snap.changes[0].title, "Add shower niche", "approved CO title is shown");
+eq(snap.changes[0].status, "approved", "approved CO carries its status");
+eq(snap.changes[1].status, "pending", "pending CO carries awaiting-approval status");
+eq(snap.changes[1].amount, 750, "pending CO amount is shown when money is on");
+ok(!json.includes("310") && !json.includes("haggling with supplier"), "pending CO cost and note never appear");
 eq(snap.money.draws[0].status, "paid", "draw status is shown");
 eq(snap.job.next && snap.job.next.title, "Tile", "the client sees what's coming next");
 ok(!JSON.stringify(snap.job.next).includes("doneTs"), "next-up carries only title and due date");
@@ -102,8 +107,9 @@ eq(S.portalSnapshot(dueOrder, {}, []).work.upcoming[0].title, "Sooner", "coming-
 const noMoney = S.portalSnapshot(job, { money: false, coName: "ATB" }, []);
 const njson = JSON.stringify(noMoney);
 eq(noMoney.money, null, "money:false strips the payments block");
-eq(noMoney.changes.length, 0, "money:false strips change order amounts");
-ok(!njson.includes("10500") && !njson.includes("10000") && !njson.includes("3000"), "no dollar figures leak with money off");
+eq(noMoney.changes.length, 2, "money:false keeps CO titles so the client still knows they exist");
+ok(!("amount" in noMoney.changes[0]) && !("amount" in noMoney.changes[1]), "money:false strips CO amounts");
+ok(!njson.includes("10500") && !njson.includes("10000") && !njson.includes("3000") && !njson.includes("500") && !njson.includes("750"), "no dollar figures leak with money off");
 
 // 4. Photos are capped
 const many = Array.from({ length: 20 }, (_, i) => "data:image/jpeg;base64,x" + i);
