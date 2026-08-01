@@ -3074,6 +3074,11 @@ function renderJobs(){
     +'</div>';
   const nm=e=>((e.state.jobName&&e.state.jobName.trim())||"Untitled job");
   const cl=e=>(e.state.clientType||"");
+  /* Same rule as the dashboard: show the pipeline even when nothing is in it. */
+  if(!arr.some(e=>boardStage(e))){
+    html+='<div class="dash-start">'+emptyArt()+'<div><b>Nothing on the board yet.</b> Save an estimate and it lands in Bidding, '
+      +'then moves through these stages as you win it, start it, and finish it.</div></div>';
+  }
   /* Leads: captured interest, not yet priced */
   html+='<div class="bsect"><span>Leads</span><span class="link" id="leadAddBtn" style="font-size:11px">+ Add lead</span></div>';
   html+='<div id="leadForm" style="display:none" class="pipecard solo"><div style="padding:11px 12px">'+
@@ -3099,8 +3104,9 @@ function renderJobs(){
   } else {
     html+='<div class="pipecard solo"><div class="pipopen" style="cursor:default"><span class="pm">No leads waiting. Add one when the phone rings, or share your request link below.</span></div></div>';
   }
-  if(groups.active.length){
-    html+='<div class="bsect"><span>In progress</span></div>';
+  html+='<div class="bsect"><span>In progress</span></div>';
+  if(!groups.active.length) html+='<div class="bnone">Jobs you have started, with budget spent and the next task due.</div>';
+  {
     groups.active.forEach(e=>{
       const b=jobBudgetTarget(e), sp=jobSpent(e), pct=b>0?sp/b*100:0, nt=nextTask(e);
       html+='<div class="pipecard"><button type="button" class="pipopen" data-job="'+esc(e.id)+'" aria-label="Open job '+esc(nm(e))+'">'
@@ -3111,8 +3117,9 @@ function renderJobs(){
         +'</div></div>';
     });
   }
-  if(groups.upnext.length){
-    html+='<div class="bsect"><span>Up next</span></div>';
+  html+='<div class="bsect"><span>Up next</span></div>';
+  if(!groups.upnext.length) html+='<div class="bnone">Bids you have won, waiting on a start date.</div>';
+  {
     groups.upnext.forEach(e=>{
       const st=e.sched&&e.sched.start;
       html+='<div class="pipecard"><button type="button" class="pipopen" data-job="'+esc(e.id)+'" aria-label="Open job '+esc(nm(e))+'">'
@@ -3121,8 +3128,9 @@ function renderJobs(){
         +'<div class="pipact"><button type="button" class="minibtn gold" data-start="'+esc(e.id)+'" aria-label="Start job '+esc(nm(e))+'">Start job</button></div></div>';
     });
   }
-  if(groups.bidding.length){
-    html+='<div class="bsect"><span>Bidding</span></div>';
+  html+='<div class="bsect"><span>Bidding</span></div>';
+  if(!groups.bidding.length) html+='<div class="bnone">Estimates that are out with a client, waiting on a decision.</div>';
+  {
     groups.bidding.forEach(e=>{
       const days=Math.max(0, Math.floor((Date.now()-(e.createdTs||0))/864e5));
       const age=e.createdTs? ('bid '+(days===0?'today':days+' day'+(days===1?'':'s')+' ago')) : '';
@@ -3131,8 +3139,9 @@ function renderJobs(){
         +'<span class="pm">'+esc(cl(e))+(age?' · '+age:'')+(days>14?' <span class="bdg bdg-lost">gone cold</span>':'')+'</span></button></div>';
     });
   }
-  if(groups.complete.length){
-    html+='<div class="bsect"><span>Recently completed</span></div>';
+  html+='<div class="bsect"><span>Recently completed</span></div>';
+  if(!groups.complete.length) html+='<div class="bnone">Finished jobs, with what you actually cleared on each.</div>';
+  {
     groups.complete.slice(0,5).forEach(e=>{
       const ct=e.costTracking||"unknown";
       const profTxt = ct==="unknown" ? '<span class="nottracked" style="font-size:12px">Not tracked</span>'
@@ -3141,9 +3150,6 @@ function renderJobs(){
         +'<span class="t"><span class="nm">'+esc(nm(e))+'</span><span class="fig">'+profTxt+'</span></span>'
         +'<span class="pm">'+esc(cl(e))+(e.completed?' · completed '+fmtDay(e.completed):'')+'</span></button></div>';
     });
-  }
-  if(!groups.lead.length&&!groups.active.length&&!groups.upnext.length&&!groups.bidding.length&&!groups.complete.length){
-    html+='<div class="dash-empty">'+emptyArt()+'No jobs yet. Estimates you save show up here as bids you can win, schedule, and track through completion.</div>';
   }
   html+='<div class="card" id="leadCapCard" style="margin-top:14px"><h2>Request link <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="A public page where anyone can ask you for an estimate. Only this device can read the requests; the link itself cannot.">i</span></h2><div id="leadCapBody"></div></div>';
   box.innerHTML=html;
