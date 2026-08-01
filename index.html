@@ -427,6 +427,13 @@
   .proj-bar i{display:block;height:100%;border-radius:5px;background:var(--accent2)}
   .proj .oc{padding:3px 9px;font-size:10.5px;flex:0 0 auto}
   .dash-empty{background:var(--panel);border:1px dashed var(--line);border-radius:16px;padding:34px 20px;text-align:center;color:var(--muted);font-size:13.5px}
+  /* first-run prompt: sits above a fully drawn dashboard instead of replacing it */
+  .dash-start{background:var(--panel);border:1px dashed var(--line);border-radius:16px;padding:13px 15px;margin-bottom:12px;
+    display:flex;align-items:center;gap:13px;color:var(--muted);font-size:12.8px;line-height:1.45}
+  .dash-start .emptyart{width:56px;height:34px;flex:0 0 auto;opacity:.8}
+  .dash-start b{color:var(--ink);font-weight:600}
+  .bbars i.ghost{background:var(--line);opacity:.55}
+  .bnone{color:var(--muted);font-size:12.5px;padding:0 2px 8px}
   @media(min-width:640px){ .kpis{grid-template-columns:repeat(4,1fr)} .projgrid{grid-template-columns:1fr 1fr} }
   @media(min-width:1040px){ .projgrid{grid-template-columns:1fr 1fr 1fr} }
 
@@ -2791,15 +2798,20 @@ function renderDashboard(){
   const dateLine=now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+" · "+now.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
   let html='<div class="bgreet"><div><div class="bdate" id="dashClock">'+esc(dateLine)+'</div><div class="bhi" id="dashGreet">'+greet+', David</div></div>'+
     '<button type="button" class="bnew" id="dashNew" aria-label="New estimate">'+ic("plus")+'</button></div>';
+  /* With no jobs saved the dashboard still draws its full frame, at zero. Hiding the
+     layout until data exists makes a working app look broken and tells a new user
+     nothing about what the numbers will mean. Show the shape, prompt above it. */
   if(!n){
-    html+='<div class="dash-empty">'+emptyArt()+'No jobs yet. Tap <b>+</b> to price your first job, then <b>Save</b> it and your dashboard comes to life.</div>';
-    box.innerHTML=html; $("dashNew").onclick=()=>showView("calc"); return;
+    html+='<div class="dash-start">'+emptyArt()+'<div><b>No jobs yet.</b> Tap + to price your first one. '
+      +'This is the shape your dashboard takes as work comes in.</div></div>';
   }
   /* hero: pipeline total + bar chart of the last ~8 job prices (most recent highlighted) */
   const pipeline=arr.reduce((a,e)=>a+entryPrice(e),0);
   const last=arr.slice(0,8).reverse();
   const maxP=Math.max.apply(null,last.map(entryPrice).concat([1]));
-  const bars=last.map((e,i)=>'<i class="'+(i===last.length-1?"hot":"")+'" style="height:'+Math.max(4,Math.round(entryPrice(e)/maxP*100))+'%"></i>').join("");
+  const bars=n
+    ? last.map((e,i)=>'<i class="'+(i===last.length-1?"hot":"")+'" style="height:'+Math.max(4,Math.round(entryPrice(e)/maxP*100))+'%"></i>').join("")
+    : [18,26,20,34,28,42,30,48].map(h=>'<i class="ghost" style="height:'+h+'%"></i>').join("");
   html+='<div class="bcard"><div class="blabel">Pipeline</div><div class="bbig">'+fmt(pipeline)+'</div><div class="bbars">'+bars+'</div></div>';
   /* bento row: win-rate ring + avg-margin tile with distribution */
   const decided=arr.filter(e=>{ const o=entryMeta(e).outcome; return o==="won"||o==="lost"; });
@@ -2848,6 +2860,7 @@ function renderDashboard(){
   }
   /* recent jobs */
   html+='<div class="bsect"><span>Recent</span><span class="link" id="dashAll" style="font-size:11px">View all</span></div>';
+  if(!n) html+='<div class="bnone">Saved estimates land here, newest first.</div>';
   arr.slice(0,5).forEach(e=>{
     const s=e.state, r=e.results||compute(s);
     const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
