@@ -33,7 +33,7 @@ function extractFn(src, name){
   }
   throw new Error("Unbalanced braces extracting " + name);
 }
-const CLIENT_FNS = ["makeSyncCode","normCode","b64FromBuf","bufFromB64","splitB64","syncKey","syncId","encryptBackup","decryptBackup","mergeArchives"];
+const CLIENT_FNS = ["makeSyncCode","normCode","b64FromBuf","bufFromB64","splitB64","syncKey","syncId","encryptBackup","decryptBackup","mergeArchives","emptyBackupOk"];
 const S = new Function(CLIENT_FNS.map(f => extractFn(html, f)).join("\n") + "\nreturn {" + CLIENT_FNS.join(",") + "};")();
 
 (async function(){
@@ -127,6 +127,21 @@ eq(res16.ok, true, "a full 16-part backup plus commit fits in one burst window")
 let burst = null;
 for(let i = 0; i < 25; i++){ burst = api.rateCheck("198.51.100.61", T0 + i * 200); }
 eq(burst.ok, false, "25th request in a minute is blocked");
+
+// 9. Wipe guard: a device with no estimates must not overwrite a healthy cloud backup.
+// This is the rule that stops local data loss from propagating to the only copy.
+eq(S.emptyBackupOk([]), false, "an empty archive is not safe to upload on its own");
+eq(S.emptyBackupOk(null), false, "a missing archive is not safe to upload");
+eq(S.emptyBackupOk(undefined), false, "an undefined archive is not safe to upload");
+eq(S.emptyBackupOk([{ id: "e1" }]), true, "one real estimate is enough to back up normally");
+// the guard only bites when the cloud actually holds something worth protecting
+const GUARD = Number((html.match(/const EMPTY_GUARD_BYTES\s*=\s*(\d+)/) || [])[1]);
+ok(GUARD > 0, "the guard threshold is defined in the app");
+const wouldHold = (localArch, cloud) => !S.emptyBackupOk(localArch) && !!(cloud && cloud.exists && (cloud.bytes || 0) > GUARD);
+eq(wouldHold([], { exists: true, bytes: 137504 }), true, "empty device + real cloud backup = hold the upload");
+eq(wouldHold([], { exists: true, bytes: 10 }), false, "empty device + trivial cloud copy = allow, nothing to lose");
+eq(wouldHold([], { exists: false }), false, "empty device + no cloud copy = allow the first backup");
+eq(wouldHold([{ id: "e1" }], { exists: true, bytes: 137504 }), false, "a device with estimates always backs up normally");
 
 if(failures){ console.error("\n" + failures + " backup test(s) failed."); process.exit(1); }
 console.log("\nAll cloud backup invariants passed.");
