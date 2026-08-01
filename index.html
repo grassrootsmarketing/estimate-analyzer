@@ -553,6 +553,12 @@
   .brdel:hover{color:var(--badink);border-color:var(--badbd);background:var(--badbg)}
   .brdel:active{transform:scale(.92)}
   .brdel.brarc:hover{color:var(--warnink);border-color:var(--warnbd);background:var(--warnbg)}
+  /* row actions stay in the layout so nothing shifts; they just fade in under the pointer.
+     Touch devices have no hover, so there they are always visible. */
+  @media(hover:hover) and (pointer:fine){
+    .brwrap .brdel{opacity:0;transition:opacity .15s ease,color .16s ease,border-color .16s ease,background .16s ease,transform .12s ease}
+    .brwrap:hover .brdel,.brwrap:focus-within .brdel{opacity:1}
+  }
   @media(min-width:900px){ #dashBody,#jobBody,#jobsBody{max-width:680px;margin:0 auto} #schedView .calcard{max-width:860px;margin:0 auto} }
 
   /* ================= JOBS TAB (pipeline board) + PM hardening ================= */
@@ -933,7 +939,7 @@
         <div class="row g3">
           <div><span class="lbl">Contingency %<span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="A cushion added to your costs for surprises: found rot, price jumps, an extra dump run. 5 to 10% is typical.">i</span></span><input id="contingency" type="number" inputmode="decimal" value="0" min="0" max="100" step="0.5" /></div>
           <div><span class="lbl">Overhead %<span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="What it costs to run the business itself: truck, insurance, phone, tools, your time quoting. Drives break-even and net profit.">i</span></span><input id="overhead" type="number" inputmode="decimal" value="0" min="0" max="99" step="0.5" /></div>
-          <div><span class="lbl">Mat. tax %<span class="tip eright" tabindex="0" role="button" aria-label="What is this?" data-tip="Sales tax applied only to Materials lines. LA County is 9.5%. Labor and subs are not taxed here.">i</span></span><input id="tax" type="number" inputmode="decimal" value="0" min="0" max="30" step="0.1" /></div>
+          <div><span class="lbl">Mat. tax %<span class="tip eright" tabindex="0" role="button" aria-label="What is this?" data-tip="Sales tax applied only to Materials lines. LA County is 9.5%. Labor and subs are not taxed here.">i</span></span><input id="tax" type="number" inputmode="decimal" value="9.5" min="0" max="30" step="0.1" /></div>
         </div>
       </div>
     </details>
@@ -1865,6 +1871,7 @@ function renderArchive(){
       '<button class="oc '+ocls+'" data-a="oc">'+ic(ocIcon)+m.outcome+'</button>'+
       '<button data-a="ac">'+ic("dollar")+acLabel+'</button>'+
       '<button class="'+(e.pinned?"pin-on":"")+'" data-a="pin">'+ic("star",e.pinned?"fill":"")+(e.pinned?"Kept":"Keep")+'</button>'+
+      (e.archived?'<button data-a="unarch">'+ic("rotate")+'Unarchive</button>':'')+
       '<button data-a="open">'+ic("clipboard")+'Open</button>'+
       '<button data-a="load">'+ic("folder-open")+'Load</button>'+
       '<button data-a="dup">'+ic("copy")+'Duplicate</button>'+
@@ -1885,6 +1892,9 @@ function renderArchive(){
       m.outcome=next; persistMeta(); renderArchive(); renderHistory(); };
     div.querySelector('[data-a=ac]').onclick=()=>{ const v=prompt("Actual final cost for this job ($):", m.actualCost!=null?m.actualCost:""); if(v==null) return; const n=parseFloat(v); m.actualCost=(v.trim()===""?null:(isFinite(n)?n:null)); persistMeta(); renderArchive(); renderHistory(); };
     div.querySelector('[data-a=pin]').onclick=()=>{ const arr=getArchive(); const t=arr.find(x=>x.id===e.id); if(t){ t.pinned=!t.pinned; e.pinned=t.pinned; setArchive(arr); renderArchive(); toast(t.pinned?"Pinned. Exempt from the rolling history on this device.":"Unpinned. Back in the rolling 30."); } };
+    const _ua=div.querySelector('[data-a=unarch]');
+    if(_ua) _ua.onclick=()=>{ const arr=getArchive(); const t=arr.find(x=>x.id===e.id);
+      if(t){ t.archived=false; t.updatedTs=Date.now(); e.archived=false; setArchive(arr); renderArchive(); toast("Back on the dashboard"); } };
     div.querySelector('[data-a=open]').onclick=()=>openJob(e.id,"archive");
     div.querySelector('[data-a=load]').onclick=()=>{ applyState(s); EDIT_ENTRY_ID=e.id; persist(); _savedSig=stateSig(); updateSaveStatus(); showView("calc"); toast("Loaded. Saving updates this job."); maybeOutcomePrompt(e); };
     div.querySelector('[data-a=dup]').onclick=()=>{ const st=JSON.parse(JSON.stringify(s)); st.ts=Date.now(); st.jobName=(st.jobName||"Estimate")+" (copy)"; let arr=getArchive(); arr.unshift(newEntry(st)); arr=pruneArchive(arr); setArchive(arr); renderArchive(); toast("Duplicated"); };
@@ -2339,6 +2349,7 @@ function sanitizeRows(arr){ return Array.isArray(arr) ? arr.map(r=>({ item:Strin
 function sanitizeEntry(e){
   if(!e || typeof e!=="object" || !e.state || typeof e.state!=="object") return null;
   e.pinned=!!e.pinned;
+  e.archived=!!e.archived;              // filed off the dashboard, never deleted
   e.outcome=(e.outcome==="won"||e.outcome==="lost")?e.outcome:"pending";
   e.stage=(e.stage==="active"||e.stage==="complete")?e.stage:"";
   if(e.outcome==="lost") e.stage="";                               // a lost job cannot stay active or complete
@@ -2571,7 +2582,7 @@ async function leadId(code){ const d=await crypto.subtle.digest("SHA-256",new Te
 function newLeadEntry(f){ const now=Date.now();
   const st={ts:now, mode:"cost", jobName:txt(f.name,80)||"New lead", clientType:"Individual homeowner",
     contactName:txt(f.name,80), contactPhone:txt(f.phone,40), contactEmail:txt(f.email,80),
-    benchCat:"", benchQty:"", margin:40, contingency:0, overhead:0, tax:0, proposed:"", photos:[], rows:[]};
+    benchCat:"", benchQty:"", margin:40, contingency:0, overhead:0, tax:9.5, proposed:"", photos:[], rows:[]};
   const e=newEntry(st); e.isLead=true;
   e.lead={desc:txt(f.desc,600), area:txt(f.area,120), timing:txt(f.timing,40),
     src:(f.src==="form"?"form":"manual"), key:txt(f.key,120), receivedTs:numTs(f.ts)||now};
@@ -2861,19 +2872,18 @@ function renderDashboard(){
   /* recent jobs */
   html+='<div class="bsect"><span>Recent</span><span class="link" id="dashAll" style="font-size:11px">View all</span></div>';
   if(!n) html+='<div class="bnone">Saved estimates land here, newest first.</div>';
-  arr.slice(0,5).forEach(e=>{
+  arr.filter(e=>!e.archived).slice(0,5).forEach(e=>{
     const s=e.state, r=e.results||compute(s);
     const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
     const meta=[(s.clientType||""),when].filter(Boolean).join(" · ");
     const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nm">'+esc(nm)+' '+stageBadge(e)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
       '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
-    /* bids can be marked lost (kept in the Archive + win rate) or deleted, right from the homepage */
-    html+= boardStage(e)==="bidding"
-      ? '<div class="brwrap">'+row
-        +'<button type="button" class="brdel brarc" data-lostbid="'+esc(e.id)+'" aria-label="Mark bid '+esc(nm)+' lost">'+ic("folder")+'</button>'
-        +'<button type="button" class="brdel" data-delbid="'+esc(e.id)+'" aria-label="Delete bid '+esc(nm)+'">'+ic("x")+'</button></div>'
-      : row;
+    /* Archive files it off the dashboard and is reversible; delete is permanent.
+       Both stay in the layout and fade in on hover, so rows never jump. */
+    html+='<div class="brwrap">'+row
+      +'<button type="button" class="brdel brarc" data-arch="'+esc(e.id)+'" title="Archive" aria-label="Archive '+esc(nm)+'">'+ic("folder")+'</button>'
+      +'<button type="button" class="brdel" data-delbid="'+esc(e.id)+'" title="Delete" aria-label="Delete '+esc(nm)+'">'+ic("x")+'</button></div>';
   });
   box.innerHTML=html;
   $("dashNew").onclick=()=>showView("calc");
@@ -2882,17 +2892,16 @@ function renderDashboard(){
   box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"dash"); });
   box.querySelectorAll("[data-delbid]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
     const t=jobById(el.dataset.delbid); if(!t) return;
-    const bnm=((t.state&&t.state.jobName)||"").trim()||"this bid";
-    if(!confirm('Delete "'+bnm+'"? This removes the estimate for good. If you just did not win it, use Mark lost instead so it stays in your history.')) return;
+    const bnm=((t.state&&t.state.jobName)||"").trim()||"this estimate";
+    if(!confirm('Delete "'+bnm+'"? This removes it for good. To just clear it off the dashboard, use Archive instead.')) return;
     setArchive(getArchive().filter(x=>x&&x.id!==t.id));
     renderDashboard(); toast("Bid deleted");
   }; });
-  box.querySelectorAll("[data-lostbid]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
-    const arr=getArchive(), t=arr.find(x=>x&&x.id===el.dataset.lostbid); if(!t) return;
-    const bnm=((t.state&&t.state.jobName)||"").trim()||"this bid";
-    if(!confirm('Mark "'+bnm+'" lost? It leaves the pipeline but stays in your Archive and win-rate history. You can change the outcome there any time.')) return;
-    t.outcome="lost"; t.stageChangedTs=Date.now();
-    setArchive(arr); renderDashboard(); toast("Marked lost. Find it in the Archive.");
+  /* Archiving is reversible and loses nothing, so it does not stop to ask. */
+  box.querySelectorAll("[data-arch]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===el.dataset.arch); if(!t) return;
+    t.archived=true; t.updatedTs=Date.now();
+    setArchive(arr); renderDashboard(); toast("Archived. Find it in the Archive tab.");
   }; });
 }
 
