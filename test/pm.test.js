@@ -261,5 +261,17 @@ eq(new Set(Object.values(eight)).size, 8, "eight concurrent jobs use all eight d
 const nine = S.calAssignColors(Array.from({ length: 9 }, (_, i) => ({ id: "job" + i })));
 ok(S.CAL_COLORS.includes(nine.job8), "a ninth job wraps around the palette instead of crashing");
 
+// 21. Archiving files an entry off the dashboard without destroying it
+const arch1 = S.sanitizeEntry({ state: { ts: 1 }, archived: true });
+eq(arch1.archived, true, "sanitize keeps the archived flag");
+eq(S.sanitizeEntry({ state: { ts: 1 } }).archived, false, "entries default to not archived");
+eq(S.sanitizeEntry({ state: { ts: 1 }, archived: "yes" }).archived, true, "archived is coerced to a real boolean");
+// archiving must not touch outcome, stage, or the win-rate record
+const archJob = S.sanitizeEntry({ state: { ts: 1 }, outcome: "won", stage: "active", archived: true });
+eq(archJob.outcome, "won", "archiving leaves the outcome alone");
+eq(archJob.stage, "active", "archiving leaves the stage alone");
+eq(S.boardStage(archJob), "active", "an archived job still holds its place on the jobs board");
+ok(S.isManagedJob(archJob), "archived jobs are still managed, so pruning never drops them");
+
 if (failures) { console.error("\n" + failures + " PM test(s) failed."); process.exit(1); }
 console.log("\nAll PM invariants passed.");
