@@ -545,6 +545,7 @@
   .brdel .ic{width:16px;height:16px}
   .brdel:hover{color:var(--badink);border-color:var(--badbd);background:var(--badbg)}
   .brdel:active{transform:scale(.92)}
+  .brdel.brarc:hover{color:var(--warnink);border-color:var(--warnbd);background:var(--warnbg)}
   @media(min-width:900px){ #dashBody,#jobBody,#jobsBody{max-width:680px;margin:0 auto} #schedView .calcard{max-width:860px;margin:0 auto} }
 
   /* ================= JOBS TAB (pipeline board) + PM hardening ================= */
@@ -2638,8 +2639,14 @@ function portalSnapshot(e, opts, photoList){
     const contract=contractPrice(e), paid=drawsPaid(e);
     snap.money={contract:contract, paid:paid, balance:fromC(toC(contract)-toC(paid)),
       draws:(Array.isArray(e.draws)?e.draws:[]).map(d=>({label:txt(d&&d.label,120)||"Payment", amount:money2(d&&d.amount)||0, status:{planned:1,invoiced:1,paid:1}[d&&d.status]?d.status:"planned"}))};
-    snap.changes=approvedChanges(e).map(c=>({number:txt(c.number,20), title:txt(c.title,200)||"Change order", amount:money2(c.amount)||0}));
   }
+  /* change orders: approved AND awaiting approval, never voided ones. Titles and
+     status always; amounts only when money is shared. Notes and costs never. */
+  snap.changes=(Array.isArray(e.changes)?e.changes:[])
+    .filter(c=>c&&(c.status==="approved"||c.status==="pending"))
+    .map(c=>{ const o={number:txt(c.number,20), title:txt(c.title,200)||"Change order", status:c.status};
+      if(opts.money!==false) o.amount=money2(c.amount)||0;
+      return o; });
   return snap;
 }
 function downscaleDataUrl(src, MAX, q){ return new Promise(function(res){
@@ -2827,9 +2834,11 @@ function renderDashboard(){
     const meta=[(s.clientType||""),when].filter(Boolean).join(" · ");
     const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nm">'+esc(nm)+' '+stageBadge(e)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
       '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
-    /* bids can be cleared right from the homepage; won/active/complete jobs cannot */
+    /* bids can be marked lost (kept in the Archive + win rate) or deleted, right from the homepage */
     html+= boardStage(e)==="bidding"
-      ? '<div class="brwrap">'+row+'<button type="button" class="brdel" data-delbid="'+esc(e.id)+'" aria-label="Delete bid '+esc(nm)+'">'+ic("x")+'</button></div>'
+      ? '<div class="brwrap">'+row
+        +'<button type="button" class="brdel brarc" data-lostbid="'+esc(e.id)+'" aria-label="Mark bid '+esc(nm)+' lost">'+ic("folder")+'</button>'
+        +'<button type="button" class="brdel" data-delbid="'+esc(e.id)+'" aria-label="Delete bid '+esc(nm)+'">'+ic("x")+'</button></div>'
       : row;
   });
   box.innerHTML=html;
@@ -2840,9 +2849,16 @@ function renderDashboard(){
   box.querySelectorAll("[data-delbid]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
     const t=jobById(el.dataset.delbid); if(!t) return;
     const bnm=((t.state&&t.state.jobName)||"").trim()||"this bid";
-    if(!confirm('Delete "'+bnm+'"? This removes the estimate for good.')) return;
+    if(!confirm('Delete "'+bnm+'"? This removes the estimate for good. If you just did not win it, use Mark lost instead so it stays in your history.')) return;
     setArchive(getArchive().filter(x=>x&&x.id!==t.id));
     renderDashboard(); toast("Bid deleted");
+  }; });
+  box.querySelectorAll("[data-lostbid]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===el.dataset.lostbid); if(!t) return;
+    const bnm=((t.state&&t.state.jobName)||"").trim()||"this bid";
+    if(!confirm('Mark "'+bnm+'" lost? It leaves the pipeline but stays in your Archive and win-rate history. You can change the outcome there any time.')) return;
+    t.outcome="lost"; t.stageChangedTs=Date.now();
+    setArchive(arr); renderDashboard(); toast("Marked lost. Find it in the Archive.");
   }; });
 }
 

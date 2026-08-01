@@ -132,11 +132,19 @@
         var chip=d.status==="paid"?'<span class="chip paid">Paid</span>':(d.status==="invoiced"?'<span class="chip invoiced">Invoiced</span>':'<span class="chip">Upcoming</span>');
         html+='<div class="kv"><span class="k">'+esc(d.label)+'</span><span class="v">'+money(d.amount)+' '+chip+'</span></div>';
       });
-      if(s.changes&&s.changes.length){
-        html+='<h2 style="margin-top:14px">Approved changes</h2>';
-        s.changes.forEach(function(c){
-          html+='<div class="kv"><span class="k">'+esc((c.number?c.number+" · ":"")+c.title)+'</span><span class="v">'+(c.amount<0?"-":"+")+money(Math.abs(c.amount))+'</span></div>';
-        });
+      html+='</div>';
+    }
+    /* change orders: approved and awaiting approval, amounts only when money is shared */
+    if(s.changes&&s.changes.length){
+      html+='<div class="card"><h2>Change orders</h2>';
+      s.changes.forEach(function(c){
+        var st=c.status||"approved";
+        var chip=st==="approved"?'<span class="chip paid">Approved</span>':'<span class="chip invoiced">Awaiting approval</span>';
+        var amt=(typeof c.amount==="number")?'<span class="v">'+(c.amount<0?"-":"+")+money(Math.abs(c.amount))+'</span>':'';
+        html+='<div class="kv"><span class="k">'+esc((c.number?c.number+" · ":"")+c.title)+' '+chip+'</span>'+amt+'</div>';
+      });
+      if(s.changes.some(function(c){ return c.status==="pending"; })){
+        html+='<p class="sub" style="margin:10px 0 0;font-size:12.5px">To approve or discuss a change, call or text '+esc((s.company&&s.company.name)||"your contractor")+'.</p>';
       }
       html+='</div>';
     }
