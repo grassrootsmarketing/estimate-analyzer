@@ -516,7 +516,8 @@
   .funl .fbar i{position:absolute;left:50%;transform:translateX(-50%);top:0;bottom:0;border-radius:6px;background:var(--accent2);transition:width .4s ease}
   .bsub{font-size:11.5px;color:var(--muted);text-align:center;margin-top:8px}
   .bmargin .bbig{color:var(--accent2)}
-  .mdist{display:flex;align-items:flex-end;gap:6px;height:34px;margin-top:12px}
+  .bcard.bmargin{display:flex;flex-direction:column}
+  .mdist{display:flex;align-items:flex-end;gap:6px;min-height:34px;flex:1;margin-top:12px}
   .mdist i{flex:1;background:var(--panel2);border-radius:4px;min-height:3px}
   .mdist i.f{background:var(--accent2);opacity:.75}
   .mlbl{display:flex;gap:6px;margin-top:5px}
@@ -2697,7 +2698,8 @@ function renderDashboard(){
       '<div class="bsub">'+(decided.length?winRate+"% win rate · "+won+" of "+decided.length+" decided":"mark jobs won or lost")+'</div></div>'+
     '<div class="bcard bmargin"><div class="blabel">Avg margin</div><div class="bbig">'+(avgM!=null?avgM.toFixed(0)+"%":"–")+'</div>'+
       '<div class="mdist">'+bands.map(c=>'<i class="'+(c?"f":"")+'" style="height:'+(c?Math.max(12,Math.round(c/maxB*100)):0)+'%"></i>').join("")+'</div>'+
-      '<div class="mlbl"><span>under 20</span><span>20–35</span><span>over 35</span></div></div>'+
+      '<div class="mlbl"><span>under 20</span><span>20–35</span><span>over 35</span></div>'+
+      '<div class="bsub">'+(margs.length?("across "+margs.length+" estimate"+(margs.length>1?"s":"")+" · median "+median(margs).toFixed(0)+"%"):"save estimates to see margins")+'</div></div>'+
     '</div>';
   /* in-progress jobs: spend vs target cost + next task */
   const act=arr.filter(e=>boardStage(e)==="active");
