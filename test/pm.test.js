@@ -36,7 +36,7 @@ const FNS = ["roundUp","compute","uid","numTs","txt","capArr","validDateStr","da
   "jobSpent","projectedProfit","contractLessCosts","rowPaidC","rowInvoicedC","drawsPaid","drawsInvoiced",
   "drawsTotal","contractRemaining","accountsReceivable","unbilled","nextTask","isOverdue","barTone",
   "pruneArchive","entryPrice","safeImg","sanitizePhotos","sanitizeRows","sanitizeEntry",
-  "clampNum","boundVal","cleanRows","dayAdd","dayDiff","calJobs","calLane","calColor"];
+  "clampNum","boundVal","cleanRows","dayAdd","dayDiff","calJobs","calLane","calColor","calAssignColors"];
 const CONSTS = ["COST_CATS","HISTORY_CAP","QTY_CAP","PCT_BOUNDS","CAL_COLORS"];
 
 const srcParts = CONSTS.map(c => extractConst(html, c)).concat(FNS.map(f => extractFn(html, f)));
@@ -251,6 +251,15 @@ eq(S.calLane(lanes, "2026-07-11", "2026-07-20"), 0, "bar starting after lane 0 c
 eq(S.calLane(lanes, "2026-07-10", "2026-07-20"), 2, "shared edge day counts as overlap on both lanes");
 ok(S.calColor("abc") === S.calColor("abc"), "bar colors are deterministic per job");
 ok(S.CAL_COLORS.includes(S.calColor("anything")), "bar colors come from the fixed palette");
+// "a" (97) and "i" (105) hash to the same palette slot; on screen they must differ
+ok(S.calColor("a") === S.calColor("i"), "test premise: these two ids collide by hash");
+const cmap = S.calAssignColors([{ id: "a" }, { id: "i" }]);
+ok(cmap.a !== cmap.i, "colliding jobs get distinct colors on the visible calendar");
+ok(S.CAL_COLORS.includes(cmap.a) && S.CAL_COLORS.includes(cmap.i), "assigned colors stay in the palette");
+const eight = S.calAssignColors(Array.from({ length: 8 }, (_, i) => ({ id: "job" + i })));
+eq(new Set(Object.values(eight)).size, 8, "eight concurrent jobs use all eight distinct colors");
+const nine = S.calAssignColors(Array.from({ length: 9 }, (_, i) => ({ id: "job" + i })));
+ok(S.CAL_COLORS.includes(nine.job8), "a ninth job wraps around the palette instead of crashing");
 
 if (failures) { console.error("\n" + failures + " PM test(s) failed."); process.exit(1); }
 console.log("\nAll PM invariants passed.");

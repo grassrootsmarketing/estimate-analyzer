@@ -33,7 +33,7 @@ function extractFn(src, name){
 }
 const FNS = ["roundUp","compute","txt","numTs","validDateStr","toC","fromC","sumC","money2",
   "boardStage","approvedChanges","changesTotalC","contractPrice","entryPrice",
-  "rowPaidC","rowInvoicedC","drawsPaid","portalSnapshot"];
+  "rowPaidC","rowInvoicedC","drawsPaid","nextTask","isOverdue","portalSnapshot"];
 const S = new Function(FNS.map(f => extractFn(html, f)).join("\n") + "\nreturn {" + FNS.join(",") + "};")();
 
 // A job loaded with everything secret: distinctive values that must never appear
@@ -79,6 +79,8 @@ eq(snap.money.balance, 7500, "balance owed is correct");
 eq(snap.changes.length, 1, "only APPROVED change orders are shown");
 eq(snap.changes[0].title, "Add shower niche", "approved CO title is shown");
 eq(snap.money.draws[0].status, "paid", "draw status is shown");
+eq(snap.job.next && snap.job.next.title, "Tile", "the client sees what's coming next");
+ok(!JSON.stringify(snap.job.next).includes("doneTs"), "next-up carries only title and due date");
 
 // 3. Money off: nothing financial survives
 const noMoney = S.portalSnapshot(job, { money: false, coName: "ATB" }, []);
