@@ -33,7 +33,7 @@ function extractFn(src, name){
 }
 const FNS = ["roundUp","compute","txt","numTs","validDateStr","toC","fromC","sumC","money2",
   "boardStage","approvedChanges","changesTotalC","contractPrice","entryPrice",
-  "rowPaidC","rowInvoicedC","drawsPaid","nextTask","isOverdue","portalSnapshot"];
+  "rowPaidC","rowInvoicedC","drawsPaid","dayOrdinal","nextTask","isOverdue","portalSnapshot"];
 const S = new Function(FNS.map(f => extractFn(html, f)).join("\n") + "\nreturn {" + FNS.join(",") + "};")();
 
 // A job loaded with everything secret: distinctive values that must never appear
@@ -81,6 +81,22 @@ eq(snap.changes[0].title, "Add shower niche", "approved CO title is shown");
 eq(snap.money.draws[0].status, "paid", "draw status is shown");
 eq(snap.job.next && snap.job.next.title, "Tile", "the client sees what's coming next");
 ok(!JSON.stringify(snap.job.next).includes("doneTs"), "next-up carries only title and due date");
+eq(snap.work.done.length, 1, "done-so-far lists completed work");
+eq(snap.work.done[0].title, "Demo", "done-so-far shows the finished task title");
+eq(snap.work.upcoming.length, 1, "coming-up lists open work");
+eq(snap.work.upcoming[0].title, "Tile", "coming-up shows the open task title");
+ok(!JSON.stringify(snap.work).includes("doneTs") && !JSON.stringify(snap.work).includes('"id"'), "work log carries titles and dates only");
+const busy = Object.assign({}, job, { tasks: Array.from({ length: 40 }, (_, i) =>
+  ({ id: "bt" + i, ts: i, title: "Task " + i, due: "", done: i < 20, doneTs: i < 20 ? i + 1 : null })) });
+const busySnap = S.portalSnapshot(busy, {}, []);
+eq(busySnap.work.done.length, 8, "done-so-far caps at 8 (most recent)");
+eq(busySnap.work.upcoming.length, 8, "coming-up caps at 8");
+eq(busySnap.work.done[7].title, "Task 19", "done-so-far keeps the most recent completions");
+const dueOrder = Object.assign({}, job, { tasks: [
+  { id: "u1", ts: 1, title: "No due", due: "", done: false, doneTs: null },
+  { id: "u2", ts: 2, title: "Later", due: "2026-09-01", done: false, doneTs: null },
+  { id: "u3", ts: 3, title: "Sooner", due: "2026-08-05", done: false, doneTs: null }] });
+eq(S.portalSnapshot(dueOrder, {}, []).work.upcoming[0].title, "Sooner", "coming-up is ordered by due date");
 
 // 3. Money off: nothing financial survives
 const noMoney = S.portalSnapshot(job, { money: false, coName: "ATB" }, []);
