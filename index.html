@@ -327,7 +327,7 @@
     --shadow:rgba(0,0,0,.45); --shadowsoft:rgba(0,0,0,.30);
   }
   :root[data-theme="light"]{
-    --bg:#edf6dd; --panel:#fffef9; --panel2:#e2efcc; --line:#cfdfb4;
+    --bg:#e3f3c0; --panel:#fdfff4; --panel2:#d6ecaa; --line:#bcd98c;
     --ink:#12301a; --muted:#54704e; --accent:#1f4a26; --accent2:#2e7a44;
     --good:#217a4b; --warn:#b9831c; --bad:#bf432f; --chip:#e2efcc;
     --resultbg:#f6faf1; --resultbd:#c9dcc0;
@@ -1089,7 +1089,7 @@ function ic(n,cls){ return '<svg class="ic'+(cls?' '+cls:'')+'" aria-hidden="tru
 /* Theme: dark by default, light optional, remembered on the device */
 function applyTheme(t){ if(t==="light") document.documentElement.setAttribute("data-theme","light"); else document.documentElement.removeAttribute("data-theme");
   const tg=$("themeToggle"); if(tg) tg.innerHTML='<svg class="ic"><use href="#i-'+(t==="light"?"moon":"sun")+'"/></svg>';
-  const mt=document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute("content", t==="light"?"#edf6dd":"#0b1f11"); }
+  const mt=document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute("content", t==="light"?"#e3f3c0":"#0b1f11"); }
 function currentTheme(){ return document.documentElement.getAttribute("data-theme")==="light"?"light":"dark"; }
 function initTheme(){ let t="light"; try{ t=localStorage.getItem("ea_theme")||"light"; }catch(e){} applyTheme(t); }
 function toggleTheme(){ const next=currentTheme()==="light"?"dark":"light"; try{ localStorage.setItem("ea_theme",next); }catch(e){} applyTheme(next); }
