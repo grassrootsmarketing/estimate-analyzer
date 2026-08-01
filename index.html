@@ -17,6 +17,8 @@
   /* Vendored display face (OFL): Space Grotesk, served same-origin, cached by the SW */
   @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:500;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-500-normal.woff2") format("woff2")}
   @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:700;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-700-normal.woff2") format("woff2")}
+  @font-face{font-family:"Inter";font-style:normal;font-weight:400;font-display:swap;src:url("/vendor/fonts/inter-latin-400-normal.woff2") format("woff2")}
+  @font-face{font-family:"Inter";font-style:normal;font-weight:600;font-display:swap;src:url("/vendor/fonts/inter-latin-600-normal.woff2") format("woff2")}
   :root{
     --bg:#0f1419; --panel:#171e26; --panel2:#1d2731; --line:#2a3744;
     --ink:#ffffff; --muted:#eef2f6; --accent:#ff8c42; --accent2:#ffb072;
@@ -25,8 +27,10 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0}
-  body{background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  body{background:var(--bg);color:var(--ink);font:16px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+  input,select,textarea,button{font-family:inherit}
+  b,strong{font-weight:600}
   h1,h2,h3{margin:0}
   a{color:var(--accent2)}
   .app{max-width:640px;margin:0 auto;padding:0 14px}
@@ -564,6 +568,20 @@
   .chip.good{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
   .chip.warn{background:var(--warnbg);border-color:var(--warnbd);color:var(--warnink)}
   .chip.bad{background:var(--badbg);border-color:var(--badbd);color:var(--badink)}
+  /* stage badges: ONE color language for the pipeline, used on every list */
+  .bdg{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 8px;font-size:9.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;border:1px solid transparent;vertical-align:middle;white-space:nowrap}
+  .bdg-lead{background:rgba(167,139,250,.13);border-color:rgba(167,139,250,.32);color:#b9a5f7}
+  .bdg-bidding{background:var(--warnbg);border-color:var(--warnbd);color:var(--warnink)}
+  .bdg-upnext{background:rgba(255,140,66,.13);border-color:rgba(255,140,66,.34);color:var(--accent2)}
+  .bdg-active{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
+  .bdg-complete{background:rgba(62,207,142,.07);border-color:rgba(62,207,142,.2);color:#7fb99e}
+  .bdg-lost{background:var(--badbg);border-color:var(--badbd);color:var(--badink)}
+  [data-theme="light"] .bdg-lead{color:#6a48c9;background:rgba(122,90,214,.1);border-color:rgba(122,90,214,.3)}
+  [data-theme="light"] .bdg-upnext{color:#b35c14;background:rgba(214,122,40,.1);border-color:rgba(214,122,40,.3)}
+  [data-theme="light"] .bdg-complete{color:#2c7a55;background:rgba(44,122,85,.08);border-color:rgba(44,122,85,.22)}
+  /* nav count badge: things waiting on you in Jobs */
+  .nav button{position:relative}
+  .navbdg{position:absolute;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;border-radius:9px;background:var(--accent);color:#1a1208;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;box-shadow:0 0 0 2px var(--bg)}
   /* job page: tasks, payments, change orders */
   .trow{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
   .trow:first-of-type{border-top:none}
@@ -664,9 +682,9 @@
   <!-- Duotone icon set: each symbol layers a faint currentColor fill (.fl) under
        rounded strokes, so icons read as drawn shapes with ink depth, not bare wire.
        Both themes inherit color; keep every path stroke/fill-attribute free. -->
-  <symbol id="i-dashboard" viewBox="0 0 24 24"><rect class="fl" x="3" y="3" width="7" height="9" rx="2"/><rect class="fl" x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></symbol>
+  <symbol id="i-dashboard" viewBox="0 0 24 24"><rect class="fl" x="3" y="3" width="8.4" height="8.4" rx="2.6"/><rect class="fl" x="14.2" y="10.4" width="6.8" height="10.6" rx="2.6"/><rect x="3" y="3" width="8.4" height="8.4" rx="2.6"/><rect x="14.2" y="3" width="6.8" height="4.8" rx="2.2"/><rect x="14.2" y="10.4" width="6.8" height="10.6" rx="2.6"/><rect x="3" y="14" width="8.4" height="7" rx="2.4"/><circle cx="7.2" cy="7.2" r="1.15" fill="currentColor" stroke="none"/><path d="M5.4 17.6l1.7 1.7 2.6-2.9"/></symbol>
   <symbol id="i-ruler" viewBox="0 0 24 24"><path class="fl" d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></symbol>
-  <symbol id="i-folder" viewBox="0 0 24 24"><path class="fl" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><rect class="fl" x="3" y="8.6" width="18" height="12.4" rx="2.6"/><rect x="3" y="8.6" width="18" height="12.4" rx="2.6"/><path d="M4 8.6 5.6 4.6A2 2 0 0 1 7.46 3.3h9.08a2 2 0 0 1 1.86 1.3L20 8.6"/><path d="M9.4 13.2h5.2"/><circle cx="17.6" cy="6" r="1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><circle class="fl" cx="14" cy="4" r="3.2"/><circle class="fl" cx="8" cy="12" r="3.2"/><circle class="fl" cx="16" cy="20" r="3.2"/><path d="M3 4h7.6"/><path d="M17.4 4H21"/><path d="M3 12h1.6"/><path d="M11.4 12H21"/><path d="M3 20h9.6"/><path d="M19.4 20H21"/><circle cx="14" cy="4" r="2.3"/><circle cx="8" cy="12" r="2.3"/><circle cx="16" cy="20" r="2.3"/></symbol>
   <symbol id="i-calc" viewBox="0 0 24 24"><rect class="fl" x="4" y="2" width="16" height="20" rx="3"/><rect x="4" y="2" width="16" height="20" rx="3"/><line x1="8" x2="16" y1="6.5" y2="6.5"/><path d="M8 11h.01"/><path d="M12 11h.01"/><path d="M16 11h.01"/><path d="M8 14.5h.01"/><path d="M12 14.5h.01"/><path d="M16 14.5v3.5"/><path d="M8 18h.01"/><path d="M12 18h.01"/></symbol>
   <symbol id="i-clipboard" viewBox="0 0 24 24"><rect class="fl" x="8" y="2" width="8" height="4" rx="1.5"/><rect width="8" height="4" x="8" y="2" rx="1.5"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
@@ -1548,7 +1566,8 @@ async function _writeArch(v){
   else { try{ localStorage.setItem(LS_ARCH,JSON.stringify(v)); ok=true; }catch(e){ ok=false; } }
   const w=$("persistWarn");
   if(ok){ if(w) w.style.display="none"; if(_bc){ try{ _bc.postMessage({src:_bcSelf}); }catch(e){} }
-    if(typeof queueCloudBackup==="function") queueCloudBackup(); }   // every saved change schedules an encrypted cloud backup
+    if(typeof queueCloudBackup==="function") queueCloudBackup();
+    if(typeof updateNavBadges==="function") updateNavBadges(); }   // every saved change: cloud backup + nav counts
   else if(w){ w.style.display=""; }
   return ok;
 }
@@ -1698,6 +1717,28 @@ function saveToArchive(){
   renderArchive();
 }
 let ARCH_Q="";
+/* One badge language for pipeline state, used on every list in the app. */
+function stageBadge(e){
+  if(!e) return "";
+  const b=boardStage(e);
+  if(!b) return (e.outcome==="lost")?'<span class="bdg bdg-lost">Lost</span>':"";
+  const map={lead:"Lead",bidding:"Bidding",upnext:"Won",active:"In progress",complete:"Complete"};
+  return '<span class="bdg bdg-'+b+'">'+map[b]+'</span>';
+}
+/* Jobs tab badge: leads waiting plus overdue tasks on active jobs. */
+function updateNavBadges(){
+  const el=$("navJobs"); if(!el) return;
+  let n=0;
+  getArchive().forEach(e=>{ if(!e) return;
+    const b=boardStage(e);
+    if(b==="lead") n++;
+    if(b==="active") (e.tasks||[]).forEach(t=>{ if(t&&!t.done&&isOverdue(t)) n++; });
+  });
+  let s=el.querySelector(".navbdg");
+  if(!n){ if(s) s.remove(); return; }
+  if(!s){ s=document.createElement("span"); s.className="navbdg"; el.appendChild(s); }
+  s.textContent=n>9?"9+":String(n);
+}
 function renderArchive(){
   const all=getArchive(), list=$("archiveList"); $("archCount").textContent="("+all.length+")";
   const a=ARCH_Q ? all.filter(e=>((e.state.jobName||"")+"").toLowerCase().includes(ARCH_Q)) : all;
@@ -1719,7 +1760,7 @@ function renderArchive(){
     const meta=when+(m.trade?" · "+esc(m.trade):"")+(m.size?" · "+m.size.n+" "+m.size.unit:"")+(nphoto?" · "+nphoto+" photo"+(nphoto>1?"s":""):"");
     const div=document.createElement("div"); div.className="arch-entry"+(e.pinned?" pinned":"");
     const ocIcon={pending:"circle",won:"check-circle",lost:"x-circle"}[m.outcome]||"circle";
-    div.innerHTML='<div class="arch-meta">'+meta+'</div><div class="arch-title">'+(e.pinned?ic("star","starfill")+' ':'')+esc(name)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
+    div.innerHTML='<div class="arch-meta">'+meta+'</div><div class="arch-title">'+(e.pinned?ic("star","starfill")+' ':'')+esc(name)+' '+stageBadge(e)+'<span class="tag">'+tag+'</span>'+signedTag+'</div><div class="arch-nums">'+nums+'</div>'+
       '<div class="arch-row">'+
       '<button class="oc '+ocls+'" data-a="oc">'+ic(ocIcon)+m.outcome+'</button>'+
       '<button data-a="ac">'+ic("dollar")+acLabel+'</button>'+
@@ -2670,7 +2711,7 @@ function renderDashboard(){
     const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
     const meta=[(s.clientType||""),when].filter(Boolean).join(" · ");
-    html+='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nm">'+esc(nm)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
+    html+='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nm">'+esc(nm)+' '+stageBadge(e)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
       '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
   });
   box.innerHTML=html;
@@ -2753,7 +2794,7 @@ function renderJobs(){
       const age=e.createdTs? ('bid '+(days===0?'today':days+' day'+(days===1?'':'s')+' ago')) : '';
       html+='<div class="pipecard solo"><button type="button" class="pipopen" data-job="'+esc(e.id)+'" aria-label="Open job '+esc(nm(e))+'">'
         +'<span class="t"><span class="nm">'+esc(nm(e))+'</span><span class="fig">'+fmt(entryPrice(e))+'</span></span>'
-        +'<span class="pm">'+esc(cl(e))+(age?' · <span'+(days>14?' style="color:var(--warnink)"':'')+'>'+age+'</span>':'')+'</span></button></div>';
+        +'<span class="pm">'+esc(cl(e))+(age?' · '+age:'')+(days>14?' <span class="bdg bdg-lost">gone cold</span>':'')+'</span></button></div>';
     });
   }
   if(groups.complete.length){
@@ -2835,7 +2876,7 @@ function renderJob(){
   let stHtml="";
   if(b==="bidding") stHtml='<span class="chip">Pending bid</span><button type="button" class="minibtn gold" id="jobStart">Start job</button>';
   else if(b==="upnext") stHtml='<span class="chip good">Won</span><button type="button" class="minibtn gold" id="jobStart">Start job</button>';
-  else if(b==="active") stHtml='<span class="chip good">In progress'+(e.actualStart?" · "+fmtDay(e.actualStart):"")+'</span><button type="button" class="minibtn" id="jobComplete">Mark complete</button>';
+  else if(b==="active") stHtml=(e.portal&&e.portal.on?'<span class="bdg bdg-upnext">Portal live</span>':'')+'<span class="chip good">In progress'+(e.actualStart?" · "+fmtDay(e.actualStart):"")+'</span><button type="button" class="minibtn" id="jobComplete">Mark complete</button>';
   else if(b==="complete") stHtml='<span class="chip">'+ic("check")+'Complete'+(e.completed?" · "+fmtDay(e.completed):"")+'</span><button type="button" class="minibtn" id="jobReopen">Reopen</button>';
   else stHtml='<span class="chip bad">Lost</span>';
   let html='<button type="button" class="jback" id="jobBack" aria-label="Back to '+backLbl+'">'+ic("chevron-left")+backLbl+'</button>'
@@ -3250,6 +3291,7 @@ async function maybeInstallHint(){
   updateSaveStatus();
   renderArchive();
   renderDashboard();
+  updateNavBadges();
   maybeInstallHint();
 })();
 </script>
