@@ -2626,6 +2626,14 @@ function portalSnapshot(e, opts, photoList){
   /* the client's KPI: what is happening now, and what comes next (title + due only; no notes) */
   const nt=(stage==="active")?nextTask(e):null;
   snap.job.next=nt?{title:txt(nt.title,120), due:validDateStr(nt.due)}:null;
+  /* done so far + what's coming up: task titles and dates only, capped at 8 each */
+  const doneList=tasks.filter(t=>t&&t.done).sort((a,b)=>(a.doneTs||0)-(b.doneTs||0));
+  const openList=tasks.filter(t=>t&&!t.done).sort((a,b)=>{
+    const ad=validDateStr(a.due), bd=validDateStr(b.due);
+    if(ad&&bd) return ad.localeCompare(bd)||((a.ts||0)-(b.ts||0));
+    if(ad) return -1; if(bd) return 1; return (a.ts||0)-(b.ts||0); });
+  snap.work={done:doneList.slice(-8).map(t=>({title:txt(t.title,120)})),
+    upcoming:openList.slice(0,8).map(t=>({title:txt(t.title,120), due:validDateStr(t.due)}))};
   if(opts.money!==false){
     const contract=contractPrice(e), paid=drawsPaid(e);
     snap.money={contract:contract, paid:paid, balance:fromC(toC(contract)-toC(paid)),

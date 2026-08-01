@@ -36,6 +36,14 @@
   .step.now .t{color:var(--accent2);font-weight:600}
   .bignow{font-family:"Space Grotesk",sans-serif;font-size:20px;font-weight:700;margin:12px 0 2px}
   .prog{font-size:13px;color:var(--muted)}
+  /* work log rows: done so far + what's coming up */
+  .wl{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+  .wl:last-child{border-bottom:0}
+  .wt{width:22px;height:22px;border-radius:50%;background:var(--panel2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex:0 0 auto}
+  .wt.done{background:rgba(33,122,75,.12);color:var(--good)}
+  .wn{flex:1;min-width:0}
+  .wl.donerow .wn{color:var(--muted)}
+  .wd{color:var(--muted);font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
   .kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px}
   .kv:last-child{border-bottom:0}
   .kv .k{color:var(--muted)}
@@ -85,7 +93,19 @@
       return '<div class="step'+(i<idx?' on':'')+(i===idx?' now':'')+'"><div class="bar"></div><div class="t">'+st[1]+'</div></div>';
     }).join("")+'</div><div class="bignow">'+esc(job.stageLabel||"")+'</div>'+
     (prog.total?'<div class="prog">'+prog.done+' of '+prog.total+' work items complete</div>':'')+
-    (job.next&&job.next.title?'<div class="prog" style="margin-top:4px;color:var(--accent2);font-weight:600">Up next: '+esc(job.next.title)+(job.next.due?' · '+day(job.next.due):'')+'</div>':'')+'</div>';
+    (job.next&&job.next.title&&!(s.work&&s.work.upcoming&&s.work.upcoming.length)?'<div class="prog" style="margin-top:4px;color:var(--accent2);font-weight:600">Up next: '+esc(job.next.title)+(job.next.due?' · '+day(job.next.due):'')+'</div>':'')+'</div>';
+    /* work log: done so far, then what's coming up */
+    var w=s.work||{};
+    if(w.done&&w.done.length){
+      html+='<div class="card"><h2>Done so far</h2>'+w.done.map(function(t){
+        return '<div class="wl donerow"><span class="wt done">✓</span><span class="wn">'+esc(t.title)+'</span></div>';
+      }).join("")+'</div>';
+    }
+    if(w.upcoming&&w.upcoming.length){
+      html+='<div class="card"><h2>What\'s coming up</h2>'+w.upcoming.map(function(t,i){
+        return '<div class="wl"><span class="wt">'+(i+1)+'</span><span class="wn">'+esc(t.title)+'</span>'+(t.due?'<span class="wd">'+day(t.due)+'</span>':'')+'</div>';
+      }).join("")+'</div>';
+    }
     /* schedule */
     if(job.schedStart||job.schedTarget||job.started||job.completed){
       html+='<div class="card"><h2>Schedule</h2>';
