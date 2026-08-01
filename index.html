@@ -17,17 +17,19 @@
   /* Vendored display face (OFL): Space Grotesk, served same-origin, cached by the SW */
   @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:500;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-500-normal.woff2") format("woff2")}
   @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:700;font-display:swap;src:url("/vendor/fonts/space-grotesk-latin-700-normal.woff2") format("woff2")}
-  @font-face{font-family:"Inter";font-style:normal;font-weight:400;font-display:swap;src:url("/vendor/fonts/inter-latin-400-normal.woff2") format("woff2")}
-  @font-face{font-family:"Inter";font-style:normal;font-weight:600;font-display:swap;src:url("/vendor/fonts/inter-latin-600-normal.woff2") format("woff2")}
+  @font-face{font-family:"Instrument Serif";font-style:normal;font-weight:400;font-display:swap;src:url("/vendor/fonts/instrument-serif-latin-400-normal.woff2") format("woff2")}
+  @font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:400;font-display:swap;src:url("/vendor/fonts/plus-jakarta-sans-latin-400-normal.woff2") format("woff2")}
+  @font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:600;font-display:swap;src:url("/vendor/fonts/plus-jakarta-sans-latin-600-normal.woff2") format("woff2")}
+  @font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:700;font-display:swap;src:url("/vendor/fonts/plus-jakarta-sans-latin-700-normal.woff2") format("woff2")}
   :root{
-    --bg:#0f1419; --panel:#171e26; --panel2:#1d2731; --line:#2a3744;
-    --ink:#ffffff; --muted:#eef2f6; --accent:#ff8c42; --accent2:#ffb072;
-    --good:#3ecf8e; --warn:#f5c451; --bad:#f06548; --chip:#22303c;
+    --bg:#0b1f11; --panel:#12291a; --panel2:#183321; --line:#274830;
+    --ink:#fdf9ee; --muted:#c5d8c8; --accent:#7bd98f; --accent2:#9fe6ae;
+    --good:#7bd98f; --warn:#e9c46a; --bad:#f0836b; --chip:#1c3a25;
     --navh:62px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0}
-  body{background:var(--bg);color:var(--ink);font:16px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  body{background:var(--bg);color:var(--ink);font:16px/1.55 "Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
   input,select,textarea,button{font-family:inherit}
   b,strong{font-weight:600}
@@ -138,8 +140,8 @@
   .savednote.saved{color:var(--good)}
   /* import */
   /* Upload box: prominent by default (reads as primary on mobile, no hover needed), intensifies on hover. */
-  .drop{border:2px dashed var(--accent2);border-radius:16px;padding:26px 16px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px;background:rgba(255,140,66,.06);display:flex;flex-direction:column;align-items:center;gap:7px;min-height:150px;justify-content:center}
-  .drop:hover{border-color:var(--accent);background:rgba(255,140,66,.13)}
+  .drop{border:2px dashed var(--accent2);border-radius:16px;padding:26px 16px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px;background:rgba(123,217,143,.07);display:flex;flex-direction:column;align-items:center;gap:7px;min-height:150px;justify-content:center}
+  .drop:hover{border-color:var(--accent);background:rgba(123,217,143,.14)}
   .drop:active{transform:scale(.99)}
   .drop.over{border-color:var(--accent);background:#21303c;color:var(--ink)}
   .drop-ico{color:var(--accent2);transition:color .16s ease,transform .16s ease}
@@ -179,7 +181,7 @@
   .addsel .iconbtn{flex:0 0 auto;width:44px;height:44px;align-self:center}
   .micorb.rec{background:var(--bad);color:#fff;animation:orbpulse 1.5s ease-out infinite}
   @keyframes orbpulse{0%{box-shadow:0 0 0 0 rgba(240,131,107,.45)}70%{box-shadow:0 0 0 18px rgba(240,131,107,0)}100%{box-shadow:0 0 0 0 rgba(240,131,107,0)}}
-  #calcView.mode-analyze #drop{border-color:var(--accent);background:rgba(255,140,66,.11)}
+  #calcView.mode-analyze #drop{border-color:var(--accent);background:rgba(123,217,143,.12)}
   /* Desktop: two columns, inputs left, price/summary pinned on the right so they stay visible while you edit. */
   @media(min-width:900px){
     .app{max-width:1240px}
@@ -311,30 +313,32 @@
     .app{max-width:720px}
   }
 
-  /* ================= THEME: dark (default) + light ================= */
+  /* ================= THEME: forest (dark, default) + sage (light) =================
+     Palette study: deep forest #0f2c17 against cream #fbf7f0 and light sage
+     #f4f7ef, sage-muted text, warm peach only as a whisper. */
   :root{
-    --bg:#0f1311; --panel:#171d19; --panel2:#1d251f; --line:#2b342d;
-    --ink:#eef2ec; --muted:#9aa89c; --accent:#f1c14e; --accent2:#5cc98d;
-    --good:#5cc98d; --warn:#f1c14e; --bad:#f0836b; --chip:#232c26;
-    --resultbg:#16211b; --resultbd:#2f5f45;
-    --goodbg:#14271e; --goodbd:#2c5540; --goodink:#8fe0b4;
-    --warnbg:#2a2410; --warnbd:#57491d; --warnink:#f0d68a;
-    --badbg:#2c1a16; --badbd:#5e342b; --badink:#f3b3a4;
-    --tipbg:#050806; --tipink:#eef2ec; --primink:#241a05;
-    --field:#141a16; --fieldbd:#333e35; --onaccent2:#04120a;
+    --bg:#0b1f11; --panel:#12291a; --panel2:#183321; --line:#274830;
+    --ink:#fdf9ee; --muted:#c5d8c8; --accent:#7bd98f; --accent2:#9fe6ae;
+    --good:#7bd98f; --warn:#e9c46a; --bad:#f0836b; --chip:#1c3a25;
+    --resultbg:#123020; --resultbd:#2e6b45;
+    --goodbg:#123425; --goodbd:#2c6647; --goodink:#a4e8ba;
+    --warnbg:#2c2611; --warnbd:#5c4d1f; --warnink:#f0d68a;
+    --badbg:#301c15; --badbd:#63382c; --badink:#f3b3a4;
+    --tipbg:#04120a; --tipink:#fdf9ee; --primink:#0b1f11;
+    --field:#0f2716; --fieldbd:#2e5238; --onaccent2:#0b1f11;
     --shadow:rgba(0,0,0,.45); --shadowsoft:rgba(0,0,0,.30);
   }
   :root[data-theme="light"]{
-    --bg:#f6f2e9; --panel:#ffffff; --panel2:#f4efe2; --line:#e7e0cf;
-    --ink:#1b2a22; --muted:#75705f; --accent:#f1c14e; --accent2:#1f6b46;
-    --good:#1f6b46; --warn:#b9831c; --bad:#bf432f; --chip:#efe8d5;
-    --resultbg:#f3f9f4; --resultbd:#cfe6d8;
-    --goodbg:#eaf5ee; --goodbd:#bfe0cd; --goodink:#1c5c3c;
+    --bg:#f2f6ec; --panel:#fffdf7; --panel2:#e9f0dc; --line:#d7e1c8;
+    --ink:#0f2c17; --muted:#5b7057; --accent:#1f4a26; --accent2:#2e7a44;
+    --good:#217a4b; --warn:#b9831c; --bad:#bf432f; --chip:#e7efdb;
+    --resultbg:#f6faf1; --resultbd:#c9dcc0;
+    --goodbg:#e7f3e9; --goodbd:#b9dcc4; --goodink:#1b5e39;
     --warnbg:#fdf3d7; --warnbd:#ecd08a; --warnink:#7a531a;
     --badbg:#fbeee9; --badbd:#e7c4b9; --badink:#9a3322;
-    --tipbg:#1b2a22; --tipink:#ffffff; --primink:#3a2c05;
-    --field:#ffffff; --fieldbd:#ddd5c1; --onaccent2:#ffffff;
-    --shadow:rgba(30,50,35,.12); --shadowsoft:rgba(30,40,30,.05);
+    --tipbg:#0f2c17; --tipink:#fdf9ee; --primink:#fdf9ee;
+    --field:#ffffff; --fieldbd:#ccd8bd; --onaccent2:#ffffff;
+    --shadow:rgba(15,44,23,.14); --shadowsoft:rgba(15,44,23,.06);
   }
   body{background:var(--bg);color:var(--ink)}
   a{color:var(--accent2)}
@@ -572,7 +576,7 @@
   .bdg{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 8px;font-size:9.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;border:1px solid transparent;vertical-align:middle;white-space:nowrap}
   .bdg-lead{background:rgba(167,139,250,.13);border-color:rgba(167,139,250,.32);color:#b9a5f7}
   .bdg-bidding{background:var(--warnbg);border-color:var(--warnbd);color:var(--warnink)}
-  .bdg-upnext{background:rgba(255,140,66,.13);border-color:rgba(255,140,66,.34);color:var(--accent2)}
+  .bdg-upnext{background:rgba(233,196,106,.13);border-color:rgba(233,196,106,.36);color:var(--warnink)}
   .bdg-active{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
   .bdg-complete{background:rgba(62,207,142,.07);border-color:rgba(62,207,142,.2);color:#7fb99e}
   .bdg-lost{background:var(--badbg);border-color:var(--badbd);color:var(--badink)}
@@ -581,7 +585,7 @@
   [data-theme="light"] .bdg-complete{color:#2c7a55;background:rgba(44,122,85,.08);border-color:rgba(44,122,85,.22)}
   /* nav count badge: things waiting on you in Jobs */
   .nav button{position:relative}
-  .navbdg{position:absolute;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;border-radius:9px;background:var(--accent);color:#1a1208;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;box-shadow:0 0 0 2px var(--bg)}
+  .navbdg{position:absolute;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;border-radius:9px;background:var(--accent);color:var(--primink);font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;box-shadow:0 0 0 2px var(--bg)}
   /* job page: tasks, payments, change orders */
   .trow{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
   .trow:first-of-type{border-top:none}
@@ -618,7 +622,11 @@
 
   /* ================= TEN-ROUND POLISH PASS ================= */
   /* Type system: Space Grotesk carries the brand voice (titles + money), system UI carries the reading text */
-  :root{--dfont:"Space Grotesk",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--numfont:var(--dfont)}
+  :root{--dfont:"Instrument Serif",Georgia,"Times New Roman",serif;--numfont:"Space Grotesk",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  /* Instrument Serif ships one weight: keep display text at 400 and let size carry the drama */
+  header .ttl,.titlein,.th-head,.bhi,.jtitle,.sightitle{font-weight:400;letter-spacing:-.01em}
+  .bhi{font-size:30px}
+  .th-head{font-size:27px}
   .recbox .v,.bbig,.jb-l .v,.jtile .v,.fold-num,.jstat .v,.kpi .k-v,.proj-price,.brrow .pr,.marg-head .big,.stat .v,#margVal,.sc .p,.litem-cost b,.totline.big,.pipopen .fig,.iprow .fig,.drow .amt,.payline{font-family:var(--numfont);letter-spacing:-.3px;font-weight:500}
   header .ttl,.titlein,.th-head,.bhi,.jtitle,.sightitle{font-family:var(--dfont)}
   header .ttl{font-weight:700;letter-spacing:-.2px}
