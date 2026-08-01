@@ -538,7 +538,7 @@
   .brrow .mt{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
   .brrow .br{text-align:right;flex:0 0 auto}
   .brrow .pr{display:block;font-size:15px;font-weight:500;color:var(--accent2);font-variant-numeric:tabular-nums}
-  @media(min-width:900px){ #dashBody,#jobBody,#jobsBody{max-width:680px;margin:0 auto} }
+  @media(min-width:900px){ #dashBody,#jobBody,#jobsBody{max-width:680px;margin:0 auto} #schedView .calcard{max-width:860px;margin:0 auto} }
 
   /* ================= JOBS TAB (pipeline board) + PM hardening ================= */
   .jstrip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:2px 0 14px}
@@ -678,6 +678,40 @@
     .nav{justify-content:center;gap:4px}
     .nav button{flex:0 1 132px;font-size:11.5px}
     .nav button .ic{width:25px;height:25px}
+  }
+  /* ================= HOVER HIGHLIGHT PASS ================= */
+  /* Pointer-fine only: phones never get stuck in a hover state. One motion language:
+     interactive surfaces lift 1-2px, take a green edge, and settle back fast. */
+  @media(hover:hover) and (pointer:fine){
+    .pipecard,.jtile,.bcard,.kpi,.jcard{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+    .pipecard:hover{transform:translateY(-2px);border-color:var(--accent2);box-shadow:0 6px 18px var(--shadowsoft)}
+    .jtile:hover,.bcard:hover,.kpi:hover{transform:translateY(-1px);border-color:var(--accent2)}
+    .btn,.minibtn,.calnav,.unchip,.seg button,.arch-row button,.hicon{transition:transform .15s ease,filter .15s ease,border-color .15s ease,background .15s ease,color .15s ease}
+    .btn.primary:hover,.minibtn.gold:hover{filter:brightness(1.08);transform:translateY(-1px)}
+    .btn.ghost:hover,.minibtn:hover,.calnav:hover,.arch-row button:hover,.seg button:hover{border-color:var(--accent2);transform:translateY(-1px)}
+    .minibtn.danger:hover{border-color:var(--badbd);filter:brightness(1.06)}
+    /* calendar: bars glow and rise under the pointer, stretch handles brighten to invite the drag */
+    .calbar{transition:filter .16s ease,transform .16s ease,box-shadow .16s ease}
+    .calbar:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 3px 10px rgba(10,26,15,.35)}
+    .calbar .h::after{opacity:.5;transition:opacity .16s ease,transform .16s ease}
+    .calbar:hover .h::after{opacity:1;transform:scaleY(1.15)}
+    .calbar.drag{transform:none}
+    .calday{transition:background .16s ease}
+    .calday:hover{background:rgba(46,122,68,.06)}
+    .unchip:hover{transform:translateY(-1px);border-color:var(--accent2);background:var(--goodbg)}
+    /* rows: a quiet ink shift says "this is live" without moving the layout */
+    .trow:hover .ttl,.drow:hover .lb{color:var(--accent2)}
+    .arch-row:hover .nm{color:var(--accent2)}
+    .funl .fbar i{transition:width .4s ease,filter .16s ease}
+    .funl .fbar:hover i{filter:brightness(1.12)}
+    .nav button:hover .ic{transform:translateY(-2px) scale(1.12)}
+    .tip{transition:border-color .15s ease,color .15s ease}
+    .tip:hover{border-color:var(--accent2);color:var(--accent2)}
+    .logo:hover,.logoprev:hover{filter:brightness(1.04)}
+  }
+  /* accessibility: honor reduced-motion everywhere, hover pass included */
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
   }
   /* R7: one depth system: faint top highlight gives dark surfaces a machined edge */
   .card,.jcard,.bcard,.fold,.talkhero,.pipecard,.jtile,.kpi{box-shadow:0 1px 2px var(--shadowsoft),inset 0 1px 0 rgba(255,255,255,.04)}
