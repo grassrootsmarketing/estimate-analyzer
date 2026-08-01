@@ -492,7 +492,7 @@
   .jempty{background:var(--panel);border:1px dashed var(--line);border-radius:15px;padding:28px 18px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5}
   /* bento dashboard */
   .bgreet{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 14px}
-  .bdate{font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .bdate{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-variant-numeric:tabular-nums}
   .bhi{font-size:22px;font-weight:500;letter-spacing:-.2px;color:var(--ink);margin-top:3px}
   .bnew{background:var(--accent);color:var(--primink);border:none;border-radius:14px;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;transition:filter .16s ease,transform .12s ease}
   .bnew:hover{filter:brightness(1.06)}
@@ -508,8 +508,8 @@
   /* pipeline funnel (replaces the old win-rate ring) */
   .funl{display:flex;flex-direction:column;gap:6px;margin-top:12px}
   .funl .fr{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-  .funl .fn{font-size:11px;color:var(--muted);letter-spacing:.02em}
-  .funl .fv{font-size:11.5px;color:var(--ink);font-family:var(--numfont);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .funl .fn{font-size:13px;color:var(--muted);letter-spacing:.02em;font-weight:500}
+  .funl .fv{font-size:13.5px;color:var(--ink);font-family:var(--numfont);font-variant-numeric:tabular-nums;white-space:nowrap}
   .funl .fbar{height:12px;border-radius:6px;background:var(--panel2);position:relative;overflow:hidden;margin-bottom:2px}
   .funl .fbar i{position:absolute;left:50%;transform:translateX(-50%);top:0;bottom:0;border-radius:6px;background:var(--accent2);transition:width .4s ease}
   .bsub{font-size:11.5px;color:var(--muted);text-align:center;margin-top:8px}
@@ -2645,13 +2645,21 @@ function emptyArt(){ return '<svg class="emptyart" viewBox="0 0 120 64" aria-hid
   +'<path d="M8 56h104"/><path d="M96 56l8-18 8 18"/><path d="M99 49h10"/>'
   +'</svg>'; }
 /* Dashboard home: artful bento overview, hand-drawn SVG/CSS charts, computed from the archive */
+/* live clock on the dashboard: date + time, refreshed every few seconds */
+function tickClock(){
+  const el=$("dashClock"); if(!el) return;
+  const now=new Date(), hour=now.getHours();
+  el.textContent=now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+" · "+now.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  const g=$("dashGreet"); if(g) g.textContent=(hour<12?"Good morning":(hour<17?"Good afternoon":"Good evening"))+", David";
+}
+setInterval(tickClock, 5000);
 function renderDashboard(){
   const box=$("dashBody"); if(!box) return;
   const arr=getArchive(), n=arr.length;
   const now=new Date(), hour=now.getHours();
   const greet=hour<12?"Good morning":(hour<17?"Good afternoon":"Good evening");
-  const dateLine=now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
-  let html='<div class="bgreet"><div><div class="bdate">'+esc(dateLine)+'</div><div class="bhi">'+greet+', David</div></div>'+
+  const dateLine=now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+" · "+now.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  let html='<div class="bgreet"><div><div class="bdate" id="dashClock">'+esc(dateLine)+'</div><div class="bhi" id="dashGreet">'+greet+', David</div></div>'+
     '<button type="button" class="bnew" id="dashNew" aria-label="New estimate">'+ic("plus")+'</button></div>';
   if(!n){
     html+='<div class="dash-empty">'+emptyArt()+'No jobs yet. Tap <b>+</b> to price your first job, then <b>Save</b> it and your dashboard comes to life.</div>';
