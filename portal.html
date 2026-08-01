@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Project update</title>
+<style>
+  @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:500;font-display:swap;src:url(/vendor/fonts/space-grotesk-latin-500-normal.woff2) format("woff2")}
+  @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:700;font-display:swap;src:url(/vendor/fonts/space-grotesk-latin-700-normal.woff2) format("woff2")}
+  :root{
+    --bg:#0f1419; --panel:#171e26; --panel2:#1d2731; --line:#2a3744;
+    --ink:#ffffff; --muted:#9fb0bf; --accent:#ff8c42; --accent2:#ffb072;
+    --good:#3ecf8e; --bad:#f06548;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  .wrap{max-width:560px;margin:0 auto;padding:24px 16px 48px}
+  .co{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .co img{height:34px;width:auto;max-width:120px;object-fit:contain;border-radius:6px}
+  .co .nm{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:17px}
+  h1{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:26px;letter-spacing:-.02em;margin:0 0 2px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+  .card h2{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  /* stage timeline */
+  .steps{display:flex;gap:6px}
+  .step{flex:1;text-align:center}
+  .step .bar{height:6px;border-radius:3px;background:var(--panel2);margin-bottom:7px}
+  .step.on .bar{background:var(--good)}
+  .step.now .bar{background:var(--accent)}
+  .step .t{font-size:10.5px;color:var(--muted);letter-spacing:.02em}
+  .step.now .t{color:var(--accent2);font-weight:600}
+  .bignow{font-family:"Space Grotesk",sans-serif;font-size:20px;font-weight:700;margin:12px 0 2px}
+  .prog{font-size:13px;color:var(--muted)}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-variant-numeric:tabular-nums;font-weight:500}
+  .money{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+  .mt{background:var(--panel2);border-radius:12px;padding:10px;text-align:center}
+  .mt .l{font-size:10.5px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+  .mt .v{font-family:"Space Grotesk",sans-serif;font-size:17px;font-weight:700;margin-top:3px}
+  .chip{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;background:var(--panel2);color:var(--muted)}
+  .chip.paid{background:rgba(62,207,142,.15);color:var(--good)}
+  .chip.invoiced{background:rgba(255,140,66,.15);color:var(--accent2)}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;cursor:pointer}
+  .foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:20px}
+  .foot a{color:var(--accent2);text-decoration:none;font-weight:600}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted)}
+  #lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:50}
+  #lightbox img{max-width:96vw;max-height:92vh;border-radius:10px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading your project…</div></div>
+<div id="lightbox" onclick="this.style.display='none'"><img id="lightimg" alt=""></div>
+<script>
+(function(){
+  var esc=function(v){ return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); };
+  var money=function(v){ v=+v||0; return "$"+v.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2}); };
+  var day=function(d){ if(!d) return ""; var p=d.split("-"); return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}); };
+  var app=document.getElementById("app");
+  var k=(new URLSearchParams(location.search).get("k")||"").toLowerCase();
+  if(!/^[0-9a-f]{32}$/.test(k)){ app.innerHTML='<div class="empty">This link is incomplete. Ask for a fresh one.</div>'; return; }
+  fetch("/api/portal",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({op:"get",token:k})})
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+  .then(function(res){
+    if(!res.ok){ app.innerHTML='<div class="empty">'+esc((res.d&&res.d.error)||"This portal isn't active.")+'</div>'; return; }
+    var s; try{ s=JSON.parse(res.d.data); }catch(e){ app.innerHTML='<div class="empty">Something went wrong loading this project.</div>'; return; }
+    var co=s.company||{}, job=s.job||{}, prog=s.progress||{};
+    document.title=(job.name||"Project update")+(co.name?(" · "+co.name):"");
+    var STEPS=[["bidding","Estimate"],["upnext","Scheduled"],["active","In progress"],["complete","Complete"]];
+    var idx=Math.max(0,STEPS.findIndex(function(st){return st[0]===job.stage;}));
+    if(job.stage==="lead") idx=0;
+    var html='';
+    html+='<div class="co">'+(co.logo?'<img src="'+esc(co.logo)+'" alt="">':'')+'<span class="nm">'+esc(co.name||"Your contractor")+'</span></div>';
+    html+='<h1>'+esc(job.name)+'</h1><p class="sub">'+(job.client?("Prepared for "+esc(job.client)+" · "):"")+'updated '+(s.ts?new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"recently")+'</p>';
+    /* status */
+    html+='<div class="card"><h2>Where things stand</h2><div class="steps">'+STEPS.map(function(st,i){
+      return '<div class="step'+(i<idx?' on':'')+(i===idx?' now':'')+'"><div class="bar"></div><div class="t">'+st[1]+'</div></div>';
+    }).join("")+'</div><div class="bignow">'+esc(job.stageLabel||"")+'</div>'+
+    (prog.total?'<div class="prog">'+prog.done+' of '+prog.total+' work items complete</div>':'')+'</div>';
+    /* schedule */
+    if(job.schedStart||job.schedTarget||job.started||job.completed){
+      html+='<div class="card"><h2>Schedule</h2>';
+      if(job.started) html+='<div class="kv"><span class="k">Work started</span><span class="v">'+day(job.started)+'</span></div>';
+      else if(job.schedStart) html+='<div class="kv"><span class="k">Planned start</span><span class="v">'+day(job.schedStart)+'</span></div>';
+      if(job.completed) html+='<div class="kv"><span class="k">Completed</span><span class="v">'+day(job.completed)+'</span></div>';
+      else if(job.schedTarget) html+='<div class="kv"><span class="k">Target finish</span><span class="v">'+day(job.schedTarget)+'</span></div>';
+      html+='</div>';
+    }
+    /* photos */
+    if(s.photos&&s.photos.length){
+      html+='<div class="card"><h2>Progress photos</h2><div class="grid">'+s.photos.map(function(p,i){
+        return '<img src="'+esc(p)+'" data-i="'+i+'" alt="Progress photo '+(i+1)+'">';
+      }).join("")+'</div></div>';
+    }
+    /* money */
+    if(s.money){
+      var m=s.money;
+      html+='<div class="card"><h2>Payments</h2><div class="money">'+
+        '<div class="mt"><div class="l">Contract</div><div class="v">'+money(m.contract)+'</div></div>'+
+        '<div class="mt"><div class="l">Paid</div><div class="v" style="color:var(--good)">'+money(m.paid)+'</div></div>'+
+        '<div class="mt"><div class="l">Balance</div><div class="v">'+money(m.balance)+'</div></div></div>';
+      (m.draws||[]).forEach(function(d){
+        var chip=d.status==="paid"?'<span class="chip paid">Paid</span>':(d.status==="invoiced"?'<span class="chip invoiced">Invoiced</span>':'<span class="chip">Upcoming</span>');
+        html+='<div class="kv"><span class="k">'+esc(d.label)+'</span><span class="v">'+money(d.amount)+' '+chip+'</span></div>';
+      });
+      if(s.changes&&s.changes.length){
+        html+='<h2 style="margin-top:14px">Approved changes</h2>';
+        s.changes.forEach(function(c){
+          html+='<div class="kv"><span class="k">'+esc((c.number?c.number+" · ":"")+c.title)+'</span><span class="v">'+(c.amount<0?"-":"+")+money(Math.abs(c.amount))+'</span></div>';
+        });
+      }
+      html+='</div>';
+    }
+    /* contact */
+    if(co.phone||co.email){
+      html+='<div class="foot">Questions? '+(co.phone?'<a href="tel:'+esc(String(co.phone).replace(/[^\d+]/g,""))+'">Call '+esc(co.name||"us")+'</a>':'')+
+        (co.phone&&co.email?' · ':'')+(co.email?'<a href="mailto:'+esc(co.email)+'">Email</a>':'')+'</div>';
+    }
+    app.innerHTML=html;
+    app.querySelectorAll(".grid img").forEach(function(im){
+      im.onclick=function(){ document.getElementById("lightimg").src=im.src; document.getElementById("lightbox").style.display="flex"; };
+    });
+  })
+  .catch(function(){ app.innerHTML='<div class="empty">Couldn\'t load this project. Check your connection and try again.</div>'; });
+})();
+</script>
+</body>
+</html>

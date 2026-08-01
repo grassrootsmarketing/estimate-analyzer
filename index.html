@@ -1676,6 +1676,7 @@ function upsertFromState(st){
     // Pricing a lead graduates it into a real bid.
     if(t.isLead && (st.rows||[]).some(r=>((+r.qty||0)*(+r.unit||0))>0)) t.isLead=false;
     setArchive(a);
+    if(t.portal&&t.portal.on&&typeof schedulePortalPublish==="function") schedulePortalPublish(t.id);
     return {entry:t, created:false};
   }
   const e=newEntry(st);
@@ -2230,6 +2231,9 @@ function sanitizeEntry(e){
     const st={pending:1,approved:1,void:1}[c.status]?c.status:"pending";
     return {id:fixId(c.id,"o"), ts:numTs(c.ts), number:txt(c.number,20), title:txt(c.title,200)||"Change order",
       amount:amt, cost:cost, status:st, approvedTs:st==="approved"?(numTs(c.approvedTs)||0):null, note:txt(c.note,200)}; }).filter(Boolean);
+  // Client portal: on/off, capability token, and what the client is allowed to see.
+  e.portal=(e.portal&&typeof e.portal==="object"&&e.portal.on===true&&/^[0-9a-f]{32}$/.test(String(e.portal.token||"")))?
+    {on:true, token:String(e.portal.token), photos:e.portal.photos!==false, money:e.portal.money!==false, publishedTs:numTs(e.portal.publishedTs)}:null;
   // Lead fields: a captured lead keeps its note, source, and dedupe key.
   e.isLead=e.isLead===true;
   e.lead=(e.lead&&typeof e.lead==="object")?{desc:txt(e.lead.desc,600),area:txt(e.lead.area,120),timing:txt(e.lead.timing,40),
@@ -2468,6 +2472,80 @@ async function renderLeadCapture(){
     $("leadOn").onclick=async ()=>{ LEADKEY=makeSyncCode(); saveKey(LEAD_LS,LEADKEY); await renderLeadCapture(); toast("Request link created"); };
   }
 }
+
+/* ---------------- CLIENT PORTAL (read-only share page per job) ----------------
+   The link carries a random 128-bit token; the published snapshot is built by
+   portalSnapshot(), which only ever includes client-safe fields. Costs,
+   margins, and internal notes are structurally excluded, never filtered. */
+function makePortalToken(){ const u=new Uint8Array(16); crypto.getRandomValues(u);
+  return Array.from(u).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+function portalSnapshot(e, opts, photoList){
+  opts=opts||{}; const s=(e&&e.state)||{};
+  const stage=boardStage(e)||"bidding";
+  const stageLabel={lead:"Getting started",bidding:"Estimate in review",upnext:"Scheduled",active:"In progress",complete:"Complete"}[stage]||"In review";
+  const tasks=Array.isArray(e.tasks)?e.tasks:[];
+  const snap={v:1, ts:0,
+    company:{name:txt(opts.coName,80), phone:txt(opts.coPhone,40), email:txt(opts.coEmail,80), logo:(typeof opts.logo==="string"&&opts.logo.indexOf("data:image/")===0)?opts.logo:""},
+    job:{name:txt(s.jobName,80)||"Your project", client:txt(s.contactName,80), stage:stage, stageLabel:stageLabel,
+      started:validDateStr(e.actualStart), completed:validDateStr(e.completed),
+      schedStart:validDateStr(e.sched&&e.sched.start), schedTarget:validDateStr(e.sched&&e.sched.target)},
+    progress:{done:tasks.filter(t=>t&&t.done).length, total:tasks.length},
+    money:null, changes:[], photos:Array.isArray(photoList)?photoList.slice(0,12):[]};
+  if(opts.money!==false){
+    const contract=contractPrice(e), paid=drawsPaid(e);
+    snap.money={contract:contract, paid:paid, balance:fromC(toC(contract)-toC(paid)),
+      draws:(Array.isArray(e.draws)?e.draws:[]).map(d=>({label:txt(d&&d.label,120)||"Payment", amount:money2(d&&d.amount)||0, status:{planned:1,invoiced:1,paid:1}[d&&d.status]?d.status:"planned"}))};
+    snap.changes=approvedChanges(e).map(c=>({number:txt(c.number,20), title:txt(c.title,200)||"Change order", amount:money2(c.amount)||0}));
+  }
+  return snap;
+}
+function downscaleDataUrl(src, MAX, q){ return new Promise(function(res){
+  const img=new Image();
+  img.onload=function(){ try{
+    let cw=img.naturalWidth, ch=img.naturalHeight;
+    if(!cw||!ch||Math.max(cw,ch)<=MAX){ res(src); return; }
+    let cur=document.createElement("canvas"); cur.width=cw; cur.height=ch;
+    cur.getContext("2d").drawImage(img,0,0);
+    while(Math.max(cw,ch)>MAX*2){ const nw=Math.round(cw/2), nh=Math.round(ch/2);
+      const nxt=document.createElement("canvas"); nxt.width=nw; nxt.height=nh;
+      const nx=nxt.getContext("2d"); nx.imageSmoothingEnabled=true; nx.imageSmoothingQuality="high";
+      nx.drawImage(cur,0,0,nw,nh); cur=nxt; cw=nw; ch=nh; }
+    const sc=MAX/Math.max(cw,ch), nw=Math.max(1,Math.round(cw*sc)), nh=Math.max(1,Math.round(ch*sc));
+    const nxt=document.createElement("canvas"); nxt.width=nw; nxt.height=nh;
+    const nx=nxt.getContext("2d"); nx.imageSmoothingEnabled=true; nx.imageSmoothingQuality="high";
+    nx.drawImage(cur,0,0,nw,nh);
+    res(nxt.toDataURL("image/jpeg",q||.8));
+  }catch(e){ res(src); } };
+  img.onerror=function(){ res(src); };
+  img.src=src; }); }
+async function portalApi(bodyObj){
+  const r=await fetch("/api/portal",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(bodyObj)});
+  let d=null; try{ d=await r.json(); }catch(e){}
+  if(!r.ok) throw new Error((d&&d.error)||("HTTP "+r.status)); return d; }
+let _portalTimers={}, _portalBusy={};
+async function publishPortal(id, manual){
+  const e=jobById(id); if(!e||!e.portal||!e.portal.on||_portalBusy[id]) return;
+  if(!navigator.onLine){ if(manual) toast("You're offline. The portal updates next time you're online."); return; }
+  _portalBusy[id]=true;
+  try{
+    let photos=[];
+    if(e.portal.photos){ const src=sanitizePhotos(e.state.photos);
+      for(let i=0;i<src.length;i++){ photos.push(await downscaleDataUrl(src[i],1024,.8)); } }
+    const snap=portalSnapshot(e,{money:e.portal.money, coName:PROFILE.name, coPhone:PROFILE.phone, coEmail:PROFILE.email, logo:safeImg(PROFILE.logo)}, photos);
+    snap.ts=Date.now();
+    while(JSON.stringify(snap).length>3400000 && snap.photos.length){ snap.photos.pop(); }   // stay under the request cap
+    await portalApi({op:"put", token:e.portal.token, data:JSON.stringify(snap)});
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===id);
+    if(t&&t.portal){ t.portal.publishedTs=Date.now(); setArchive(arr); }
+    if(manual){ toast("Client portal updated"); if($("jobView").classList.contains("on")&&CUR_JOB===id) renderJob(); }
+  }catch(err){ if(manual) toast("Couldn't update the portal: "+(err&&err.message||"error")); }
+  finally{ _portalBusy[id]=false; }
+}
+function schedulePortalPublish(id){
+  const e=jobById(id); if(!e||!e.portal||!e.portal.on) return;
+  clearTimeout(_portalTimers[id]); _portalTimers[id]=setTimeout(()=>publishPortal(id,false), 15000);
+}
+function portalLink(e){ return location.origin+"/portal.html?k="+e.portal.token; }
 
 /* ---------------- NAV / VIEWS ---------------- */
 const _VIEWS=["dash","calc","jobs","archive","settings","proposal","job"];
@@ -2713,7 +2791,9 @@ async function _pmWrite(arr, okMsg){
   const ok=await setArchive(arr);
   if(CUR_JOB && $("jobView").classList.contains("on")) renderJob();
   if($("jobsView").classList.contains("on")) renderJobs();
-  if(ok){ if(okMsg) toast(okMsg); } else { toast("Save failed. Tap Retry in the banner."); }
+  if(ok){ if(okMsg) toast(okMsg);
+    if(CUR_JOB && typeof schedulePortalPublish==="function") schedulePortalPublish(CUR_JOB); }   // portal follows the job
+  else { toast("Save failed. Tap Retry in the banner."); }
   return ok;
 }
 /* Lifecycle transitions are explicit actions with timestamps, never tap-to-cycle. */
@@ -2893,6 +2973,24 @@ function renderJob(){
     if(approvedChanges(e).length) html+='<div class="jnote">Contract adjusted by '+fmtSigned(adj)+' across '+approvedChanges(e).length+' approved change order'+(approvedChanges(e).length>1?'s':'')+'. Approval here is internal tracking; keep the client\'s written approval with the job.</div>';
     html+='</div>';
   }
+  /* ---- client portal card ---- */
+  const po=e.portal;
+  html+='<div class="jcard"><div class="jbudget-top" style="margin-bottom:6px"><div class="jb-l"><div class="l">Client portal <span class="tip" tabindex="0" role="button" aria-label="What is this?" data-tip="A private page for this client: progress, schedule, photos, and their balance. Your costs and margins are never included. Anyone with the link can view it; share it only with the client.">i</span></div></div></div>';
+  if(po&&po.on){
+    html+='<div style="font-size:12.5px;word-break:break-all;padding:9px 11px;border:1px dashed var(--line);border-radius:10px;color:var(--ink)">'+esc(portalLink(e))+'</div>'
+      +'<div class="jcap" style="margin-top:6px">'+(po.publishedTs?('Last published '+new Date(po.publishedTs).toLocaleString()):'Not published yet')+' · updates itself about 15 seconds after you log changes</div>'
+      +'<div class="arch-tools" style="margin-top:9px">'
+      +'<button type="button" class="minibtn gold" id="portalCopy">Copy link</button>'
+      +'<button type="button" class="minibtn" id="portalNow">Publish now</button>'
+      +'<button type="button" class="minibtn" id="portalOff">Turn off</button></div>'
+      +'<div class="arch-tools" style="margin-top:8px;gap:14px">'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)"><input type="checkbox" id="portalPhotosTgl" '+(po.photos?'checked':'')+'> Show photos</label>'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)"><input type="checkbox" id="portalMoneyTgl" '+(po.money?'checked':'')+'> Show payments</label></div>';
+  } else {
+    html+='<p class="jcap" style="margin:2px 0 10px">Give this client a private progress page: status, schedule, photos, and their balance. Costs and margins stay yours.</p>'
+      +'<div class="btns" style="margin-top:0"><button class="btn wide" id="portalOn">Create client link</button></div>';
+  }
+  html+='</div>';
   html+='<div class="btns"><button class="btn wide" id="jobEdit">'+ic("pencil")+'Edit estimate</button></div>';
   box.innerHTML=html;
   wireJobPage(e, b);
@@ -2903,6 +3001,28 @@ function wireJobPage(e, b){
   $("jobBack").onclick=()=>showView(CUR_FROM||"jobs");
   $("jobEdit").onclick=()=>{ applyState(e.state); EDIT_ENTRY_ID=e.id; persist(); _savedSig=stateSig(); updateSaveStatus(); showView("calc");
     toast(b==="active"||b==="complete" ? "Loaded. This job is underway; log contract changes as change orders." : "Loaded. Saving updates this job."); };
+  /* client portal controls */
+  const pOn=$("portalOn"); if(pOn) pOn.onclick=async ()=>{
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===CUR_JOB); if(!t) return;
+    t.portal={on:true, token:makePortalToken(), photos:true, money:true, publishedTs:0};
+    await setArchive(arr); renderJob(); toast("Client link created. Publishing…");
+    publishPortal(CUR_JOB, true);
+  };
+  const pCopy=$("portalCopy"); if(pCopy) pCopy.onclick=()=>{ try{ navigator.clipboard.writeText(portalLink(jobById(CUR_JOB))); toast("Link copied. Text it to your client."); }catch(err){ toast("Couldn't copy. Long-press the link to copy it."); } };
+  const pNow=$("portalNow"); if(pNow) pNow.onclick=()=>publishPortal(CUR_JOB, true);
+  const pOff=$("portalOff"); if(pOff) pOff.onclick=async ()=>{
+    if(!confirm("Turn off the client portal? The link stops working and the published page is deleted.")) return;
+    const t=jobById(CUR_JOB), tok=t&&t.portal&&t.portal.token;
+    const arr=getArchive(), t2=arr.find(x=>x&&x.id===CUR_JOB); if(t2) t2.portal=null;
+    await setArchive(arr); renderJob();
+    if(tok){ try{ await portalApi({op:"wipe", token:tok}); toast("Portal turned off and deleted"); }catch(err){ toast("Portal off here; couldn't reach the cloud copy: "+(err.message||"error")); } }
+  };
+  const pPh=$("portalPhotosTgl"); if(pPh) pPh.onchange=async ()=>{
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===CUR_JOB); if(!t||!t.portal) return;
+    t.portal.photos=!!pPh.checked; await setArchive(arr); publishPortal(CUR_JOB, true); };
+  const pMo=$("portalMoneyTgl"); if(pMo) pMo.onchange=async ()=>{
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===CUR_JOB); if(!t||!t.portal) return;
+    t.portal.money=!!pMo.checked; await setArchive(arr); publishPortal(CUR_JOB, true); };
   const st=$("jobStart"); if(st) st.onclick=()=>startJob(CUR_JOB);
   const cp=$("jobComplete"); if(cp) cp.onclick=()=>completeJob(CUR_JOB);
   const ro=$("jobReopen"); if(ro) ro.onclick=()=>reopenJob(CUR_JOB);
