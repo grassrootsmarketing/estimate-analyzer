@@ -6,14 +6,13 @@
 <meta name="robots" content="noindex">
 <title>Project update</title>
 <style>
-  @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:500;font-display:swap;src:url(/vendor/fonts/space-grotesk-latin-500-normal.woff2) format("woff2")}
-  @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:700;font-display:swap;src:url(/vendor/fonts/space-grotesk-latin-700-normal.woff2) format("woff2")}
+  @font-face{font-family:"Instrument";font-style:normal;font-weight:400;font-display:swap;src:url(/vendor/fonts/instrument-serif-latin-400-normal.woff2) format("woff2")}
   @font-face{font-family:"Inter";font-style:normal;font-weight:400;font-display:swap;src:url(/vendor/fonts/inter-latin-400-normal.woff2) format("woff2")}
   @font-face{font-family:"Inter";font-style:normal;font-weight:600;font-display:swap;src:url(/vendor/fonts/inter-latin-600-normal.woff2) format("woff2")}
   :root{
-    --bg:#e4ece2; --panel:#fcfefb; --panel2:#d6e3d3; --line:#bfd2bc;
-    --ink:#12301a; --muted:#54704e; --accent:#1f4a26; --accent2:#2e7a44;
-    --good:#217a4b; --bad:#bf432f;
+    --bg:#f0eee6; --panel:#faf9f5; --panel2:#ebe7dc; --line:#dedace;
+    --ink:#141413; --muted:#6e6a61; --accent:#d97757; --accent2:#a8492a;
+    --good:#2c7a55; --bad:#b0432c;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0}
@@ -22,19 +21,21 @@
   .co{display:flex;align-items:center;gap:10px;margin-bottom:18px}
   .co img{height:34px;width:auto;max-width:120px;object-fit:contain;border-radius:6px}
   .co .nm{font-family:"Inter",sans-serif;font-weight:700;font-size:16px}
-  h1{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:26px;letter-spacing:-.02em;margin:0 0 2px}
+  h1{font-family:"Instrument",Georgia,serif;font-weight:400;font-size:31px;letter-spacing:-.015em;line-height:1.1;margin:0 0 4px}
   .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
   .card h2{font-family:"Inter",sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
   /* stage timeline */
   .steps{display:flex;gap:6px}
   .step{flex:1;text-align:center}
   .step .bar{height:6px;border-radius:3px;background:var(--panel2);margin-bottom:7px}
-  .step.on .bar{background:var(--good)}
-  .step.now .bar{background:var(--accent2)}
+  /* Progress is one hue getting stronger, not a colour change. Green is reserved
+     for money that has actually landed. */
+  .step.on .bar{background:var(--accent);opacity:.45}
+  .step.now .bar{background:var(--accent);opacity:1}
   .step .t{font-size:10.5px;color:var(--muted);letter-spacing:.02em}
   .step.now .t{color:var(--accent2);font-weight:600}
-  .bignow{font-family:"Space Grotesk",sans-serif;font-size:20px;font-weight:700;margin:12px 0 2px}
+  .bignow{font-family:"Instrument",Georgia,serif;font-size:24px;font-weight:400;letter-spacing:-.012em;margin:12px 0 2px}
   .prog{font-size:13px;color:var(--muted)}
   /* work log rows: done so far + what's coming up */
   .wl{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14.5px}

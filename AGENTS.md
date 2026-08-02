@@ -50,6 +50,22 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
    link, and every published portal token move together. Treat that as its own
    project, not a find-and-replace.
 
+8. **The display face ships one weight. Never ask it for bold.** `--dfont` is
+   Instrument Serif, vendored at 400 and nothing else. Any rule that sets a weight
+   above 400 on a `--dfont` element makes the browser synthesise a fake bold, which
+   smears the letterforms at exactly the sizes the serif is used at. If a headline
+   needs more presence, increase the size, not the weight. The sans (`--numfont`,
+   Inter) is vendored at 400/500/600/700; 800 and 900 are safe there only because
+   font matching falls back to 700 rather than synthesising. This rule already
+   caught the app once: the forest build set 700 on four display selectors, and
+   they all had to be walked back to 400 during the Homestead retheme.
+
+9. **`--accent` and `--accent2` are not interchangeable.** `--accent` is a fill
+   colour (clay #D97757). `--accent2` is a text colour, and on bone it runs deeper
+   (#A8492A) because clay on bone is about 2.9:1 and will not carry small type.
+   Swapping them produces text that looks fine on a dark screen in a review and
+   fails in daylight on a phone, which is where this app actually gets used.
+
 ## Run, test, deploy
 
 - **Run locally:** open `index.html` in a browser, or serve the folder statically
