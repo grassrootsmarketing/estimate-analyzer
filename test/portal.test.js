@@ -33,7 +33,8 @@ function extractFn(src, name){
 }
 const FNS = ["roundUp","compute","txt","numTs","validDateStr","toC","fromC","sumC","money2",
   "boardStage","approvedChanges","changesTotalC","contractPrice","entryPrice",
-  "rowPaidC","rowInvoicedC","drawsPaid","dayOrdinal","nextTask","isOverdue","portalSnapshot"];
+  "rowPaidC","rowInvoicedC","drawsPaid","dayOrdinal","todayStr","nextTask","isOverdue",
+  "dayFromTs","projectedFinish","slipDays","phaseTimeline","portalSnapshot"];
 const S = new Function(FNS.map(f => extractFn(html, f)).join("\n") + "\nreturn {" + FNS.join(",") + "};")();
 
 // A job loaded with everything secret: distinctive values that must never appear
@@ -114,6 +115,91 @@ ok(!njson.includes("10500") && !njson.includes("10000") && !njson.includes("3000
 // 4. Photos are capped
 const many = Array.from({ length: 20 }, (_, i) => "data:image/jpeg;base64,x" + i);
 eq(S.portalSnapshot(job, {}, many).photos.length, 12, "photos are capped at 12");
+
+// ---- 10. Summary rollup: what was agreed, what was added, where that leaves it ----
+const m = snap.money;
+eq(m.base, 10000, "base is the originally agreed price, before change orders");
+eq(m.approvedChanges, 500, "approved changes are totalled separately");
+eq(m.pendingChanges, 750, "pending changes are totalled separately");
+eq(m.contract, 10500, "contract is base plus approved changes only");
+ok(m.contract === m.base + m.approvedChanges, "the rollup adds up");
+ok(m.contract !== m.base + m.approvedChanges + m.pendingChanges,
+   "pending changes are NOT folded into the contract total");
+ok(JSON.stringify(m).indexOf(String(SECRET_COST)) < 0 &&
+   JSON.stringify(m).indexOf(String(SECRET_TRUECOST)) < 0 &&
+   JSON.stringify(m).indexOf(String(SECRET_MARGIN)) < 0,
+   "the money rollup carries no cost, true cost, or margin");
+
+// ---- 11. Change orders carry an approval date, and only when approved ----
+const coA = snap.changes.find(c => c.number === "CO-1");
+const coP = snap.changes.find(c => c.number === "CO-3");
+ok(coA && coA.on, "an approved change order carries the date it was approved");
+eq(coP.on, "", "a pending change order carries no approval date");
+ok(!snap.changes.some(c => c.number === "CO-2"), "a voided change order is still never shared");
+ok(JSON.stringify(snap.changes).indexOf("haggling") < 0 &&
+   JSON.stringify(snap.changes).indexOf("client asked twice") < 0,
+   "change order notes still never leave the app");
+
+// ---- 12. Completion dates on finished work ----
+ok(snap.work.done.every(t => "on" in t), "finished work carries the date it was finished");
+ok(snap.work.upcoming.every(t => "late" in t), "upcoming work carries an overdue flag");
+
+// ---- 13. Timing projections ----
+eq(S.dayFromTs(0), "", "dayFromTs refuses a missing timestamp");
+const sched = { start: "2026-07-20", target: "2026-08-15" };
+const onTime = { sched, tasks: [{ id:"a", ts:1, title:"A", done:false, due:"2026-08-10" }] };
+eq(S.projectedFinish(onTime), "2026-08-15",
+   "a job whose last phase lands before the target still projects to the target");
+const late = { sched, tasks: [{ id:"a", ts:1, title:"A", done:false, due:"2026-08-22" }] };
+eq(S.projectedFinish(late), "2026-08-22",
+   "a phase due past the target pushes the projected finish out to meet it");
+eq(S.slipDays(late), 7, "slip is measured in days past the original target");
+eq(S.slipDays(onTime), 0, "a job on or ahead of schedule reports no slip");
+eq(S.slipDays({ sched: { start:"", target:"" }, tasks: [] }), 0,
+   "no target means no slip rather than a nonsense number");
+eq(S.projectedFinish({ sched: { start:"", target:"" }, tasks: [{ id:"a", ts:1, title:"A", done:false, due:"2026-09-01" }] }),
+   "2026-09-01", "with no target the last open phase becomes the projection");
+eq(S.projectedFinish({ sched, tasks: [] }), "2026-08-15",
+   "with no phases the target stands as the projection");
+ok(S.slipDays({ sched, tasks: [{ id:"a", ts:1, title:"A", done:true, doneTs:1, due:"2026-09-30" }] }) === 0,
+   "a finished phase never drags the projection out, however late its due date was");
+
+// ---- 14. Phase timeline ordering and state ----
+const tl = S.phaseTimeline({
+  sched,
+  tasks: [{ id:"p3", ts:3, title:"Third",  done:false, due:"2026-12-01" },
+          { id:"p1", ts:1, title:"First",  done:true,  doneTs:1000, due:"" },
+          { id:"p2", ts:2, title:"Second", done:false, due:"2000-01-01" }]
+});
+eq(tl.length, 3, "every phase appears in the timeline");
+eq(tl[0].title, "First", "finished phases come first");
+eq(tl[0].state, "done", "a finished phase reads as done");
+eq(tl[1].title, "Second", "open phases follow, ordered by due date");
+eq(tl[1].state, "late", "an open phase past its due date is flagged late");
+eq(tl[2].state, "planned", "a phase that is neither overdue nor next up reads as planned");
+// "late" outranks "now" on purpose. When the next phase up is already overdue,
+// the client should be told it is late, not told it is merely current.
+const tlClear = S.phaseTimeline({
+  sched,
+  tasks: [{ id:"q1", ts:1, title:"Soon",  done:false, due:"2099-01-01" },
+          { id:"q2", ts:2, title:"Later", done:false, due:"2099-06-01" }]
+});
+eq(tlClear[0].state, "now", "with nothing overdue, the next phase up is flagged as current");
+eq(tlClear[1].state, "planned", "phases behind the current one stay planned");
+ok(tl.every(p => !("cost" in p) && !("note" in p) && !("amount" in p)),
+   "the timeline carries titles and dates only");
+const tlSnap = snap.timeline;
+ok(tlSnap && Array.isArray(tlSnap.phases), "the snapshot carries a timeline");
+ok(tlSnap.slip >= 0, "slip is never negative in the snapshot");
+ok(JSON.stringify(tlSnap).indexOf(String(SECRET_COST)) < 0 &&
+   JSON.stringify(tlSnap).indexOf("secret vendor discount") < 0,
+   "the timeline leaks nothing from the cost log");
+
+// ---- 15. Timing survives money:false, the rollup does not ----
+//     Reuses the noMoney snapshot built in section 8 rather than rebuilding it.
+ok(noMoney.timeline && noMoney.timeline.phases.length === 2,
+   "timing is still shared when money is withheld");
+ok(!noMoney.money, "the whole money rollup goes with money:false, base included");
 
 // ---- /api/portal guard rails ----
 delete process.env.BLOB_READ_WRITE_TOKEN;
