@@ -146,6 +146,12 @@
   .savednote{font-size:12.5px;color:var(--good);margin-top:10px;min-height:15px;line-height:1.4}
   .savednote.unsaved{color:var(--warnink);background:var(--warnbg);border:1px solid var(--warnbd);border-radius:9px;padding:8px 11px}
   .savednote.saved{color:var(--good)}
+  /* The way out of editing a job, inside the sentence that says you are editing
+     one. Takes the banner's own colour rather than the link colour so it does not
+     fight the warning it sits inside. */
+  .savednote button.link{background:none;border:none;padding:0;margin:0;font:inherit;
+    color:inherit;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+  .savednote button.link:hover{opacity:.78}
   /* import */
   /* Upload box: prominent by default (reads as primary on mobile, no hover needed), intensifies on hover. */
   .drop{border:2px dashed var(--accent2);border-radius:16px;padding:26px 16px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px;background:rgba(123,217,143,.07);display:flex;flex-direction:column;align-items:center;gap:7px;min-height:150px;justify-content:center}
@@ -2065,11 +2071,36 @@ function bnum(v){ return Number.isInteger(v)?v:(Math.round(v*100)/100); }
 let _savedSig=null, _warned100=false, _warned200=false;
 function stateSig(s){ s=s||getState(); return JSON.stringify({m:s.mode,j:s.jobName,ct:s.clientType,cn:s.contactName,cp:s.contactPhone,ce:s.contactEmail,bc:s.benchCat,bq:s.benchQty,mg:s.margin,co:s.contingency,oh:s.overhead,tx:s.tax,ph:(s.photos||[]).length,rows:s.rows}); }
 function hasContent(){ const s=getState(); return !!(s.jobName&&s.jobName.trim()) || (s.rows||[]).some(r=>(+r.qty||0)*(+r.unit||0)>0); }
+/* Three states, not two. The old version only knew whether the numbers on screen
+   matched some saved entry, so an edited job that had since been reloaded said
+   "not saved to your jobs yet" while Save was still correctly aimed at the job it
+   belongs to. Reading both at once, you would think Save creates something new
+   and then be told the job is marked complete. Which job Save will overwrite is
+   the thing worth saying out loud, so it is said by name. */
 function updateSaveStatus(){ const el=$("savedNote"); if(!el) return;
   if(!hasContent()){ el.textContent=""; el.className="savednote"; return; }
+  const cur=EDIT_ENTRY_ID ? getArchive().find(x=>x&&x.id===EDIT_ENTRY_ID) : null;
+  if(cur){
+    const nm=esc(clip(((cur.state&&cur.state.jobName)||"").trim()||"Untitled job",34));
+    const b=boardStage(cur);
+    const tail=b==="complete" ? " That job is marked complete." : (b==="active" ? " That job is in progress." : "");
+    if(_savedSig===stateSig()){ el.innerHTML="✓ Saved to <b>"+nm+"</b>."; el.className="savednote saved"; }
+    else { el.innerHTML="<b>Editing "+nm+".</b> Save updates that job."+tail
+        +' <button type="button" class="link" id="detachJob">Start a separate job instead</button>';
+      el.className="savednote unsaved";
+      const d=$("detachJob"); if(d) d.onclick=detachFromJob; }
+    return;
+  }
   if(_savedSig===null){ el.innerHTML="<b>Not saved to your jobs yet.</b> Tap Save to keep it. (Your work is auto-held on this device so you won't lose it if you leave.)"; el.className="savednote unsaved"; }
   else if(_savedSig!==stateSig()){ el.innerHTML="<b>Unsaved changes</b> since your last save. Tap Save."; el.className="savednote unsaved"; }
   else { el.innerHTML="✓ Saved to your jobs."; el.className="savednote saved"; }
+}
+/* Cut the link to the job being edited and keep the numbers. The only other way
+   out was to clear every line item, which is a poor trade when the numbers on
+   screen are the ones you want to keep. */
+function detachFromJob(){
+  EDIT_ENTRY_ID=null; _savedSig=null; persist(); updateSaveStatus();
+  toast("Detached. Save now creates a separate job.");
 }
 // Rolling history: pinned jobs and MANAGED jobs (won, staged, or with any PM data)
 // are never pruned; only disposable unpinned estimate history rolls off at the cap.
