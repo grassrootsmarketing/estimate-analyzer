@@ -1831,7 +1831,9 @@ function hasExample(){ return getArchive().some(e=>e&&e.isExample); }
 function maybeSeedExample(){
   if(exampleOff() || getArchive().length) return false;
   const ex=buildExampleJob(); if(!ex) return false;
-  ARCH_CACHE=[ex];
+  /* Held in memory rather than written, so it goes through the same door by
+     hand. Nothing may assign to the cache without passing through it. */
+  ARCH_CACHE=sanitizeArchive([ex]);
   return true;
 }
 async function removeExample(){
