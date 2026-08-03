@@ -2102,6 +2102,45 @@ function detachFromJob(){
   EDIT_ENTRY_ID=null; _savedSig=null; persist(); updateSaveStatus();
   toast("Detached. Save now creates a separate job.");
 }
+/* The + button is labelled New estimate, so it had better produce one. It used to
+   only switch views, which meant it dropped you into whatever job was last opened,
+   still linked to it, still carrying its rates. Tapping + then Save would quietly
+   overwrite that job.
+   Nothing is discarded without asking. Unsaved work is the one thing the app can
+   never get back, so the question names what is at stake and differs depending on
+   whether there is a saved copy behind it. */
+function newEstimateRates(){
+  const set=(id,key,lo,hi,fallback)=>{ const v=PROFILE[key];
+    $(id).value=(v!=null&&v!=="")?boundVal(v,lo,hi):fallback; };
+  set("margin","defMarkup",0,500,40);
+  set("overhead","defOverhead",0,99,0);
+  set("contingency","defContingency",0,100,0);
+  set("tax","defTax",0,30,9.5);
+}
+function startNewEstimate(){
+  if(hasContent() && (_savedSig===null || _savedSig!==stateSig())){
+    const cur=EDIT_ENTRY_ID ? getArchive().find(x=>x&&x.id===EDIT_ENTRY_ID) : null;
+    const nm=clip(($("jobName").value||"").trim()||"this estimate",34);
+    const q=cur
+      ? 'Start a new estimate? Your unsaved changes to "'+nm+'" are dropped. The saved version of that job is untouched.'
+      : 'Start a new estimate? "'+nm+'" has never been saved to your jobs, so it goes for good.';
+    if(!confirm(q)) return;
+  }
+  EDIT_ENTRY_ID=null; _savedSig=null;
+  $("jobName").value=""; $("contactName").value=""; $("contactPhone").value=""; $("contactEmail").value="";
+  $("benchCat").value=""; $("benchQty").value=""; $("proposed").value="";
+  newEstimateRates();
+  $("clientName").value=""; $("clientAddress").value=""; $("projScope").value="";
+  $("depositPct").value=25; $("itemize").checked=true;
+  SIGNATURE=null; SIGNED_AT=null;
+  if(typeof updateSigStatus==="function") updateSigStatus();
+  PHOTOS=[]; if(typeof renderPhotos==="function") renderPhotos();
+  defaultRows();
+  setMode("cost");
+  syncQtyLabel(); render(); calc(); persist(); updateSaveStatus();
+  showView("calc");
+  toast("New estimate. Nothing here is linked to an existing job.");
+}
 // Rolling history: pinned jobs and MANAGED jobs (won, staged, or with any PM data)
 // are never pruned; only disposable unpinned estimate history rolls off at the cap.
 const HISTORY_CAP=30;
@@ -3274,7 +3313,7 @@ function renderDashboard(){
       +'</div></div>';
   });
   box.innerHTML=html;
-  $("dashNew").onclick=()=>showView("calc");
+  $("dashNew").onclick=startNewEstimate;
   const xr=$("exRemove"); if(xr) xr.onclick=ev=>{ ev.stopPropagation(); removeExample(); };
   const va=$("dashAll"); if(va) va.onclick=()=>showView("archive");
   const vj=$("dashJobs"); if(vj) vj.onclick=()=>showView("jobs");
