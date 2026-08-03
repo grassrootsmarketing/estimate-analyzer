@@ -330,6 +330,7 @@
     --goodbg:#1a2620; --goodbd:#35543f; --goodink:#9bd6ab;
     --warnbg:#2a2418; --warnbd:#57492a; --warnink:#ebc98d;
     --badbg:#2c1e18; --badbd:#5d3a2d; --badink:#f0ae96;
+    --dangerfill:#a83f27; --ondanger:#fff3ee;
     --tipbg:#0b0b0a; --tipink:#f5f3ee; --primink:#fff7f2;
     --field:#1a1917; --fieldbd:#3c3934; --onaccent2:#141413;
     --shadow:rgba(0,0,0,.50); --shadowsoft:rgba(0,0,0,.32);
@@ -342,6 +343,7 @@
     --goodbg:#e9f1ea; --goodbd:#c3dcc9; --goodink:#1f6042;
     --warnbg:#faf0dc; --warnbd:#e6d2a6; --warnink:#77571c;
     --badbg:#fbeee8; --badbd:#f0cdbe; --badink:#96341f;
+    --dangerfill:#96341f; --ondanger:#fff7f2;
     --tipbg:#141413; --tipink:#f5f3ee; --primink:#fff7f2;
     --field:#ffffff; --fieldbd:#dad4c6; --onaccent2:#fff7f2;
     --shadow:rgba(40,30,20,.14); --shadowsoft:rgba(40,30,20,.05);
@@ -573,7 +575,7 @@
     .rowmore{opacity:.32}
     .brwrap:hover .rowmore,.brwrap:focus-within .rowmore,.rowmore[aria-expanded="true"]{opacity:1}
   }
-  .rowmenu{position:absolute;right:8px;top:calc(100% - 10px);z-index:35;min-width:176px;
+  .rowmenu{position:absolute;right:8px;top:calc(100% - 10px);z-index:35;min-width:176px;max-width:calc(100vw - 32px);
     background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;
     box-shadow:0 12px 34px var(--shadow);transform-origin:top right;animation:rowmenuin .14s cubic-bezier(.2,.8,.3,1)}
   .rowmenu.up{top:auto;bottom:calc(100% - 10px);transform-origin:bottom right}
@@ -586,8 +588,23 @@
   .rowmenu button.danger{color:var(--badink)}
   .rowmenu button.danger:hover{background:var(--badbg)}
   .rowmenu .msub{display:block;font-size:11px;color:var(--muted);margin-top:1px;font-weight:400}
+  /* Delete asks first, in the same popover rather than a system dialog, so the
+     question stays attached to the row it is about. Archive does not ask; it is
+     reversible from the Archive tab and losing nothing is the point of it. */
+  .rowmenu.confirming{min-width:216px;max-width:250px}
+  .rmconf{padding:6px 7px 3px}
+  .rmq{margin:0 0 10px;font-size:13px;line-height:1.42;color:var(--ink);overflow-wrap:anywhere}
+  .rmq b{font-weight:500}
+  .rmq span{display:block;color:var(--muted);font-size:11.5px;margin-top:3px}
+  .rmbtns{display:flex;gap:6px}
+  .rowmenu .rmbtns button{flex:1 1 0;min-height:40px;justify-content:center;gap:0;
+    font-size:13.5px;padding:9px 10px;border:1px solid var(--line);border-radius:10px}
+  .rowmenu .rmbtns button.solid{background:var(--dangerfill);border-color:var(--dangerfill);color:var(--ondanger)}
+  .rowmenu .rmbtns button.solid:hover{background:var(--dangerfill);filter:brightness(.93)}
+  .rmconf,.rmmain{animation:rowpane .13s ease}
   @keyframes rowmenuin{from{opacity:0;transform:scale(.95) translateY(-6px)}to{opacity:1;transform:none}}
-  @media(prefers-reduced-motion:reduce){ .rowmenu{animation:none} }
+  @keyframes rowpane{from{opacity:0}to{opacity:1}}
+  @media(prefers-reduced-motion:reduce){ .rowmenu,.rmconf,.rmmain{animation:none} }
   @media(min-width:900px){ #dashBody,#jobBody,#jobsBody{max-width:680px;margin:0 auto} #schedView .calcard{max-width:860px;margin:0 auto} }
 
   /* ================= JOBS TAB (pipeline board) + PM hardening ================= */
@@ -1826,8 +1843,25 @@ async function removeExample(){
 let _rowMenuDocWired=false, _rowMenuOpenedAt=0;
 function closeRowMenus(root){
   const r=root||document;
-  r.querySelectorAll(".rowmenu").forEach(m=>{ m.hidden=true; m.classList.remove("up"); });
+  r.querySelectorAll(".rowmenu").forEach(m=>{ m.hidden=true; m.classList.remove("up"); resetRowMenu(m); });
   r.querySelectorAll(".rowmore[aria-expanded=\'true\']").forEach(b=>b.setAttribute("aria-expanded","false"));
+}
+/* Back to the plain list of actions. Called on close too, so a menu never
+   reopens still holding the delete question from last time. */
+function resetRowMenu(m){
+  if(!m) return;
+  m.classList.remove("confirming");
+  const a=m.querySelector(".rmmain"), b=m.querySelector(".rmconf");
+  if(a) a.hidden=false;
+  if(b) b.hidden=true;
+}
+/* Flip above the row when the menu would otherwise run off the bottom. Run
+   again after the pane swaps, because the confirm pane is a different height. */
+function placeRowMenu(m){
+  if(!m) return;
+  m.classList.remove("up");
+  const r=m.getBoundingClientRect();
+  if(r.bottom > window.innerHeight - 72) m.classList.add("up");
 }
 function wireRowMenus(box){
   box.querySelectorAll("[data-more]").forEach(el=>{
@@ -1838,8 +1872,7 @@ function wireRowMenus(box){
       closeRowMenus(box);
       if(!m||wasOpen) return;
       m.hidden=false; el.setAttribute("aria-expanded","true");
-      const r=m.getBoundingClientRect();
-      if(r.bottom > window.innerHeight - 72) m.classList.add("up");
+      resetRowMenu(m); placeRowMenu(m);
       /* preventScroll matters: focusing the first item scrolls the row into
          view, which fired the scroll-to-close handler below and shut the menu
          the instant it opened. The timestamp guards the same race for any
@@ -1852,7 +1885,15 @@ function wireRowMenus(box){
   if(_rowMenuDocWired) return;
   _rowMenuDocWired=true;
   document.addEventListener("click",()=>closeRowMenus());
-  document.addEventListener("keydown",ev=>{ if(ev.key==="Escape") closeRowMenus(); });
+  /* Escape backs out of the delete question first and closes the menu second,
+     so it never takes two guesses to get out of the wrong place. */
+  document.addEventListener("keydown",ev=>{
+    if(ev.key!=="Escape") return;
+    const c=document.querySelector(".rowmenu.confirming:not([hidden])");
+    if(c){ resetRowMenu(c); placeRowMenu(c); _rowMenuOpenedAt=Date.now();
+      const d=c.querySelector("[data-delbid]"); if(d) d.focus({preventScroll:true}); return; }
+    closeRowMenus();
+  });
   window.addEventListener("scroll",()=>{ if(Date.now()-_rowMenuOpenedAt>250) closeRowMenus(); },{passive:true});
 }
 function median(a){ if(!a.length) return 0; const s=a.slice().sort((x,y)=>x-y), n=s.length, m=Math.floor(n/2); return n%2?s[m]:(s[m-1]+s[m])/2; }
@@ -1862,6 +1903,9 @@ function uid(p){ try{ if(typeof crypto!=="undefined"&&crypto.randomUUID) return 
   return p+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function numTs(v){ const n=+v; return (isFinite(n)&&n>0&&n<4102444800000)?n:0; }
 function txt(v,n){ return String(v==null?"":v).slice(0,n||200); }
+/* Shorten for display only, with a real ellipsis, so a pasted 400 character job
+   name cannot stretch a popover across the screen. */
+function clip(s,n){ const v=String(s==null?"":s); return v.length>(n||40) ? v.slice(0,(n||40)-1).trim()+"…" : v; }
 function capArr(a){ return Array.isArray(a)?a.slice(0,300):[]; }
 function validDateStr(s){ if(typeof s!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(s)) return "";
   const y=+s.slice(0,4), m=+s.slice(5,7), d=+s.slice(8,10);
@@ -3115,10 +3159,16 @@ function renderDashboard(){
       +'<button type="button" class="rowmore" data-more="'+esc(e.id)+'" aria-haspopup="menu" aria-expanded="false"'
       +' title="More" aria-label="More actions for '+esc(nm)+'">'+ic("more")+'</button>'
       +'<div class="rowmenu" data-menu="'+esc(e.id)+'" role="menu" hidden>'
+      +'<div class="rmmain">'
       +'<button type="button" role="menuitem" data-arch="'+esc(e.id)+'">'+ic("folder")
       +'<span>Archive<span class="msub">Off the dashboard, kept in Archive</span></span></button>'
       +'<button type="button" role="menuitem" class="danger" data-delbid="'+esc(e.id)+'">'+ic("trash")
       +'<span>Delete<span class="msub">Removes it for good</span></span></button>'
+      +'</div>'
+      +'<div class="rmconf" hidden><p class="rmq">Delete <b>'+esc(clip(nm,34))+'</b>?'
+      +'<span>This cannot be undone. Archive keeps it.</span></p>'
+      +'<div class="rmbtns"><button type="button" data-delno="'+esc(e.id)+'">Keep it</button>'
+      +'<button type="button" class="solid" data-delyes="'+esc(e.id)+'">Delete</button></div></div>'
       +'</div></div>';
   });
   box.innerHTML=html;
@@ -3128,10 +3178,24 @@ function renderDashboard(){
   const vj=$("dashJobs"); if(vj) vj.onclick=()=>showView("jobs");
   box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"dash"); });
   wireRowMenus(box);
+  /* Delete asks in place: the menu swaps to the question, and Keep it holds
+     focus so a stray Enter backs out rather than destroys a job. */
   box.querySelectorAll("[data-delbid]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
-    const t=jobById(el.dataset.delbid); if(!t) return;
-    const bnm=((t.state&&t.state.jobName)||"").trim()||"this estimate";
-    if(!confirm('Delete "'+bnm+'"? This removes it for good. To just clear it off the dashboard, use Archive instead.')) return;
+    const m=el.closest(".rowmenu"); if(!m) return;
+    const a=m.querySelector(".rmmain"), c=m.querySelector(".rmconf");
+    if(!a||!c) return;
+    a.hidden=true; c.hidden=false; m.classList.add("confirming");
+    placeRowMenu(m); _rowMenuOpenedAt=Date.now();
+    const no=c.querySelector("[data-delno]"); if(no) no.focus({preventScroll:true});
+  }; });
+  box.querySelectorAll("[data-delno]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
+    const m=el.closest(".rowmenu"); if(!m) return;
+    resetRowMenu(m); placeRowMenu(m); _rowMenuOpenedAt=Date.now();
+    const d=m.querySelector("[data-delbid]"); if(d) d.focus({preventScroll:true});
+  }; });
+  box.querySelectorAll("[data-delyes]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
+    const t=jobById(el.dataset.delyes); if(!t){ closeRowMenus(); return; }
+    closeRowMenus();
     setArchive(getArchive().filter(x=>x&&x.id!==t.id));
     renderDashboard(); toast("Bid deleted");
   }; });
