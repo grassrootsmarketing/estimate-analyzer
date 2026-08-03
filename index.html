@@ -31,9 +31,10 @@
     --navh:62px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0}
+  *{min-width:0}
+  html,body{margin:0;overflow-x:clip}
   body{background:var(--bg);color:var(--ink);font:16px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+    padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%;overflow-wrap:break-word}
   input,select,textarea,button{font-family:inherit}
   b,strong{font-weight:600}
   h1,h2,h3{margin:0}
@@ -42,8 +43,8 @@
   header{position:sticky;top:0;z-index:30;background:rgba(15,20,25,.92);backdrop-filter:blur(8px);
     border-bottom:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:10px}
   header .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto}
-  header .ttl{font-size:16px;font-weight:800;letter-spacing:.2px}
-  header .sub{font-size:11px;color:var(--muted);margin-top:-2px}
+  header .ttl{font-size:16px;font-weight:800;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header .sub{font-size:11px;color:var(--muted);margin-top:-2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .view{display:none;padding:14px 0 24px}
   .view.on{display:block}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
@@ -127,6 +128,7 @@
   .link{transition:color .16s ease}
   .link:hover{color:var(--accent)}
   /* info tooltips */
+  .tip::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%}
   .tip{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font-size:11px;font-weight:700;font-style:normal;margin-left:6px;cursor:help;position:relative;vertical-align:middle;line-height:1;flex:0 0 auto;transition:color .16s ease,border-color .16s ease,transform .12s ease}
   .tip:hover{color:var(--ink);border-color:var(--accent2)}
   .tip:active{transform:scale(.9)}
@@ -396,7 +398,7 @@
   .homebtn{display:flex;align-items:center;gap:10px;background:transparent;border:none;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;min-width:0;border-radius:10px;transition:opacity .16s ease,transform .12s ease}
   .homebtn:hover{opacity:.85}
   .homebtn:active{transform:scale(.98)}
-  .hicon{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;transition:color .16s ease,border-color .16s ease,transform .12s ease}
+  .hicon{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;transition:color .16s ease,border-color .16s ease,transform .12s ease}
   .hicon .ic{width:20px;height:20px}
   .hicon:hover{color:var(--ink);border-color:var(--accent2)} .hicon:active{transform:scale(.92)}
   .ic.starfill{fill:var(--accent);stroke:var(--accent)}
@@ -545,7 +547,9 @@
   .brrow:hover{transform:translateY(-1px);border-color:var(--accent2);box-shadow:0 4px 14px var(--shadowsoft)}
   .brrow:active{transform:none}
   .brrow .bl{min-width:0}
-  .brrow .nm{display:block;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brrow .nmrow{display:flex;align-items:center;gap:6px;min-width:0}
+  .brrow .nmrow .bdg{flex:0 0 auto}
+  .brrow .nm{display:block;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
   .brrow .mt{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
   .brrow .br{text-align:right;flex:0 0 auto}
   .brrow .pr{display:block;font-size:15px;font-weight:500;color:var(--accent2);font-variant-numeric:tabular-nums}
@@ -590,7 +594,7 @@
     display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px}
   .persistwarn .btn{flex:0 0 auto;min-width:0;min-height:38px;padding:8px 14px}
   /* small explicit-action buttons (payments, COs, lifecycle) */
-  .minibtn{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:500;cursor:pointer;min-height:36px;display:inline-flex;align-items:center;gap:5px;transition:border-color .16s ease,background .16s ease,transform .12s ease}
+  .minibtn{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:500;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;gap:5px;transition:border-color .16s ease,background .16s ease,transform .12s ease}
   .minibtn:hover{border-color:var(--accent2)} .minibtn:active{transform:scale(.96)}
   .minibtn.gold{background:var(--accent);border-color:var(--accent);color:var(--primink)}
   .minibtn.danger{color:var(--badink);border-color:var(--badbd);background:var(--badbg)}
@@ -608,10 +612,10 @@
   .bdg-lost{background:var(--badbg);border-color:var(--badbd);color:var(--badink)}
   [data-theme="light"] .bdg-lead{color:#6e6a61;background:rgba(110,106,97,.09);border-color:rgba(110,106,97,.26)}
   [data-theme="light"] .bdg-upnext{color:#a8492a;background:rgba(217,119,87,.11);border-color:rgba(217,119,87,.30)}
-  [data-theme="light"] .bdg-complete{color:#2c7a55;background:rgba(44,122,85,.08);border-color:rgba(44,122,85,.22)}
+  [data-theme="light"] .bdg-complete{color:#26684a;background:rgba(38,104,74,.08);border-color:rgba(38,104,74,.22)}
   /* nav count badge: things waiting on you in Jobs */
   .nav button{position:relative}
-  .navbdg{position:absolute;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;border-radius:9px;background:var(--accent);color:var(--primink);font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;box-shadow:0 0 0 2px var(--bg)}
+  .navbdg{position:absolute;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;border-radius:9px;background:var(--accent2);color:var(--onaccent2);font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;box-shadow:0 0 0 2px var(--bg)}
   /* job page: tasks, payments, change orders */
   .trow{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
   .trow:first-of-type{border-top:none}
@@ -650,18 +654,18 @@
   .calcard{margin:0 0 14px}
   .calhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
   .calmon{flex:1;font-family:var(--dfont);font-size:15.5px;font-weight:700;letter-spacing:-.2px}
-  .calnav{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:9px;min-width:34px;min-height:32px;padding:0 10px;font-size:13px;font-weight:600;cursor:pointer;transition:border-color .16s ease}
+  .calnav{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:9px;min-width:40px;min-height:40px;padding:0 10px;font-size:13px;font-weight:600;cursor:pointer;transition:border-color .16s ease}
   .calnav:hover{border-color:var(--accent2)}
   .caldow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:9.5px;font-weight:600;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
   .calweek{position:relative;display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line)}
   .calweek:last-of-type{border-bottom:1px solid var(--line)}
-  .calday{min-height:calc(30px + var(--lanes,0)*22px);padding:3px 0 2px;border-left:1px solid var(--line);text-align:center}
+  .calday{min-height:calc(30px + var(--lanes,0)*27px);padding:3px 0 2px;border-left:1px solid var(--line);text-align:center}
   .calday:first-child{border-left:none}
   .calday .dn{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:10px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
   .calday.out .dn{opacity:.4}
   .calday.tdy .dn{background:var(--accent);color:var(--primink);font-weight:700}
-  .calbars{position:absolute;left:0;right:0;top:27px;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:20px;row-gap:2px;pointer-events:none}
-  .calbar{pointer-events:auto;position:relative;margin:0 1px;border-radius:7px;background:var(--c);color:#fff;font-size:10.5px;font-weight:600;line-height:20px;padding:0 8px;overflow:hidden;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 1px 2px var(--shadowsoft)}
+  .calbars{position:absolute;left:0;right:0;top:27px;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:24px;row-gap:3px;pointer-events:none}
+  .calbar{pointer-events:auto;position:relative;margin:0 1px;border-radius:7px;background:var(--c);color:#fff;font-size:11px;font-weight:600;line-height:24px;padding:0 8px;overflow:hidden;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 1px 2px var(--shadowsoft)}
   .calbar .bn{pointer-events:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .calbar.opl{border-top-left-radius:2px;border-bottom-left-radius:2px;margin-left:0}
   .calbar.opr{border-top-right-radius:2px;border-bottom-right-radius:2px;margin-right:0}
@@ -1214,8 +1218,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const fmt = n => (n<0?"-$":"$") + Math.abs(Math.round(n)).toLocaleString();
-const fmt2 = n => "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+/* Non-finite money is not money. Corrupted data and a 100% overhead rate both
+   produce NaN or Infinity here, and "$NaN" on a client-facing figure is worse
+   than saying nothing. "$0" would be a lie, so these say n/a instead. */
+const fmt = n => isFinite(n) ? (n<0?"-$":"$") + Math.abs(Math.round(n)).toLocaleString() : "n/a";
+const fmt2 = n => isFinite(n) ? "$" + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : "n/a";
 const $ = id => document.getElementById(id);
 function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
@@ -2430,6 +2437,13 @@ function sanitizeEntry(e){
   e.stageChangedTs=numTs(e.stageChangedTs)||null;
   e.actualStart=validDateStr(e.actualStart);
   e.completed=validDateStr(e.completed);
+  /* results is derived, so a corrupted one is always recoverable. Without this a
+     restored-but-damaged entry throws inside renderArchive on r.marginPct. */
+  if(!e.results || typeof e.results!=="object" || Array.isArray(e.results)
+     || typeof e.results.price!=="number" || !isFinite(e.results.price)
+     || typeof e.results.marginPct!=="number" || !isFinite(e.results.marginPct)){
+    try{ e.results=compute(e.state); }catch(err){ e.results=compute({mode:"cost",rows:[]}); }
+  }
   const seen={};
   const fixId=(v,p)=>{ v=txt(v,40); if(!v||seen[v]) v=uid(p); seen[v]=1; return v; };
   const okCat={}; COST_CATS.forEach(c=>{ okCat[c[0]]=1; });
@@ -2961,7 +2975,7 @@ function renderDashboard(){
     const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
     const meta=[(s.clientType||""),when].filter(Boolean).join(" · ");
-    const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nm">'+esc(nm)+' '+stageBadge(e)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
+    const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nmrow"><span class="nm">'+esc(nm)+'</span>'+stageBadge(e)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
       '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
     /* Archive files it off the dashboard and is reversible; delete is permanent.
        Both stay in the layout and fade in on hover, so rows never jump. */
@@ -3043,7 +3057,9 @@ function renderCal(){
   const y=+CAL_MONTH.slice(0,4), m=+CAL_MONTH.slice(5,7);
   const first=new Date(y,m-1,1);
   const gridStart=dayAdd(CAL_MONTH+"-01",-first.getDay());
+  const gridEnd=dayAdd(gridStart,41);
   const bars=data.bars.map(b=>(CAL_TMP&&CAL_TMP.id===b.id)?Object.assign({},b,{start:CAL_TMP.start,end:CAL_TMP.end}):b)
+    .filter(b=>!(b.end<gridStart||b.start>gridEnd))
     .sort((a,b)=>a.start.localeCompare(b.start)||b.end.localeCompare(a.end));
   const placed=[]; bars.forEach(b=>{ b.lane=calLane(placed,b.start,b.end); placed.push(b); });
   let html='<div class="calhead"><button type="button" class="calnav" id="calPrev" aria-label="Previous month">&#8249;</button>'
@@ -3076,6 +3092,11 @@ function renderCal(){
     html+='<div class="calhint">'+(CAL_ARM?'Now tap a day to put it on the calendar.':'Tap a job below, then tap a day to place it. Drag a bar to move it; drag its ends to stretch.')+'</div>';
   } else if(placed.length){
     html+='<div class="calhint">Drag a bar to move it. Drag its ends to stretch. Tap a bar to open the job.</div>';
+  } else if(data.bars.length){
+    /* Bars exist, just not in the month on screen. Before the visible-window
+       filter this branch could not happen; now it can, and telling someone with
+       a full schedule that they have no jobs would be a lie. */
+    html+='<div class="calhint">Nothing scheduled this month. Your scheduled work is in another month, use the arrows to find it.</div>';
   } else {
     html+='<div class="calhint">Jobs you win land here so you can block out their weeks. Win a bid and it shows up ready to schedule.</div>';
   }
