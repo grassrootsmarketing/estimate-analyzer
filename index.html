@@ -556,20 +556,38 @@
   .brrow .mt{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
   .brrow .br{text-align:right;flex:0 0 auto}
   .brrow .pr{display:block;font-size:15px;font-weight:500;color:var(--accent2);font-variant-numeric:tabular-nums}
-  /* recent-list bid delete: row + trash side by side; only bids get the trash */
-  .brwrap{display:flex;align-items:stretch;gap:7px}
-  .brwrap .brrow{flex:1;min-width:0}
-  .brdel{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:12px;width:40px;margin-bottom:8px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:color .16s ease,border-color .16s ease,background .16s ease,transform .12s ease}
-  .brdel .ic{width:16px;height:16px}
-  .brdel:hover{color:var(--badink);border-color:var(--badbd);background:var(--badbg)}
-  .brdel:active{transform:scale(.92)}
-  .brdel.brarc:hover{color:var(--warnink);border-color:var(--warnbd);background:var(--warnbg)}
-  /* row actions stay in the layout so nothing shifts; they just fade in under the pointer.
-     Touch devices have no hover, so there they are always visible. */
+  /* Recent-list row actions. The dot button lives inside the card and opens a
+     menu, so the row never resizes and there is room for future actions. */
+  .brwrap{position:relative;margin-bottom:8px}
+  .brwrap .brrow{margin-bottom:0;width:100%;padding-right:50px}
+  .rowmore{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:36px;height:36px;
+    border-radius:11px;border:1px solid transparent;background:transparent;color:var(--muted);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+    transition:opacity .16s ease,background .16s ease,border-color .16s ease,color .16s ease}
+  .rowmore .ic{width:18px;height:18px}
+  .rowmore:hover{color:var(--ink);background:var(--panel2);border-color:var(--line)}
+  .rowmore[aria-expanded="true"]{color:var(--ink);background:var(--panel2);border-color:var(--line)}
+  /* On a pointer device the dots sit back until the row is under the cursor.
+     Touch has no hover, so there they simply stay visible. */
   @media(hover:hover) and (pointer:fine){
-    .brwrap .brdel{opacity:0;transition:opacity .15s ease,color .16s ease,border-color .16s ease,background .16s ease,transform .12s ease}
-    .brwrap:hover .brdel,.brwrap:focus-within .brdel{opacity:1}
+    .rowmore{opacity:.32}
+    .brwrap:hover .rowmore,.brwrap:focus-within .rowmore,.rowmore[aria-expanded="true"]{opacity:1}
   }
+  .rowmenu{position:absolute;right:8px;top:calc(100% - 10px);z-index:35;min-width:176px;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;
+    box-shadow:0 12px 34px var(--shadow);transform-origin:top right;animation:rowmenuin .14s cubic-bezier(.2,.8,.3,1)}
+  .rowmenu.up{top:auto;bottom:calc(100% - 10px);transform-origin:bottom right}
+  .rowmenu button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;
+    background:transparent;border:none;color:var(--ink);font:inherit;font-size:14px;
+    padding:10px 12px;border-radius:10px;cursor:pointer;text-align:left;
+    transition:background .14s ease,color .14s ease}
+  .rowmenu button .ic{width:17px;height:17px;flex:0 0 auto}
+  .rowmenu button:hover{background:var(--panel2)}
+  .rowmenu button.danger{color:var(--badink)}
+  .rowmenu button.danger:hover{background:var(--badbg)}
+  .rowmenu .msub{display:block;font-size:11px;color:var(--muted);margin-top:1px;font-weight:400}
+  @keyframes rowmenuin{from{opacity:0;transform:scale(.95) translateY(-6px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){ .rowmenu{animation:none} }
   @media(min-width:900px){ #dashBody,#jobBody,#jobsBody{max-width:680px;margin:0 auto} #schedView .calcard{max-width:860px;margin:0 auto} }
 
   /* ================= JOBS TAB (pipeline board) + PM hardening ================= */
@@ -822,6 +840,7 @@
   <symbol id="i-dashboard" viewBox="0 0 24 24"><rect class="fl" x="3" y="3" width="8.4" height="8.4" rx="2.6"/><rect class="fl" x="14.2" y="10.4" width="6.8" height="10.6" rx="2.6"/><rect x="3" y="3" width="8.4" height="8.4" rx="2.6"/><rect x="14.2" y="3" width="6.8" height="4.8" rx="2.2"/><rect x="14.2" y="10.4" width="6.8" height="10.6" rx="2.6"/><rect x="3" y="14" width="8.4" height="7" rx="2.4"/><circle cx="7.2" cy="7.2" r="1.15" fill="currentColor" stroke="none"/><path d="M5.4 17.6l1.7 1.7 2.6-2.9"/></symbol>
   <symbol id="i-brand" viewBox="0 0 24 24"><circle class="fl" cx="12" cy="12" r="9.3"/><circle cx="12" cy="12" r="9.3"/><path d="M9.2 7.9v8.2"/><path d="M14.8 7.9v8.2"/><path d="M9.2 12h5.6"/></symbol>
   <symbol id="i-ruler" viewBox="0 0 24 24"><path class="fl" d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5.2" r="1.9" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><circle cx="12" cy="18.8" r="1.9" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-folder" viewBox="0 0 24 24"><rect class="fl" x="3" y="8.6" width="18" height="12.4" rx="2.6"/><rect x="3" y="8.6" width="18" height="12.4" rx="2.6"/><path d="M4 8.6 5.6 4.6A2 2 0 0 1 7.46 3.3h9.08a2 2 0 0 1 1.86 1.3L20 8.6"/><path d="M9.4 13.2h5.2"/><circle cx="17.6" cy="6" r="1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><!-- rows pulled in to 4.3 and 19.7: at cy 4/20 the painted stroke ran past the 24 box, making this the only glyph in the set tighter than the standard 1 unit of padding --><circle class="fl" cx="14" cy="4.3" r="3.1"/><circle class="fl" cx="8" cy="12" r="3.1"/><circle class="fl" cx="16" cy="19.7" r="3.1"/><path d="M3 4.3h7.7"/><path d="M17.3 4.3H21"/><path d="M3 12h1.7"/><path d="M11.3 12H21"/><path d="M3 19.7h9.7"/><path d="M19.3 19.7H21"/><circle cx="14" cy="4.3" r="2.2"/><circle cx="8" cy="12" r="2.2"/><circle cx="16" cy="19.7" r="2.2"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24"><rect class="fl" x="3" y="5" width="18" height="16" rx="2.6"/><rect x="3" y="5" width="18" height="16" rx="2.6"/><path d="M3 9.6h18"/><path d="M8 2.6v4"/><path d="M16 2.6v4"/><rect x="6.2" y="12.4" width="7.2" height="2.5" rx="1.25" fill="currentColor" stroke="none"/><rect x="10.6" y="16.3" width="7.2" height="2.5" rx="1.25" fill="currentColor" stroke="none" opacity=".5"/></symbol>
@@ -1800,6 +1819,41 @@ async function removeExample(){
   await setArchive(arr);
   render(); renderJobs(); if($("schedView").classList.contains("on")) renderCal();
   toast("Example removed");
+}
+/* ---- row overflow menus ----
+   One menu open at a time. The menu flips above the row when it would otherwise
+   run off the bottom of the screen, which is exactly where the newest rows sit. */
+let _rowMenuDocWired=false, _rowMenuOpenedAt=0;
+function closeRowMenus(root){
+  const r=root||document;
+  r.querySelectorAll(".rowmenu").forEach(m=>{ m.hidden=true; m.classList.remove("up"); });
+  r.querySelectorAll(".rowmore[aria-expanded=\'true\']").forEach(b=>b.setAttribute("aria-expanded","false"));
+}
+function wireRowMenus(box){
+  box.querySelectorAll("[data-more]").forEach(el=>{
+    el.onclick=ev=>{
+      ev.stopPropagation();
+      const m=box.querySelector('.rowmenu[data-menu="'+el.dataset.more+'"]');
+      const wasOpen=m && !m.hidden;
+      closeRowMenus(box);
+      if(!m||wasOpen) return;
+      m.hidden=false; el.setAttribute("aria-expanded","true");
+      const r=m.getBoundingClientRect();
+      if(r.bottom > window.innerHeight - 72) m.classList.add("up");
+      /* preventScroll matters: focusing the first item scrolls the row into
+         view, which fired the scroll-to-close handler below and shut the menu
+         the instant it opened. The timestamp guards the same race for any
+         scroll the browser does on its own right after opening. */
+      _rowMenuOpenedAt=Date.now();
+      const first=m.querySelector("button"); if(first) first.focus({preventScroll:true});
+    };
+  });
+  box.querySelectorAll(".rowmenu").forEach(m=>{ m.onclick=ev=>ev.stopPropagation(); });
+  if(_rowMenuDocWired) return;
+  _rowMenuDocWired=true;
+  document.addEventListener("click",()=>closeRowMenus());
+  document.addEventListener("keydown",ev=>{ if(ev.key==="Escape") closeRowMenus(); });
+  window.addEventListener("scroll",()=>{ if(Date.now()-_rowMenuOpenedAt>250) closeRowMenus(); },{passive:true});
 }
 function median(a){ if(!a.length) return 0; const s=a.slice().sort((x,y)=>x-y), n=s.length, m=Math.floor(n/2); return n%2?s[m]:(s[m-1]+s[m])/2; }
 function entryPrice(e){ return (e.results&&e.results.price)||compute(e.state).price||0; }
@@ -3056,10 +3110,16 @@ function renderDashboard(){
     const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nmrow"><span class="nm">'+esc(nm)+'</span>'+stageBadge(e,{noExample:true})+'</span><span class="mt">'+esc(meta)+'</span></span>'+
       '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
     /* Archive files it off the dashboard and is reversible; delete is permanent.
-       Both stay in the layout and fade in on hover, so rows never jump. */
+       Both live behind one dot button so the card never resizes to make room. */
     html+='<div class="brwrap">'+row
-      +'<button type="button" class="brdel brarc" data-arch="'+esc(e.id)+'" title="Archive" aria-label="Archive '+esc(nm)+'">'+ic("folder")+'</button>'
-      +'<button type="button" class="brdel" data-delbid="'+esc(e.id)+'" title="Delete" aria-label="Delete '+esc(nm)+'">'+ic("x")+'</button></div>';
+      +'<button type="button" class="rowmore" data-more="'+esc(e.id)+'" aria-haspopup="menu" aria-expanded="false"'
+      +' title="More" aria-label="More actions for '+esc(nm)+'">'+ic("more")+'</button>'
+      +'<div class="rowmenu" data-menu="'+esc(e.id)+'" role="menu" hidden>'
+      +'<button type="button" role="menuitem" data-arch="'+esc(e.id)+'">'+ic("folder")
+      +'<span>Archive<span class="msub">Off the dashboard, kept in Archive</span></span></button>'
+      +'<button type="button" role="menuitem" class="danger" data-delbid="'+esc(e.id)+'">'+ic("trash")
+      +'<span>Delete<span class="msub">Removes it for good</span></span></button>'
+      +'</div></div>';
   });
   box.innerHTML=html;
   $("dashNew").onclick=()=>showView("calc");
@@ -3067,6 +3127,7 @@ function renderDashboard(){
   const va=$("dashAll"); if(va) va.onclick=()=>showView("archive");
   const vj=$("dashJobs"); if(vj) vj.onclick=()=>showView("jobs");
   box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"dash"); });
+  wireRowMenus(box);
   box.querySelectorAll("[data-delbid]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
     const t=jobById(el.dataset.delbid); if(!t) return;
     const bnm=((t.state&&t.state.jobName)||"").trim()||"this estimate";
