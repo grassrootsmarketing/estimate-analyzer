@@ -1780,6 +1780,46 @@ function nextTask(e){ const open=(e.tasks||[]).filter(t=>t&&!t.done).slice();
   open.sort((a,b)=>{ const ad=a.due?dayOrdinal(a.due):Infinity, bd=b.due?dayOrdinal(b.due):Infinity; return (ad-bd)||((a.ts||0)-(b.ts||0)); });
   return open[0]||null; }
 function isOverdue(t){ return !!(t&&!t.done&&t.due&&dayOrdinal(t.due)<dayOrdinal(todayStr())); }
+function dayFromTs(ts){ const n=numTs(ts); if(!n) return "";
+  const d=new Date(n); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+/* ---- client-facing timing projections ----
+   Deliberately pessimistic. The projected finish is the LATER of the target and
+   the last open phase's due date, so the portal can never promise a date the
+   schedule itself already contradicts. A client who is told the truth about a
+   two week slip calls once; a client who is told the target and then finds out
+   calls every day after that. */
+function projectedFinish(e){
+  const target=validDateStr(e&&e.sched&&e.sched.target);
+  const dues=((e&&e.tasks)||[]).filter(t=>t&&!t.done).map(t=>validDateStr(t.due)).filter(Boolean).sort();
+  const last=dues.length?dues[dues.length-1]:"";
+  if(!target) return last;
+  if(!last) return target;
+  return dayOrdinal(last)>dayOrdinal(target)?last:target;
+}
+/* Positive means running past the original target, in days. Zero when on or
+   ahead of schedule, or when there is nothing to compare against. */
+function slipDays(e){
+  const target=validDateStr(e&&e.sched&&e.sched.target), proj=projectedFinish(e);
+  if(!target||!proj) return 0;
+  return Math.max(0, dayOrdinal(proj)-dayOrdinal(target));
+}
+/* Every phase in chronological order: finished ones by when they were finished,
+   then open ones by when they are due. Titles and dates only. */
+function phaseTimeline(e){
+  const tasks=Array.isArray(e&&e.tasks)?e.tasks.filter(Boolean):[];
+  const nt=nextTask(e), today=dayOrdinal(todayStr());
+  const done=tasks.filter(t=>t.done).sort((a,b)=>(a.doneTs||0)-(b.doneTs||0));
+  const open=tasks.filter(t=>!t.done).sort((a,b)=>{
+    const ad=validDateStr(a.due), bd=validDateStr(b.due);
+    if(ad&&bd) return ad.localeCompare(bd)||((a.ts||0)-(b.ts||0));
+    if(ad) return -1; if(bd) return 1; return (a.ts||0)-(b.ts||0); });
+  return done.map(t=>({title:txt(t.title,120), done:true, date:dayFromTs(t.doneTs), state:"done"}))
+    .concat(open.map(t=>{ const due=validDateStr(t.due);
+      let state="planned";
+      if(due&&dayOrdinal(due)<today) state="late";
+      else if(nt&&t.id===nt.id) state="now";
+      return {title:txt(t.title,120), done:false, date:due, state:state}; }));
+}
 function barTone(pct){ return pct>100?"bad":(pct>85?"warn":"good"); }
 // personal benchmark: >=3 WON jobs, same trade & unit → real min/median/max $ per unit
 function personalBench(trade, unit){
@@ -2695,18 +2735,31 @@ function portalSnapshot(e, opts, photoList){
     const ad=validDateStr(a.due), bd=validDateStr(b.due);
     if(ad&&bd) return ad.localeCompare(bd)||((a.ts||0)-(b.ts||0));
     if(ad) return -1; if(bd) return 1; return (a.ts||0)-(b.ts||0); });
-  snap.work={done:doneList.slice(-8).map(t=>({title:txt(t.title,120)})),
-    upcoming:openList.slice(0,8).map(t=>({title:txt(t.title,120), due:validDateStr(t.due)}))};
+  snap.work={done:doneList.slice(-8).map(t=>({title:txt(t.title,120), on:dayFromTs(t.doneTs)})),
+    upcoming:openList.slice(0,8).map(t=>({title:txt(t.title,120), due:validDateStr(t.due),
+      late:isOverdue(t)}))};
+  /* Timing: every phase in order plus the overall projection. Dates only, and the
+     projection is the pessimistic one from projectedFinish(). */
+  snap.timeline={ start:validDateStr(e.actualStart)||validDateStr(e.sched&&e.sched.start),
+    target:validDateStr(e.sched&&e.sched.target),
+    projected:projectedFinish(e), slip:slipDays(e),
+    phases:phaseTimeline(e).slice(0,20) };
   if(opts.money!==false){
     const contract=contractPrice(e), paid=drawsPaid(e);
-    snap.money={contract:contract, paid:paid, balance:fromC(toC(contract)-toC(paid)),
+    /* base is the price the client already agreed to, so it is safe to show.
+       Cost, budget, markup and margin are not, and are never assembled here. */
+    snap.money={contract:contract, base:entryPrice(e),
+      approvedChanges:fromC(changesTotalC(e)),
+      pendingChanges:fromC(sumC((e.changes||[]).filter(c=>c&&c.status==="pending"),c=>c.amount)),
+      paid:paid, balance:fromC(toC(contract)-toC(paid)),
       draws:(Array.isArray(e.draws)?e.draws:[]).map(d=>({label:txt(d&&d.label,120)||"Payment", amount:money2(d&&d.amount)||0, status:{planned:1,invoiced:1,paid:1}[d&&d.status]?d.status:"planned"}))};
   }
   /* change orders: approved AND awaiting approval, never voided ones. Titles and
      status always; amounts only when money is shared. Notes and costs never. */
   snap.changes=(Array.isArray(e.changes)?e.changes:[])
     .filter(c=>c&&(c.status==="approved"||c.status==="pending"))
-    .map(c=>{ const o={number:txt(c.number,20), title:txt(c.title,200)||"Change order", status:c.status};
+    .map(c=>{ const o={number:txt(c.number,20), title:txt(c.title,200)||"Change order", status:c.status,
+        on:(c.status==="approved"?dayFromTs(c.approvedTs):"")};
       if(opts.money!==false) o.amount=money2(c.amount)||0;
       return o; });
   return snap;

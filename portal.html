@@ -63,6 +63,19 @@
   .empty{padding:60px 20px;text-align:center;color:var(--muted)}
   #lightbox{position:fixed;inset:0;background:rgba(7,20,11,.94);display:none;align-items:center;justify-content:center;z-index:50}
   #lightbox img{max-width:96vw;max-height:92vh;border-radius:10px}
+  /* Summary and projection styling. kvtot is the line a client's eye should land
+     on; vlate flags a date that has moved past the original target. */
+  .kvtot{border-top:1px solid var(--line);margin-top:6px;padding-top:10px}
+  .kvtot .k{color:var(--ink);font-weight:600}
+  .kvtot .v{font-family:"Instrument",Georgia,serif;font-size:21px;letter-spacing:-.012em}
+  .vgood{color:var(--good)}
+  .vlate{color:var(--accent2);font-weight:600}
+  .note{margin:12px 0 0;font-size:12.5px;line-height:1.55;color:var(--muted)}
+  .konsub{display:block;font-size:11px;color:var(--muted);margin-top:2px;font-weight:400}
+  .cosplit{margin:14px 0 8px;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .wd.wlate{color:var(--accent2);font-weight:600}
+  .wd.wtbd{color:var(--muted);font-style:normal;opacity:.85}
+  .wt.tlate{background:rgba(217,119,87,.14);color:var(--accent2)}
 </style>
 </head>
 <body>
@@ -95,17 +108,43 @@
     }).join("")+'</div><div class="bignow">'+esc(job.stageLabel||"")+'</div>'+
     (prog.total?'<div class="prog">'+prog.done+' of '+prog.total+' work items complete</div>':'')+
     (job.next&&job.next.title&&!(s.work&&s.work.upcoming&&s.work.upcoming.length)?'<div class="prog" style="margin-top:4px;color:var(--accent2);font-weight:600">Up next: '+esc(job.next.title)+(job.next.due?' · '+day(job.next.due):'')+'</div>':'')+'</div>';
+    /* Summary: one card that answers "where does this stand" in money and time,
+       so a client does not have to assemble it from four sections below. */
+    var tl=s.timeline||{}, m0=s.money||null;
+    var summaryRows=[];
+    if(m0){
+      summaryRows.push(["Original contract", money(m0.base!=null?m0.base:m0.contract), ""]);
+      if(m0.approvedChanges) summaryRows.push(["Approved changes", (m0.approvedChanges<0?"-":"+")+money(Math.abs(m0.approvedChanges)), ""]);
+      summaryRows.push(["Contract total", money(m0.contract), "tot"]);
+      summaryRows.push(["Paid to date", money(m0.paid), "good"]);
+      summaryRows.push(["Balance remaining", money(m0.balance), ""]);
+    }
+    if(tl.start) summaryRows.push([job.started?"Work started":"Planned start", day(tl.start), ""]);
+    if(job.completed) summaryRows.push(["Completed", day(job.completed), "good"]);
+    else if(tl.projected) summaryRows.push([tl.slip>0?"Projected finish":"Target finish", day(tl.projected), tl.slip>0?"late":""]);
+    if(prog.total) summaryRows.push(["Work complete", prog.done+" of "+prog.total+" phases", ""]);
+    if(summaryRows.length){
+      html+='<div class="card"><h2>Summary</h2>'+summaryRows.map(function(r){
+        return '<div class="kv'+(r[2]==="tot"?" kvtot":"")+'"><span class="k">'+esc(r[0])+
+          '</span><span class="v'+(r[2]==="good"?" vgood":(r[2]==="late"?" vlate":""))+'">'+r[1]+'</span></div>';
+      }).join("");
+      if(tl.slip>0) html+='<p class="note">Running about '+tl.slip+' day'+(tl.slip===1?"":"s")+' past the original target of '+day(tl.target)+'. Your contractor will confirm the finish date as the remaining phases are scheduled.</p>';
+      if(m0&&m0.pendingChanges) html+='<p class="note">'+money(Math.abs(m0.pendingChanges))+' in changes is awaiting your approval and is not included in the contract total above.</p>';
+      html+='</div>';
+    }
     /* work log: done so far, then what's coming up */
     var w=s.work||{};
     if(w.done&&w.done.length){
       html+='<div class="card"><h2>Done so far</h2>'+w.done.map(function(t){
-        return '<div class="wl donerow"><span class="wt done">✓</span><span class="wn">'+esc(t.title)+'</span></div>';
+        return '<div class="wl donerow"><span class="wt done">✓</span><span class="wn">'+esc(t.title)+'</span>'+(t.on?'<span class="wd">'+day(t.on)+'</span>':'')+'</div>';
       }).join("")+'</div>';
     }
     if(w.upcoming&&w.upcoming.length){
       html+='<div class="card"><h2>What\'s coming up</h2>'+w.upcoming.map(function(t,i){
-        return '<div class="wl"><span class="wt">'+(i+1)+'</span><span class="wn">'+esc(t.title)+'</span>'+(t.due?'<span class="wd">'+day(t.due)+'</span>':'')+'</div>';
-      }).join("")+'</div>';
+        var d2=t.due?'<span class="wd'+(t.late?' wlate':'')+'">'+day(t.due)+'</span>':'<span class="wd wtbd">to be scheduled</span>';
+        return '<div class="wl"><span class="wt'+(t.late?' tlate':'')+'">'+(i+1)+'</span><span class="wn">'+esc(t.title)+'</span>'+d2+'</div>';
+      }).join("")+
+      '<p class="note">Dates are projections and move as work and inspections are scheduled.</p></div>';
     }
     /* schedule */
     if(job.schedStart||job.schedTarget||job.started||job.completed){
@@ -113,7 +152,10 @@
       if(job.started) html+='<div class="kv"><span class="k">Work started</span><span class="v">'+day(job.started)+'</span></div>';
       else if(job.schedStart) html+='<div class="kv"><span class="k">Planned start</span><span class="v">'+day(job.schedStart)+'</span></div>';
       if(job.completed) html+='<div class="kv"><span class="k">Completed</span><span class="v">'+day(job.completed)+'</span></div>';
-      else if(job.schedTarget) html+='<div class="kv"><span class="k">Target finish</span><span class="v">'+day(job.schedTarget)+'</span></div>';
+      else {
+        if(job.schedTarget) html+='<div class="kv"><span class="k">Original target</span><span class="v">'+day(job.schedTarget)+'</span></div>';
+        if(tl.projected&&tl.projected!==job.schedTarget) html+='<div class="kv"><span class="k">Projected finish</span><span class="v vlate">'+day(tl.projected)+'</span></div>';
+      }
       html+='</div>';
     }
     /* photos */
@@ -137,13 +179,22 @@
     }
     /* change orders: approved and awaiting approval, amounts only when money is shared */
     if(s.changes&&s.changes.length){
-      html+='<div class="card"><h2>Change orders</h2>';
-      s.changes.forEach(function(c){
-        var st=c.status||"approved";
-        var chip=st==="approved"?'<span class="chip paid">Approved</span>':'<span class="chip invoiced">Awaiting approval</span>';
+      var appr=s.changes.filter(function(c){ return c.status==="approved"; });
+      var pend=s.changes.filter(function(c){ return c.status==="pending"; });
+      var corow=function(c){
+        var chip=c.status==="approved"?'<span class="chip paid">Approved</span>':'<span class="chip invoiced">Awaiting approval</span>';
         var amt=(typeof c.amount==="number")?'<span class="v">'+(c.amount<0?"-":"+")+money(Math.abs(c.amount))+'</span>':'';
-        html+='<div class="kv"><span class="k">'+esc((c.number?c.number+" · ":"")+c.title)+' '+chip+'</span>'+amt+'</div>';
-      });
+        return '<div class="kv"><span class="k">'+esc((c.number?c.number+" · ":"")+c.title)+' '+chip+
+          (c.on?'<span class="konsub">Approved '+day(c.on)+'</span>':'')+'</span>'+amt+'</div>';
+      };
+      html+='<div class="card"><h2>Additional costs</h2>';
+      if(appr.length){
+        html+=appr.map(corow).join("");
+        if(m0&&m0.approvedChanges) html+='<div class="kv kvtot"><span class="k">Added to your contract</span><span class="v">'+(m0.approvedChanges<0?"-":"+")+money(Math.abs(m0.approvedChanges))+'</span></div>';
+      }
+      if(pend.length){
+        html+='<div class="cosplit">Not yet approved, not in your total</div>'+pend.map(corow).join("");
+      }
       if(s.changes.some(function(c){ return c.status==="pending"; })){
         html+='<p class="sub" style="margin:10px 0 0;font-size:12.5px">To approve or discuss a change, call or text '+esc((s.company&&s.company.name)||"your contractor")+'.</p>';
       }
