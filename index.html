@@ -28,7 +28,7 @@
     --bg:#141413; --panel:#1f1e1c; --panel2:#2a2825; --line:#35332f;
     --ink:#f5f3ee; --muted:#a49c90; --accent:#d97757; --accent2:#e8a184;
     --good:#8fc79c; --warn:#e8b87a; --bad:#e58a6c; --chip:#2a2723;
-    --navh:62px;
+    --navh:68px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   *{min-width:0}
@@ -438,6 +438,9 @@
     display:flex;align-items:center;gap:13px;color:var(--muted);font-size:12.8px;line-height:1.45}
   .dash-start .emptyart{width:56px;height:34px;flex:0 0 auto;opacity:.8}
   .dash-start b{color:var(--ink);font-weight:600}
+  .dash-start.exnote{align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .dash-start.exnote .minibtn{flex:0 0 auto;margin-left:auto}
+  .bdg-ex{background:var(--panel2);border-color:var(--line);color:var(--muted)}
   .bbars i.ghost{background:var(--line);opacity:.55}
   .bnone{color:var(--muted);font-size:12.5px;padding:0 2px 8px}
   @media(min-width:640px){ .kpis{grid-template-columns:repeat(4,1fr)} .projgrid{grid-template-columns:1fr 1fr} }
@@ -716,7 +719,7 @@
   header{position:sticky;overflow:visible}
   /* R6: iOS-style active marker over the current tab */
   .nav button{position:relative}
-  .nav button.active::before{content:"";position:absolute;top:5px;left:50%;transform:translateX(-50%);width:18px;height:3px;border-radius:3px;background:var(--accent)}
+  .nav button.active::before{content:"";position:absolute;top:4px;left:50%;transform:translateX(-50%);width:20px;height:3px;border-radius:3px;background:var(--accent)}
   /* Nav quality pass: icons on the exact 24px pixel grid (23px scaled every stroke
      off-pixel and read blurry), real Inter 600 labels (700 was synthesized before the
      real file shipped), and clustered buttons on desktop instead of edge-to-edge.
@@ -727,7 +730,7 @@
      its bottom tip landed almost on the E of Estimate. Tightening the label's line
      height removes the invisible half-leading, which makes the gap value mean what
      it says, and 8px then clears the tightest glyph. */
-  .nav button{font-size:11px;font-weight:600;letter-spacing:.02em;gap:8px;line-height:1.15}
+  .nav button{font-size:11px;font-weight:600;letter-spacing:.02em;gap:8px;line-height:1.15;padding-top:8px}
   .nav button .ic{width:24px;height:24px;stroke-width:1.75}
   @media(min-width:900px){
     .nav{justify-content:center;gap:4px}
@@ -1643,7 +1646,7 @@ $("pdfInput").addEventListener("change",e=>handleFile(e.target.files[0]));
 drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; handleFile(f); });
 
 /* ---------------- STATE / PERSISTENCE (IndexedDB + in-memory cache, localStorage fallback) ---------------- */
-const LS_STATE="ea_state", LS_ARCH="ea_archive", LS_PROFILE="ea_profile";
+const LS_STATE="ea_state", LS_ARCH="ea_archive", LS_PROFILE="ea_profile", LS_EXAMPLE="ea_example";
 const DB_NAME="ea_db", DB_STORE="kv";
 let _db=null, IDB_OK=false, ARCH_CACHE=[], STATE_CACHE=null;
 function idbOpen(){ return new Promise(res=>{ let done=false; const finish=v=>{ if(done) return; done=true; res(v); };
@@ -1732,6 +1735,72 @@ function newEntry(st){ const m=deriveMeta(st); const now=Date.now(); return {id:
   stage:"", costs:[], tasks:[], draws:[], changes:[], sched:{start:"",target:""},
   createdTs:(+st.ts||now), updatedTs:(+st.ts||now), stageChangedTs:null, actualStart:"", completed:"",
   costTracking:"unknown", paymentTracking:"unknown"}; }
+/* ---- the worked example ----
+   Dates are relative to today so it always looks like live work rather than
+   something from 2026. Amounts are ordinary for an LA bathroom, and the margin
+   is deliberately a realistic 34% rather than a flattering one. */
+function buildExampleJob(){
+  const d=n=>dayAdd(todayStr(),n), ago=n=>Date.now()-n*864e5;
+  const st={ ts:Date.now(), mode:"cost", jobName:"Example: guest bathroom remodel",
+    clientType:"Individual homeowner", contactName:"Sofia Ramirez",
+    contactPhone:"(323) 555 0134", contactEmail:"sofia@example.com",
+    benchCat:"", benchQty:"", margin:34, contingency:5, overhead:12, tax:9.5,
+    proposed:"", photos:[],
+    rows:[ {item:"Demo and haul away, labor", desc:"Two days, two people", qty:2, unit:1200},
+           {item:"Tile, material",            desc:"Porcelain, 90 sq ft plus waste", qty:100, unit:9.5},
+           {item:"Tile setter, labor",        desc:"", qty:32, unit:82},
+           {item:"Plumbing fixtures, material",desc:"Valve, trim, toilet, vanity", qty:1, unit:2400},
+           {item:"Plumber, subcontractor",    desc:"Rough and trim", qty:1, unit:2650} ] };
+  const e=newEntry(st);
+  e.id="ea-example-job";
+  e.isExample=true;
+  e.outcome="won"; e.stage="active";
+  e.sched={ start:d(-9), target:d(12) };
+  e.actualStart=d(-9);
+  e.tasks=[
+    { id:"ex-t1", ts:1, title:"Demo and haul away",   done:true,  doneTs:ago(8), due:d(-8) },
+    { id:"ex-t2", ts:2, title:"Rough plumbing",       done:true,  doneTs:ago(4), due:d(-4) },
+    { id:"ex-t3", ts:3, title:"Inspection",           done:false, doneTs:null,   due:d(1) },
+    { id:"ex-t4", ts:4, title:"Tile and grout",       done:false, doneTs:null,   due:d(6) },
+    { id:"ex-t5", ts:5, title:"Set fixtures",         done:false, doneTs:null,   due:d(10) },
+    { id:"ex-t6", ts:6, title:"Punch list walkthrough",done:false,doneTs:null,   due:d(12) } ];
+  e.costs=[
+    { id:"ex-k1", ts:ago(8), cat:"Labor",      note:"Demo crew, two days",  amount:2400 },
+    { id:"ex-k2", ts:ago(6), cat:"Materials",  note:"Tile order",           amount:980 },
+    { id:"ex-k3", ts:ago(3), cat:"Subcontractor", note:"Plumber, rough in", amount:1500 } ];
+  e.draws=[
+    { id:"ex-d1", ts:ago(10), label:"Deposit",        amount:3500, paidAmount:3500, status:"paid",
+      invoicedTs:ago(10), paidTs:ago(9), note:"" },
+    { id:"ex-d2", ts:ago(3),  label:"Rough-in complete", amount:3500, paidAmount:0, status:"invoiced",
+      invoicedTs:ago(3), paidTs:null, note:"" },
+    { id:"ex-d3", ts:ago(1),  label:"Final on completion", amount:10450, paidAmount:0, status:"planned",
+      invoicedTs:null, paidTs:null, note:"" } ];
+  e.changes=[
+    { id:"ex-c1", ts:ago(5), number:"CO-1", title:"Heated floor mat", amount:1450, cost:920,
+      status:"approved", approvedTs:ago(4), note:"" },
+    { id:"ex-c2", ts:ago(1), number:"CO-2", title:"Second shower niche", amount:380, cost:240,
+      status:"pending", approvedTs:null, note:"" } ];
+  e.costTracking="tracking"; e.paymentTracking="tracking";
+  return sanitizeEntry(e);
+}
+let EXAMPLE_OFF=false;
+function exampleOff(){ return EXAMPLE_OFF; }
+function hasExample(){ return getArchive().some(e=>e&&e.isExample); }
+/* Seeded only into a genuinely empty archive, and only once. */
+function maybeSeedExample(){
+  if(exampleOff() || getArchive().length) return false;
+  const ex=buildExampleJob(); if(!ex) return false;
+  ARCH_CACHE=[ex];
+  return true;
+}
+async function removeExample(){
+  const arr=getArchive().filter(e=>!(e&&e.isExample));
+  EXAMPLE_OFF=true;
+  try{ saveKey(LS_EXAMPLE,"off"); }catch(e){}
+  await setArchive(arr);
+  render(); renderJobs(); if($("schedView").classList.contains("on")) renderCal();
+  toast("Example removed");
+}
 function median(a){ if(!a.length) return 0; const s=a.slice().sort((x,y)=>x-y), n=s.length, m=Math.floor(n/2); return n%2?s[m]:(s[m-1]+s[m])/2; }
 function entryPrice(e){ return (e.results&&e.results.price)||compute(e.state).price||0; }
 /* ---- PM utilities: ids, dates, money in cents ---- */
@@ -1902,12 +1971,13 @@ function saveToArchive(){
 }
 let ARCH_Q="";
 /* One badge language for pipeline state, used on every list in the app. */
-function stageBadge(e){
+function stageBadge(e,opts){
   if(!e) return "";
+  const ex=(e.isExample&&!(opts&&opts.noExample))?'<span class="bdg bdg-ex">Example</span>':"";
   const b=boardStage(e);
-  if(!b) return (e.outcome==="lost")?'<span class="bdg bdg-lost">Lost</span>':"";
+  if(!b) return ex+((e.outcome==="lost")?'<span class="bdg bdg-lost">Lost</span>':"");
   const map={lead:"Lead",bidding:"Bidding",upnext:"Won",active:"In progress",complete:"Complete"};
-  return '<span class="bdg bdg-'+b+'">'+map[b]+'</span>';
+  return ex+'<span class="bdg bdg-'+b+'">'+map[b]+'</span>';
 }
 /* Jobs tab badge: leads waiting plus overdue tasks on active jobs. */
 function updateNavBadges(){
@@ -2428,6 +2498,7 @@ function sanitizeEntry(e){
   if(!e || typeof e!=="object" || !e.state || typeof e.state!=="object") return null;
   e.pinned=!!e.pinned;
   e.archived=!!e.archived;              // filed off the dashboard, never deleted
+  e.isExample=!!e.isExample;            // the seeded worked example, removable in one tap
   e.outcome=(e.outcome==="won"||e.outcome==="lost")?e.outcome:"pending";
   e.stage=(e.stage==="active"||e.stage==="complete")?e.stage:"";
   if(e.outcome==="lost") e.stage="";                               // a lost job cannot stay active or complete
@@ -2913,6 +2984,13 @@ function renderDashboard(){
   if(!n){
     html+='<div class="dash-start">'+emptyArt()+'<div><b>No jobs yet.</b> Tap + to price your first one. '
       +'This is the shape your dashboard takes as work comes in.</div></div>';
+  } else if(hasExample()){
+    /* Never let someone mistake the sample for their own money. The banner
+       states it outright and the remove button sits inside it. */
+    html+='<div class="dash-start exnote"><div><b>This is an example job.</b> It shows a priced estimate, '
+      +'a schedule, tracked costs, a paid draw and one still owed, plus an approved and a pending change order. '
+      +'Open it to see how the pieces fit, then remove it.</div>'
+      +'<button type="button" class="minibtn" id="exRemove">Remove example</button></div>';
   }
   /* hero: pipeline total + bar chart of the last ~8 job prices (most recent highlighted) */
   const pipeline=arr.reduce((a,e)=>a+entryPrice(e),0);
@@ -2974,8 +3052,8 @@ function renderDashboard(){
     const s=e.state, r=e.results||compute(s);
     const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
-    const meta=[(s.clientType||""),when].filter(Boolean).join(" · ");
-    const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nmrow"><span class="nm">'+esc(nm)+'</span>'+stageBadge(e)+'</span><span class="mt">'+esc(meta)+'</span></span>'+
+    const meta=[(e.isExample?"Example":""),(s.clientType||""),when].filter(Boolean).join(" · ");
+    const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nmrow"><span class="nm">'+esc(nm)+'</span>'+stageBadge(e,{noExample:true})+'</span><span class="mt">'+esc(meta)+'</span></span>'+
       '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
     /* Archive files it off the dashboard and is reversible; delete is permanent.
        Both stay in the layout and fade in on hover, so rows never jump. */
@@ -2985,6 +3063,7 @@ function renderDashboard(){
   });
   box.innerHTML=html;
   $("dashNew").onclick=()=>showView("calc");
+  const xr=$("exRemove"); if(xr) xr.onclick=ev=>{ ev.stopPropagation(); removeExample(); };
   const va=$("dashAll"); if(va) va.onclick=()=>showView("archive");
   const vj=$("dashJobs"); if(vj) vj.onclick=()=>showView("jobs");
   box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"dash"); });
@@ -3717,6 +3796,11 @@ async function maybeInstallHint(){
   try{ PROFILE = (IDB_OK? await idbGet(LS_PROFILE):null) || readLS(LS_PROFILE) || {}; }catch(e){ PROFILE={}; }
   try{ const rawArch=(IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
     ARCH_CACHE=(Array.isArray(rawArch)?rawArch:[]).map(sanitizeEntry).filter(Boolean); }catch(e){ ARCH_CACHE=[]; }
+  try{ EXAMPLE_OFF = ((IDB_OK? await idbGet(LS_EXAMPLE):null) || readLS(LS_EXAMPLE)) === "off"; }catch(e){ EXAMPLE_OFF=false; }
+  /* Held in memory only until something else writes. Persisting it at boot would
+     turn a read into a write on every cold start, and a first run that cannot
+     write is exactly when that would hurt. */
+  try{ maybeSeedExample(); }catch(e){}
   try{ const sb = (IDB_OK? await idbGet("ea_bench"):null) || readLS("ea_bench");
     if(sb && sb.data){ const merged=JSON.parse(JSON.stringify(SEED_BENCH)); Object.keys(sb.data).forEach(k=>{ if(merged[k]&&sb.data[k]) merged[k]=sb.data[k]; }); BENCH=merged; BENCH_UPDATED=sb.updated||BENCH_UPDATED; }
   }catch(e){}
