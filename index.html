@@ -30,7 +30,7 @@
     /* Bootstrap values only. The real palette is the theme block further down;
        these exist so the page is not unstyled for the first paint. */
     --bg:#141413; --panel:#1f1e1c; --panel2:#2a2825; --line:#35332f;
-    --ink:#f5f3ee; --muted:#a49c90; --accent:#d97757; --accent2:#e8a184;
+    --ink:#f5f3ee; --muted:#bfb7a9; --accent:#d97757; --accent2:#e8a184;
     --good:#8fc79c; --warn:#e8b87a; --bad:#e58a6c; --chip:#2a2723;
     --navh:68px;
   }
@@ -328,7 +328,13 @@
      bone is only about 2.9:1 and will not carry small type. */
   :root{
     --bg:#141413; --panel:#1f1e1c; --panel2:#2a2825; --line:#35332f;
-    --ink:#f5f3ee; --muted:#a49c90; --accent:#d97757; --accent2:#e8a184;
+    /* Muted carries the body copy: hints, labels, meta lines, most of it at 12px.
+       At #a49c90 it ran 5.4 to 6.8 to 1 depending on which panel sat behind it,
+       which passes AA and still reads dim on a warm dark field at that size.
+       Lifted to 7.4 to 9.3, still far below the 15 to 1 ink holds, so muted is
+       plainly secondary rather than competing with it. Light theme is untouched:
+       there, lighter means less readable. */
+    --ink:#f5f3ee; --muted:#bfb7a9; --accent:#d97757; --accent2:#e8a184;
     --good:#8fc79c; --warn:#e8b87a; --bad:#e58a6c; --chip:#2a2723;
     --resultbg:#221f1c; --resultbd:#4d3a30;
     --goodbg:#1a2620; --goodbd:#35543f; --goodink:#9bd6ab;
