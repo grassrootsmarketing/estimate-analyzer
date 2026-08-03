@@ -35,7 +35,7 @@ const FNS = ["roundUp","compute","uid","numTs","txt","capArr","validDateStr","da
   "isManagedJob","approvedChanges","changesTotalC","contractPrice","jobBudgetTarget","jobBudgetCeiling",
   "jobSpent","projectedProfit","contractLessCosts","rowPaidC","rowInvoicedC","drawsPaid","drawsInvoiced",
   "drawsTotal","contractRemaining","accountsReceivable","unbilled","nextTask","isOverdue","barTone",
-  "pruneArchive","entryPrice","safeImg","sanitizePhotos","sanitizeRows","sanitizeEntry",
+  "pruneArchive","entryPrice","safeImg","sanitizePhotos","sanitizeRows","sanitizeEntry","sanitizeArchive",
   "clampNum","boundVal","cleanRows","dayAdd","dayDiff","calJobs","calLane","calColor","calAssignColors"];
 const CONSTS = ["COST_CATS","HISTORY_CAP","QTY_CAP","PCT_BOUNDS","CAL_COLORS"];
 
@@ -272,6 +272,77 @@ eq(archJob.outcome, "won", "archiving leaves the outcome alone");
 eq(archJob.stage, "active", "archiving leaves the stage alone");
 eq(S.boardStage(archJob), "active", "an archived job still holds its place on the jobs board");
 ok(S.isManagedJob(archJob), "archived jobs are still managed, so pruning never drops them");
+
+// 22. Contradictions between fields, which each field's own rules cannot catch
+const onBoard = S.sanitizeEntry({ state: { ts: 1 }, stage: "active", outcome: "pending" });
+eq(onBoard.outcome, "won", "a job on the board is recorded as won rather than dropped off it");
+eq(onBoard.stage, "active", "repairing the outcome does not disturb the stage");
+const stillLost = S.sanitizeEntry({ state: { ts: 1 }, stage: "active", outcome: "lost" });
+eq(stillLost.stage, "", "a lost job still loses its stage, and the repair does not undo that");
+eq(stillLost.outcome, "lost", "a lost job is never promoted to won");
+
+const backwards = S.sanitizeEntry({ state: { ts: 1 }, sched: { start: "2026-05-10", target: "2026-05-02" } });
+eq(backwards.target === undefined ? backwards.sched.target : backwards.sched.target, "2026-05-10",
+   "a target before the start collapses to a single day, which is what the calendar draws");
+const forwards = S.sanitizeEntry({ state: { ts: 1 }, sched: { start: "2026-05-10", target: "2026-06-02" } });
+eq(forwards.sched.target, "2026-06-02", "an ordinary schedule is left exactly as it was");
+const targetOnly = S.sanitizeEntry({ state: { ts: 1 }, sched: { start: "", target: "2026-06-02" } });
+eq(targetOnly.sched.target, "2026-06-02", "a target with no start is not touched");
+
+eq(S.sanitizeEntry({ state: { ts: 1 }, actualStart: "2026-05-10", completed: "2026-05-01" }).completed, "",
+   "a completion before its own start is dropped");
+eq(S.sanitizeEntry({ state: { ts: 1 }, actualStart: "2026-05-10", completed: "2026-05-10" }).completed, "2026-05-10",
+   "finishing on the day it started is legitimate and survives");
+
+const noStamp = S.sanitizeEntry({ state: { ts: 1 }, updatedTs: 9000,
+  tasks: [{ id: "t1", ts: 4000, title: "Demo", done: true, doneTs: 0 },
+          { id: "t2", ts: 5000, title: "Tile", done: true, doneTs: 8000 }] });
+eq(noStamp.tasks[0].doneTs, 4000, "a done phase with no stamp falls back to when it was added");
+eq(noStamp.tasks[1].doneTs, 8000, "a done phase that has a stamp keeps it");
+ok(noStamp.tasks[0].doneTs < noStamp.tasks[1].doneTs, "the fallback keeps done phases in a sane order");
+eq(S.sanitizeEntry({ state: { ts: 1 }, tasks: [{ id: "t1", ts: 1, title: "Open", done: false }] }).tasks[0].doneTs, null,
+   "an open phase still carries no completion stamp");
+
+const coNoDate = S.sanitizeEntry({ state: { ts: 1 },
+  changes: [{ id: "o1", ts: 7000, title: "Heated floor", amount: 1450, status: "approved", approvedTs: 0 }] });
+eq(coNoDate.changes[0].approvedTs, 7000, "an approved change order with no stamp falls back to when it was raised");
+eq(S.sanitizeEntry({ state: { ts: 1 },
+  changes: [{ id: "o1", ts: 7000, title: "x", amount: 100, status: "pending", approvedTs: 5 }] }).changes[0].approvedTs, null,
+   "a pending change order still carries no approval date");
+
+const settled = S.sanitizeEntry({ state: { ts: 1 },
+  draws: [{ id: "d1", ts: 10, label: "Deposit", amount: 3500, status: "invoiced", paidAmount: 3500, invoicedTs: 700 }] });
+eq(settled.draws[0].status, "paid", "a fully covered invoice is recorded as paid");
+eq(settled.draws[0].paidTs, 700, "the payment stamp falls back to the invoice date rather than staying empty");
+eq(S.accountsReceivable(settled), 0, "a settled draw stops counting against receivables");
+const partial = S.sanitizeEntry({ state: { ts: 1 },
+  draws: [{ id: "d1", ts: 10, label: "Deposit", amount: 3500, status: "invoiced", paidAmount: 1000 }] });
+eq(partial.draws[0].status, "invoiced", "a part payment leaves the draw invoiced, which is the point of tracking it");
+eq(S.accountsReceivable(partial), 2500, "the unpaid remainder still shows as receivable");
+
+// 23. Every repair holds on a second pass, since entries are now sanitized on every save
+const twice = S.sanitizeEntry(S.sanitizeEntry({ state: { ts: 1 }, stage: "active", outcome: "pending",
+  sched: { start: "2026-05-10", target: "2026-05-02" }, actualStart: "2026-05-10", completed: "2026-05-01",
+  tasks: [{ id: "t1", ts: 4000, title: "Demo", done: true, doneTs: 0 }],
+  changes: [{ id: "o1", ts: 7000, title: "x", amount: 100, status: "approved", approvedTs: 0 }],
+  draws: [{ id: "d1", ts: 10, label: "Deposit", amount: 3500, status: "invoiced", paidAmount: 3500, invoicedTs: 700 }] }));
+eq(twice.outcome, "won", "repairs are idempotent: outcome");
+eq(twice.sched.target, "2026-05-10", "repairs are idempotent: schedule");
+eq(twice.completed, "", "repairs are idempotent: completion");
+eq(twice.tasks[0].doneTs, 4000, "repairs are idempotent: phase stamp");
+eq(twice.changes[0].approvedTs, 7000, "repairs are idempotent: approval stamp");
+eq(twice.draws[0].status, "paid", "repairs are idempotent: draw status");
+eq(twice.tasks[0].id, "t1", "ids survive a second pass instead of being regenerated");
+eq(twice.draws[0].id, "d1", "draw ids survive a second pass");
+eq(twice.changes[0].id, "o1", "change order ids survive a second pass");
+
+// 24. sanitizeArchive is the single door into the cache
+eq(S.sanitizeArchive([{ state: { ts: 1 } }, null, { nope: true }, { state: { ts: 2 } }]).length, 2,
+   "junk entries are dropped and real ones kept");
+eq(S.sanitizeArchive(null).length, 0, "a missing archive becomes an empty one rather than throwing");
+eq(S.sanitizeArchive("not an array").length, 0, "a non-array archive becomes an empty one");
+const passed = S.sanitizeArchive([{ state: { ts: 1 }, stage: "active", outcome: "pending" }]);
+eq(passed[0].outcome, "won", "sanitizeArchive applies the same repairs as a single entry");
 
 if (failures) { console.error("\n" + failures + " PM test(s) failed."); process.exit(1); }
 console.log("\nAll PM invariants passed.");
