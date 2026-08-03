@@ -66,6 +66,17 @@ user's own device. Live at https://estimate-analyzer-atb.vercel.app
    Swapping them produces text that looks fine on a dark screen in a review and
    fails in daylight on a phone, which is where this app actually gets used.
 
+10. **`sanitizeArchive` is the only door into the archive cache.** Boot, another
+    tab's write, an import, a cloud restore, and `setArchive` all run through it,
+    so entries are repaired at the moment they are created rather than surviving
+    on disk until the next cold start. Never assign to `ARCH_CACHE` directly and
+    never write an array to storage that has not been through it. `sanitizeEntry`
+    must stay idempotent, because on this path every entry is now sanitized many
+    times over its life: repairs may not regenerate ids, invent dates, or drift a
+    value further on each pass. Its cross-field block repairs contradictions in
+    the direction that keeps data (a staged job is promoted to won, not dropped
+    off the board), and pm.test.js section 23 holds that line.
+
 ## Run, test, deploy
 
 - **Run locally:** open `index.html` in a browser, or serve the folder statically

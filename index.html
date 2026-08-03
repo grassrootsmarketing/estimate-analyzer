@@ -1735,7 +1735,7 @@ if(_bc) _bc.onmessage=async ev=>{
   if(!ev.data || ev.data.src===_bcSelf) return;
   try{
     const fresh=(IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
-    ARCH_CACHE=(Array.isArray(fresh)?fresh:[]).map(sanitizeEntry).filter(Boolean);
+    ARCH_CACHE=sanitizeArchive(fresh);
     const on=v=>{ const el=$(v+"View"); return el&&el.classList.contains("on"); };
     if(on("jobs")) renderJobs();
     if(on("job")) renderJob();
@@ -1754,7 +1754,12 @@ async function _writeArch(v){
   else if(w){ w.style.display=""; }
   return ok;
 }
-function setArchive(a){ ARCH_CACHE=a; _archWriteQ=_archWriteQ.then(()=>_writeArch(a)); return _archWriteQ; }
+/* Sanitizing on the way in means the repaired version is what reaches disk, so a
+   contradiction is fixed once at the moment it is created rather than surviving
+   until the next boot. Callers keep their own array reference; the cache is the
+   sanitized one, holding the same entry objects. */
+function setArchive(a){ ARCH_CACHE=sanitizeArchive(a); const v=ARCH_CACHE;
+  _archWriteQ=_archWriteQ.then(()=>_writeArch(v)); return _archWriteQ; }
 if($("persistRetry")) $("persistRetry").addEventListener("click",()=>{ setArchive(getArchive()); toast("Retrying save"); });
 
 /* ---- past-job memory (P4) ---- */
@@ -2638,6 +2643,28 @@ function sanitizeEntry(e){
     const st={pending:1,approved:1,void:1}[c.status]?c.status:"pending";
     return {id:fixId(c.id,"o"), ts:numTs(c.ts), number:txt(c.number,20), title:txt(c.title,200)||"Change order",
       amount:amt, cost:cost, status:st, approvedTs:st==="approved"?(numTs(c.approvedTs)||0):null, note:txt(c.note,200)}; }).filter(Boolean);
+  /* ---- contradictions between fields ----
+     Everything above checks one field against its own rules. These are the pairs
+     that can each be valid alone and still disagree with each other, and every
+     one of them shows up as visibly wrong output rather than merely odd data. */
+  /* A job sitting on the board was won, whatever outcome says. Promote rather
+     than clear the stage: clearing would drop a live job off the board silently. */
+  if(e.stage && e.outcome==="pending") e.outcome="won";
+  /* The calendar already draws a backwards range as a single day. Store what it draws. */
+  if(e.sched.start && e.sched.target && e.sched.target<e.sched.start) e.sched.target=e.sched.start;
+  /* A completion cannot precede the start it completes. The start is corroborated
+     by the schedule, so the completion date is the one that goes. */
+  if(e.actualStart && e.completed && e.completed<e.actualStart) e.completed="";
+  /* Done phases are ordered by doneTs. A missing stamp sorts to the front and puts
+     last month's work ahead of yesterday's, on the page the client reads. */
+  e.tasks.forEach(t=>{ if(t.done && !t.doneTs) t.doneTs=t.ts||e.updatedTs||e.createdTs||0; });
+  /* The portal dates every approved change order. Without a stamp the client sees
+     an approved charge with nothing next to it. */
+  e.changes.forEach(c=>{ if(c.status==="approved" && !c.approvedTs) c.approvedTs=c.ts||e.updatedTs||e.createdTs||0; });
+  /* Fully covered is paid, the same rule the payment button applies. Left as
+     invoiced it would keep counting against receivables that are already settled. */
+  e.draws.forEach(d=>{ if(d.status==="invoiced" && toC(d.paidAmount)>=toC(d.amount)){
+    d.status="paid"; if(!d.paidTs) d.paidTs=d.invoicedTs||d.ts||0; } });
   // Client portal: on/off, capability token, and what the client is allowed to see.
   e.portal=(e.portal&&typeof e.portal==="object"&&e.portal.on===true&&/^[0-9a-f]{32}$/.test(String(e.portal.token||"")))?
     {on:true, token:String(e.portal.token), photos:e.portal.photos!==false, money:e.portal.money!==false, publishedTs:numTs(e.portal.publishedTs)}:null;
@@ -2658,6 +2685,11 @@ function sanitizeEntry(e){
   }
   return e;
 }
+/* One pass, one owner. Every path that puts entries into the cache runs through
+   here: boot, another tab's write, an import, a cloud restore, and every save the
+   app makes itself. Before this, a bad write could put a contradiction on disk
+   and it would sit there unrepaired until the next cold start. */
+function sanitizeArchive(a){ return (Array.isArray(a)?a:[]).map(sanitizeEntry).filter(Boolean); }
 $("importArchInput").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
   rd.onload=()=>{ try{
@@ -3920,7 +3952,7 @@ async function maybeInstallHint(){
   // Each storage load is isolated: one failure falls back to the empty default and boot continues.
   try{ PROFILE = (IDB_OK? await idbGet(LS_PROFILE):null) || readLS(LS_PROFILE) || {}; }catch(e){ PROFILE={}; }
   try{ const rawArch=(IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
-    ARCH_CACHE=(Array.isArray(rawArch)?rawArch:[]).map(sanitizeEntry).filter(Boolean); }catch(e){ ARCH_CACHE=[]; }
+    ARCH_CACHE=sanitizeArchive(rawArch); }catch(e){ ARCH_CACHE=[]; }
   try{ EXAMPLE_OFF = ((IDB_OK? await idbGet(LS_EXAMPLE):null) || readLS(LS_EXAMPLE)) === "off"; }catch(e){ EXAMPLE_OFF=false; }
   /* Held in memory only until something else writes. Persisting it at boot would
      turn a read into a write on every cold start, and a first run that cannot
