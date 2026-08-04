@@ -3504,7 +3504,7 @@ function portalSnapshot(e, opts, photoList){
      status always; amounts only when money is shared. Notes and costs never. */
   snap.changes=(Array.isArray(e.changes)?e.changes:[])
     .filter(c=>c&&(c.status==="approved"||c.status==="pending"))
-    .map(c=>{ const o={number:txt(c.number,20), title:txt(c.title,200)||"Change order", status:c.status,
+    .map(c=>{ const o={id:txt(c.id,40), number:txt(c.number,20), title:txt(c.title,200)||"Change order", status:c.status,
         on:(c.status==="approved"?dayFromTs(c.approvedTs):"")};
       if(opts.money!==false) o.amount=money2(c.amount)||0;
       return o; });
@@ -3557,6 +3557,30 @@ function schedulePortalPublish(id){
   clearTimeout(_portalTimers[id]); _portalTimers[id]=setTimeout(()=>publishPortal(id,false), 15000);
 }
 function portalLink(e){ return location.origin+"/portal.html?k="+e.portal.token; }
+/* Reflect client approvals made in the portal: pull the recorded acts and mark
+   matching pending change orders approved. The owner keeps void/reopen control;
+   a reopened change order is not re-approved. Same one state as a manual approve. */
+let _syncedPortal={};
+async function syncPortalApprovals(id){
+  const e0=jobById(id);
+  if(!e0||!e0.portal||!e0.portal.on||!navigator.onLine) return;
+  if(_syncedPortal[id] && Date.now()-_syncedPortal[id]<8000) return;
+  _syncedPortal[id]=Date.now();
+  let acts=null;
+  try{ const r=await portalApi({op:"acts", token:e0.portal.token}); acts=r&&r.acts; }catch(err){ return; }
+  if(!acts||typeof acts!=="object") return;
+  const arr=getArchive(), t=arr.find(x=>x&&x.id===id);
+  if(!t||!Array.isArray(t.changes)) return;
+  let changed=0, names=[];
+  t.changes.forEach(c=>{ if(c && c.status==="pending" && !/^Reopened/.test(c.note||"") && Object.prototype.hasOwnProperty.call(acts, c.id)){
+    c.status="approved"; c.approvedTs=numTs(acts[c.id])||Date.now();
+    c.note=txt("Approved by client in the portal "+new Date(c.approvedTs).toLocaleDateString()+(c.note?" · "+c.note:""),200);
+    changed++; names.push(c.number||"change order");
+  }});
+  if(changed){ setArchive(arr); if(typeof schedulePortalPublish==="function") schedulePortalPublish(id);
+    if(CUR_JOB===id && $("jobView").classList.contains("on")) renderJob();
+    toast(changed===1?(names[0]+" approved by your client in the portal"):(changed+" changes approved by your client")); }
+}
 
 /* ---------------- NAV / VIEWS ---------------- */
 const _VIEWS=["dash","calc","jobs","sched","archive","settings","proposal","job"];
@@ -4112,7 +4136,8 @@ function renderJobs(){
 let CUR_JOB=null, CUR_FROM="jobs", _pmForms={};
 function jobById(id){ return getArchive().find(x=>x&&x.id===id)||null; }
 function openJob(id, from){ const e=jobById(id); if(!e){ toast("Job not found"); return; }
-  CUR_JOB=id; CUR_FROM=from||"jobs"; _pmForms={}; renderJob(); showView("job"); }
+  CUR_JOB=id; CUR_FROM=from||"jobs"; _pmForms={}; renderJob(); showView("job");
+  if(e.portal&&e.portal.on&&typeof syncPortalApprovals==="function") syncPortalApprovals(id); }
 async function _pmWrite(arr, okMsg){
   const ok=await setArchive(arr);
   if(CUR_JOB && $("jobView").classList.contains("on")) renderJob();
