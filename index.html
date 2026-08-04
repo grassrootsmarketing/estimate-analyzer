@@ -590,8 +590,8 @@
   /* pipeline funnel (replaces the old win-rate ring) */
   .funl{display:flex;flex-direction:column;gap:6px;margin-top:12px}
   .funl .fr{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-  .funl .fn{font-size:15px;color:var(--muted);letter-spacing:.02em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-  .funl .fv{font-size:16.5px;color:var(--ink);font-family:var(--numfont);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .funl .fn{font-size:14px;color:var(--muted);letter-spacing:.02em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .funl .fv{font-size:15.5px;color:var(--ink);font-family:var(--numfont);font-variant-numeric:tabular-nums;white-space:nowrap}
   .funl .fbar{height:12px;border-radius:6px;background:var(--panel2);position:relative;overflow:hidden;margin-bottom:2px}
   .funl .fbar i{position:absolute;left:50%;transform:translateX(-50%);top:0;bottom:0;border-radius:6px;background:var(--accent2);transition:width .4s ease}
   .bsub{font-size:15px;color:var(--muted);text-align:center;margin-top:9px;line-height:1.4}
@@ -601,7 +601,7 @@
   .mdist i{flex:1;background:var(--panel2);border-radius:4px;min-height:3px}
   .mdist i.f{background:var(--accent2);opacity:.75}
   .mlbl{display:flex;gap:6px;margin-top:5px}
-  .mlbl span{flex:1;text-align:center;font-size:12px;color:var(--muted);white-space:nowrap}
+  .mlbl span{flex:1;text-align:center;font-size:10.5px;color:var(--muted);white-space:nowrap}
   .bsect{font-size:14px;letter-spacing:0;color:var(--muted);font-weight:600;margin:16px 2px 8px;display:flex;justify-content:space-between;align-items:center}
   .iprow{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;color:var(--ink);transition:transform .13s ease,border-color .16s ease,box-shadow .16s ease}
   .iprow:hover{transform:translateY(-1px);border-color:var(--accent2);box-shadow:0 4px 14px var(--shadowsoft)}
@@ -847,7 +847,18 @@
   .kpi .k-v{font-size:29px}
   .proj-price{font-size:23px}
   .marg-head .big{font-size:25px}
-  .bbig,.jb-l .v,.jtile .v,.fold-num{font-size:1.12em}
+  /* These four used to read font-size:1.12em here. em resolves against the parent,
+     not against the px size each one declares further up, so this single line
+     silently overrode all of them and pinned every headline figure on the app to
+     1.12 x 16px = 17.92px. Months of "make the numbers bigger" edits landed on
+     rules that never applied. Sizes are explicit now, and they are the last word
+     on each selector. Never set a font-size in em here. */
+  .bbig{font-size:40px}
+  .jb-l .v{font-size:32px}
+  .jtile .v{font-size:21px}
+  .fold-num{font-size:15px}
+  /* Restated after the block above, because the block would otherwise win. */
+  @media(max-width:379px){ .jtile .v{font-size:18px} }
   /* Eyebrows go quiet. Clay is reserved for the live thing on the screen. */
   .card h2{color:var(--muted)}
   header .ttl{font-weight:400;letter-spacing:-.012em}
