@@ -96,6 +96,8 @@ async function handler(req, res){
       if(b) await del(b.url, { token: blobToken });
       const ab = await findBlob(PREFIX + token + ".acts.json", blobToken);
       if(ab) await del(ab.url, { token: blobToken });
+      const sb = await findBlob(PREFIX + token + ".sub.json", blobToken);
+      if(sb) await del(sb.url, { token: blobToken });
       res.status(200).json({ ok: true });
       return;
     }
@@ -113,15 +115,24 @@ async function handler(req, res){
       res.status(200).json({ ok: true });
       return;
     }
-    // owner reads recorded client approvals to reflect them in the app
+    // client opts in (or out) of text updates: {on, phone}. No costs/margins; just
+    // the client's own number and preference, scoped to their private token.
+    if(op === "sub"){
+      const on = body.on !== false;
+      const phone = String(body.phone || "").replace(/[^\d]/g, "").slice(0, 20);
+      if(on && (phone.length < 7 || phone.length > 20)){ res.status(400).json({ error: "Enter a valid phone number." }); return; }
+      await put(PREFIX + token + ".sub.json", JSON.stringify({ on: on, phone: phone, ts: Date.now() }), { access: "public", addRandomSuffix: false, allowOverwrite: true, contentType: "application/json", token: blobToken });
+      res.status(200).json({ ok: true });
+      return;
+    }
+    // owner reads recorded client approvals + text-update opt-in to reflect them
     if(op === "acts"){
-      const ap = PREFIX + token + ".acts.json";
-      const eb = await findBlob(ap, blobToken);
-      if(!eb){ res.status(200).json({ acts: {} }); return; }
-      const er = await fetch(eb.url, { cache: "no-store" });
-      if(!er.ok){ res.status(200).json({ acts: {} }); return; }
-      let acts = {}; try{ const parsed = JSON.parse(await er.text()); if(parsed && typeof parsed === "object" && !Array.isArray(parsed)) acts = parsed; }catch(e){ acts = {}; }
-      res.status(200).json({ acts: acts });
+      let acts = {}, sub = null;
+      const ab = await findBlob(PREFIX + token + ".acts.json", blobToken);
+      if(ab){ try{ const ar = await fetch(ab.url, { cache: "no-store" }); if(ar.ok){ const p = JSON.parse(await ar.text()); if(p && typeof p === "object" && !Array.isArray(p)) acts = p; } }catch(e){} }
+      const sb = await findBlob(PREFIX + token + ".sub.json", blobToken);
+      if(sb){ try{ const sr = await fetch(sb.url, { cache: "no-store" }); if(sr.ok){ const p = JSON.parse(await sr.text()); if(p && typeof p === "object" && !Array.isArray(p)) sub = p; } }catch(e){} }
+      res.status(200).json({ acts: acts, sub: sub });
       return;
     }
     res.status(400).json({ error: "bad op" });
