@@ -610,6 +610,30 @@
   .iprow .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .iprow .fig{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 auto}
   .iprow .jbar{height:5px;margin-top:9px}
+  /* Needs attention: the colour bar carries the severity, so the row itself stays
+     quiet. One tap goes straight to the job the problem belongs to. */
+  .attn{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-left-width:3px;border-radius:12px;padding:10px 12px;margin-bottom:7px;cursor:pointer;color:var(--ink);transition:transform .13s ease,box-shadow .16s ease}
+  .attn:hover{transform:translateY(-1px);box-shadow:0 4px 14px var(--shadowsoft)}
+  .attn:active{transform:none}
+  .attn.bad{border-left-color:var(--bad)}
+  .attn.warn{border-left-color:var(--warn)}
+  .attn .anm{display:block;font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .attn .awhy{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.42}
+  /* Second and later reasons on the same job read as a list, not a paragraph. */
+  .attn .awhy+.awhy{margin-top:1px}
+  /* The one sales figure worth seeing on an operations screen, and the door to
+     the rest of them. Dashed so it reads as a link out, not another metric card. */
+  .salesstrip{display:block;width:100%;text-align:left;background:var(--panel2);border:1px dashed var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;color:var(--ink);transition:transform .13s ease,border-color .16s ease}
+  .salesstrip:hover{transform:translateY(-1px);border-color:var(--accent2)}
+  .salesstrip:active{transform:none}
+  .salesstrip .t{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px;font-weight:500}
+  .salesstrip .fig{font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .salesstrip .sub{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.42}
+  /* The hero card runs full width, so its caption reads left like a sentence
+     rather than centred like a tile label. */
+  .bhero .bsub{text-align:left}
+  .bhero .jbar{margin-top:12px}
+  .bbig.owe{color:var(--accent2)}
   .brrow{display:flex;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;justify-content:space-between;align-items:center;gap:10px;color:var(--ink);transition:transform .13s ease,border-color .16s ease,box-shadow .16s ease}
   .brrow:hover{transform:translateY(-1px);border-color:var(--accent2);box-shadow:0 4px 14px var(--shadowsoft)}
   .brrow:active{transform:none}
@@ -1207,6 +1231,13 @@
 
   <!-- ============ ARCHIVE ============ -->
   <section class="view" id="archiveView">
+    <!-- Sales lives here because this tab already holds every bid you have ever
+         sent. That list is the sales record; this card is the shape of it. -->
+    <div class="card" id="salesCard">
+      <h2>Sales</h2>
+      <p class="sub">How work comes in: what is out for bid, how often you win, and what you price at.</p>
+      <div id="salesBody"></div>
+    </div>
     <div class="card" style="padding-bottom:8px">
       <h2>Saved estimates <span class="muted" id="archCount" style="font-weight:400"></span></h2>
       <input id="archSearch" placeholder="Search by job name…" style="margin:6px 0 12px" />
@@ -2143,6 +2174,125 @@ function nextTask(e){ const open=(e.tasks||[]).filter(t=>t&&!t.done).slice();
 function isOverdue(t){ return !!(t&&!t.done&&t.due&&dayOrdinal(t.due)<dayOrdinal(todayStr())); }
 function dayFromTs(ts){ const n=numTs(ts); if(!n) return "";
   const d=new Date(n); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+
+/* ---- roll-ups ----
+   Two different questions, deliberately kept apart.
+
+   Operations asks "what is happening on my jobs right now", and every figure in
+   it is about work already won: what it is worth, what has been billed, what is
+   still owed, what is late. That is the dashboard.
+
+   Sales asks "what might come in", and it is about bids nobody has decided yet,
+   plus the history of how those decisions went. That is the Archive tab.
+
+   The old single Pipeline number added every estimate ever saved, won lost or
+   finished, into one figure and called it pipeline. It answered neither question. */
+function onBooks(a){ return (Array.isArray(a)?a:[]).filter(e=>{
+  const s=boardStage(e); return !e.archived && (s==="active"||s==="upnext"); }); }
+function onBooksValue(a){ return fromC(sumC(onBooks(a), contractPrice)); }
+/* Invoiced and not yet paid. The one number a contractor checks before payroll. */
+function owedToYou(a){ return fromC(sumC((Array.isArray(a)?a:[]).filter(e=>e&&!e.archived), accountsReceivable)); }
+/* Contract value on live work that has not been invoiced yet. Never negative:
+   over-billing against a shrinking contract is a payments problem, not a
+   "you have minus four thousand dollars left to bill" problem. */
+function leftToBill(a){ return fromC(sumC(onBooks(a), e=>Math.max(0, unbilled(e)))); }
+function bidsOut(a){ return (Array.isArray(a)?a:[]).filter(e=>!e.archived && boardStage(e)==="bidding"); }
+function bidsOutValue(a){ return fromC(sumC(bidsOut(a), entryPrice)); }
+
+/* How long an invoice may sit before it is worth chasing. */
+const UNPAID_CHASE_DAYS=14;
+/* Everything worth a nudge, newest problem first within a job. Returns data, not
+   sentences, so the wording lives with the markup and the rule lives here. */
+function attentionItems(a, nowMs, todayS){
+  const now=numTs(nowMs)||Date.now();
+  const today=todayS||dayFromTs(now);
+  const tOrd=dayOrdinal(today);
+  const out=[];
+  (Array.isArray(a)?a:[]).forEach(e=>{
+    if(!e || e.archived) return;
+    const stage=boardStage(e);
+    if(stage!=="active" && stage!=="upnext" && stage!=="complete") return;
+    const name=((e.state&&e.state.jobName)||"").trim()||"Untitled job";
+    const add=o=>{ out.push(Object.assign({id:e.id, name:name}, o)); };
+    if(stage==="active"){
+      const late=(e.tasks||[]).filter(t=>t&&!t.done&&t.due&&dayOrdinal(t.due)<tOrd);
+      if(late.length) add({kind:"overdue", tone:"bad", n:late.length, title:late[0].title||"A phase"});
+      const budget=jobBudgetTarget(e), spent=jobSpent(e);
+      if(budget>0 && toC(spent)>toC(budget)) add({kind:"overbudget", tone:"bad", amount:spent, budget:budget});
+      if(!nextTask(e) && (e.tasks||[]).length) add({kind:"noplan", tone:"warn"});
+    }
+    /* A job marked won that nobody ever started. Easy to lose a week to. */
+    if(stage==="upnext"){
+      const since=numTs(e.stageChangedTs)||numTs(e.updatedTs)||numTs(e.createdTs)||now;
+      const days=Math.floor((now-since)/86400000);
+      if(days>=3) add({kind:"notstarted", tone:"warn", days:days});
+    }
+    (e.draws||[]).forEach(d=>{
+      if(!d || d.status!=="invoiced") return;
+      const owedC=toC(d.amount)-toC(d.paidAmount||0);
+      if(owedC<=0) return;
+      const sent=numTs(d.invoicedTs)||numTs(d.ts)||now;
+      const days=Math.floor((now-sent)/86400000);
+      if(days>=UNPAID_CHASE_DAYS) add({kind:"unpaid", tone:"bad", amount:fromC(owedC),
+        days:days, label:d.label||"A draw"});
+    });
+  });
+  const rank={bad:0, warn:1};
+  return out.sort((x,y)=>(rank[x.tone]-rank[y.tone]) || ((y.days||0)-(x.days||0)));
+}
+
+/* One job, one row. A job that is late and over budget and owed money is still a
+   single thing to go and deal with, so it reads as one card with its reasons
+   underneath rather than three identical names stacked up. Worst job first, and
+   inside a job the reasons keep the order attentionItems already put them in. */
+function groupAttention(items){
+  const order=[], byId={};
+  (Array.isArray(items)?items:[]).forEach(it=>{
+    if(!it) return;
+    let g=byId[it.id];
+    if(!g){ g=byId[it.id]={id:it.id, name:it.name, tone:it.tone, reasons:[]}; order.push(g); }
+    if(it.tone==="bad") g.tone="bad";
+    g.reasons.push(it);
+  });
+  return order;
+}
+
+/* The sentence a person reads. Kept next to nothing else so the rule that
+   produced the item and the wording that explains it can change apart. */
+function attentionLine(it){
+  if(!it) return "";
+  if(it.kind==="overdue") return esc(it.n>1 ? (it.n+" phases are past due")
+    : ("“"+it.title+"” is past due"));
+  if(it.kind==="overbudget") return esc("Spent "+fmt(it.amount)+" against a "+fmt(it.budget)+" cost target");
+  if(it.kind==="noplan") return esc("Every phase is ticked off. Mark it complete, or add what is left.");
+  if(it.kind==="notstarted") return esc("Won "+it.days+" day"+(it.days===1?"":"s")+" ago and not started");
+  if(it.kind==="unpaid") return esc(fmt(it.amount)+" invoiced "+it.days+" days ago, still unpaid");
+  return "";
+}
+
+/* Bid value by real calendar month, oldest first, so the bars mean something.
+   The old chart plotted the last eight saves in save order, which made eight
+   bids in one afternoon look identical to eight across a year. */
+function salesByMonth(a, months, nowMs){
+  const n=Math.max(1, Math.min(24, +months||6));
+  const now=new Date(numTs(nowMs)||Date.now());
+  const keys=[];
+  for(let i=n-1;i>=0;i--){
+    const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+    keys.push({ key:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"),
+      label:d.toLocaleDateString(undefined,{month:"short"}), total:0, count:0 });
+  }
+  const byKey={}; keys.forEach(k=>{ byKey[k.key]=k; });
+  (Array.isArray(a)?a:[]).forEach(e=>{
+    if(!e || e.isLead) return;
+    const ts=numTs(e.createdTs)||numTs(e.state&&e.state.ts); if(!ts) return;
+    const d=new Date(ts);
+    const k=byKey[d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")];
+    if(!k) return;
+    k.total=fromC(toC(k.total)+toC(entryPrice(e))); k.count++;
+  });
+  return keys;
+}
 /* ---- client-facing timing projections ----
    Deliberately pessimistic. The projected finish is the LATER of the target and
    the last open phase's due date, so the portal can never promise a date the
@@ -2334,7 +2484,66 @@ function updateNavBadges(){
   if(!s){ s=document.createElement("span"); s.className="navbdg"; el.appendChild(s); }
   s.textContent=n>9?"9+":String(n);
 }
+/* The sales picture: what is still out, how decisions have gone, what you price
+   at, and bid volume across real months. None of this belongs on the dashboard,
+   which is about work already won. */
+function renderSales(){
+  const box=$("salesBody"); if(!box) return;
+  const arr=getArchive();
+  const kfmt=v=>v>=100000?"$"+Math.round(v/1000)+"k":(v>=10000?"$"+(v/1000).toFixed(1)+"k":fmt(v));
+  const bo=bidsOut(arr), boVal=bidsOutValue(arr);
+  const decided=arr.filter(e=>{ const o=entryMeta(e).outcome; return o==="won"||o==="lost"; });
+  const won=decided.filter(e=>entryMeta(e).outcome==="won");
+  const winRate=decided.length?Math.round(won.length/decided.length*100):null;
+  const wonVal=fromC(sumC(won, contractPrice));
+  /* Bid volume by calendar month. Empty months stay in, because a gap in the
+     bidding is the thing you would most want to notice. */
+  const months=salesByMonth(arr, 6);
+  const maxM=Math.max.apply(null, months.map(m=>m.total).concat([1]));
+  const anyM=months.some(m=>m.count>0);
+  const bars=months.map(m=>'<i class="'+(m.total>0?"hot":"ghost")+'" style="height:'+
+    (m.total>0?Math.max(6,Math.round(m.total/maxM*100)):3)+'%" title="'+esc(m.label+": "+fmt(m.total))+'"></i>').join("");
+  let html='<div class="bcard bhero"><div class="blabel">Out for bid</div>'+
+    '<div class="bbig">'+fmt(boVal)+'</div>'+
+    '<div class="bsub">'+(bo.length
+      ? esc(bo.length+" bid"+(bo.length===1?"":"s")+" you are waiting to hear about")
+      : "Nothing is waiting on a client decision")+'</div></div>';
+  html+='<div class="bcard"><div class="blabel">Bid value by month</div>'+
+    '<div class="bbars">'+bars+'</div>'+
+    '<div class="mlbl">'+months.map(m=>'<span>'+esc(m.label)+'</span>').join("")+'</div>'+
+    '<div class="bsub">'+(anyM
+      ? esc("Every estimate you priced, by the month you priced it")
+      : "Save estimates to see how your bidding moves month to month")+'</div></div>';
+  const stages=[["Leads","lead",function(){return 0;},.3],["Out for bid","bidding",entryPrice,.45],
+    ["Won","won",contractPrice,.62],["Started","active",contractPrice,.82],["Completed","complete",contractPrice,1]];
+  const groups=stages.map(s=>s[1]==="won" ? arr.filter(e=>entryMeta(e).outcome==="won")
+    : arr.filter(e=>boardStage(e)===s[1]));
+  const maxC=Math.max.apply(null, groups.map(g=>g.length).concat([1]));
+  const margs=arr.map(e=>e.results&&e.results.marginPct).filter(v=>typeof v==="number"&&isFinite(v));
+  const avgM=margs.length?margs.reduce((x,y)=>x+y,0)/margs.length:null;
+  const bands=[[0,20],[20,35],[35,1e9]].map(b=>margs.filter(v=>v>=b[0]&&v<b[1]).length);
+  const maxB=Math.max.apply(null,bands.concat([1]));
+  html+='<div class="bgrid">'+
+    '<div class="bcard"><div class="blabel">Funnel <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="How work flows: leads captured, bids out, marked won, started, completed. Mark outcomes below or move jobs on the Jobs board to keep this true.">i</span></div>'+
+      '<div class="funl">'+stages.map((s,i)=>{
+        const g=groups[i], c=g.length, sum=g.reduce((x,e)=>x+s[2](e),0);
+        return '<div class="fr"><span class="fn">'+s[0]+'</span><span class="fv">'+c+(c&&sum>0?' · '+kfmt(sum):'')+'</span></div>'+
+          '<div class="fbar"><i style="width:'+(c?Math.max(8,Math.round(c/maxC*100)):0)+'%;opacity:'+s[3]+'"></i></div>';
+      }).join("")+'</div>'+
+      '<div class="bsub">'+(decided.length
+        ? esc(winRate+"% win rate · "+won.length+" of "+decided.length+" decided · "+kfmt(wonVal)+" won")
+        : "mark jobs won or lost")+'</div></div>'+
+    '<div class="bcard bmargin"><div class="blabel">Avg margin</div><div class="bbig">'+(avgM!=null?avgM.toFixed(0)+"%":"–")+'</div>'+
+      '<div class="mdist">'+bands.map(c=>'<i class="'+(c?"f":"")+'" style="height:'+(c?Math.max(12,Math.round(c/maxB*100)):0)+'%"></i>').join("")+'</div>'+
+      '<div class="mlbl"><span>under 20</span><span>20–35</span><span>over 35</span></div>'+
+      '<div class="bsub">'+(margs.length
+        ? esc("across "+margs.length+" estimate"+(margs.length>1?"s":"")+" · median "+median(margs).toFixed(0)+"%")
+        : "save estimates to see margins")+'</div></div>'+
+    '</div>';
+  box.innerHTML=html;
+}
 function renderArchive(){
+  renderSales();
   const all=getArchive(), list=$("archiveList"); $("archCount").textContent="("+all.length+")";
   const a=ARCH_Q ? all.filter(e=>((e.state.jobName||"")+"").toLowerCase().includes(ARCH_Q)) : all;
   if(!all.length){ list.innerHTML='<div class="arch-empty">No saved estimates yet. On the estimate screen, tap <b>Save</b> to log one.</div>'; return; }
@@ -3395,46 +3604,46 @@ function renderDashboard(){
       +'nothing below ever mixes sample money into your numbers.</div>'
       +'<button type="button" class="minibtn" id="exRemove">Remove example</button></div>';
   }
-  /* hero: pipeline total + bar chart of the last ~8 job prices (most recent highlighted) */
-  const pipeline=arr.reduce((a,e)=>a+entryPrice(e),0);
-  const last=arr.slice(0,8).reverse();
-  const maxP=Math.max.apply(null,last.map(entryPrice).concat([1]));
-  const bars=n
-    ? last.map((e,i)=>'<i class="'+(i===last.length-1?"hot":"")+'" style="height:'+Math.max(4,Math.round(entryPrice(e)/maxP*100))+'%"></i>').join("")
-    : [18,26,20,34,28,42,30,48].map(h=>'<i class="ghost" style="height:'+h+'%"></i>').join("");
-  html+='<div class="bcard"><div class="blabel">Pipeline</div><div class="bbig">'+fmt(pipeline)+'</div><div class="bbars">'+bars+'</div></div>';
-  /* bento row: win-rate ring + avg-margin tile with distribution */
-  const decided=arr.filter(e=>{ const o=entryMeta(e).outcome; return o==="won"||o==="lost"; });
-  const won=decided.filter(e=>entryMeta(e).outcome==="won").length;
-  const winRate=decided.length?Math.round(won/decided.length*100):null;
-  /* funnel stages: leads -> bids -> won -> in progress -> completed */
-  const stLeads=arr.filter(e=>boardStage(e)==="lead");
-  const stBids=arr.filter(e=>boardStage(e)==="bidding");
-  const stWon=arr.filter(e=>entryMeta(e).outcome==="won");
-  const stAct=arr.filter(e=>boardStage(e)==="active");
-  const stDone=arr.filter(e=>boardStage(e)==="complete");
-  const kfmt=v=>v>=100000?"$"+Math.round(v/1000)+"k":(v>=10000?"$"+(v/1000).toFixed(1)+"k":fmt(v));
-  const margs=arr.map(e=>e.results&&e.results.marginPct).filter(v=>typeof v==="number"&&isFinite(v));
-  const avgM=margs.length?margs.reduce((a,b)=>a+b,0)/margs.length:null;
-  const bands=[[0,20],[20,35],[35,1e9]].map(b=>margs.filter(v=>v>=b[0]&&v<b[1]).length);
-  const maxB=Math.max.apply(null,bands.concat([1]));
+  /* Operations hero. Every figure here is about work already won: what it is
+     worth, how much of it has been invoiced, what is still owed. Bids nobody has
+     decided are sales, not operations, and they live behind the strip below. */
+  const books=onBooks(arr);
+  const bookVal=onBooksValue(arr), owed=owedToYou(arr), toBill=leftToBill(arr);
+  const billed=fromC(sumC(books, drawsInvoiced));
+  const billPct=bookVal>0?Math.min(100, billed/bookVal*100):0;
+  const actCount=books.filter(e=>boardStage(e)==="active").length;
+  const upCount=books.length-actCount;
+  const unpaidCount=arr.filter(e=>e&&!e.archived).reduce((c,e)=>c+(e.draws||[])
+    .filter(d=>d&&d.status==="invoiced"&&(toC(d.amount)-toC(d.paidAmount||0))>0).length, 0);
+  html+='<div class="bcard bhero"><div class="blabel">On the books <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="Contract value of work you have won and not finished, including approved change orders. Bids you are still waiting to hear about are not in this number; tap Out for bid lower down to see those.">i</span></div>'+
+    '<div class="bbig">'+fmt(bookVal)+'</div>'+
+    '<div class="jbar"><i style="width:'+billPct.toFixed(0)+'%"></i></div>'+
+    '<div class="bsub">'+(books.length
+      ? esc(fmt(billed)+" invoiced so far · "+actCount+" in progress"+(upCount?", "+upCount+" won and not started":""))
+      : "Nothing won and unfinished right now.")+'</div></div>';
   html+='<div class="bgrid">'+
-    '<div class="bcard"><div class="blabel">Funnel <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="How work flows: bids out, marked won, started, completed. Mark outcomes in the Archive or move jobs on the board to keep this true.">i</span></div>'+
-      '<div class="funl">'+(function(){
-        const stages=[["Leads",stLeads,function(){return 0;},.3],["Bids out",stBids,entryPrice,.45],["Won",stWon,contractPrice,.62],["In progress",stAct,contractPrice,.82],["Completed",stDone,contractPrice,1]];
-        const maxC=Math.max.apply(null,stages.map(s=>s[1].length).concat([1]));
-        return stages.map(s=>{
-          const c=s[1].length, sum=s[1].reduce((a,e)=>a+s[2](e),0);
-          return '<div class="fr"><span class="fn">'+s[0]+'</span><span class="fv">'+c+(c&&sum>0?' · '+kfmt(sum):'')+'</span></div>'+
-            '<div class="fbar"><i style="width:'+(c?Math.max(8,Math.round(c/maxC*100)):0)+'%;opacity:'+s[3]+'"></i></div>';
-        }).join("");
-      })()+'</div>'+
-      '<div class="bsub">'+(decided.length?winRate+"% win rate · "+won+" of "+decided.length+" decided":"mark jobs won or lost")+'</div></div>'+
-    '<div class="bcard bmargin"><div class="blabel">Avg margin</div><div class="bbig">'+(avgM!=null?avgM.toFixed(0)+"%":"–")+'</div>'+
-      '<div class="mdist">'+bands.map(c=>'<i class="'+(c?"f":"")+'" style="height:'+(c?Math.max(12,Math.round(c/maxB*100)):0)+'%"></i>').join("")+'</div>'+
-      '<div class="mlbl"><span>under 20</span><span>20–35</span><span>over 35</span></div>'+
-      '<div class="bsub">'+(margs.length?("across "+margs.length+" estimate"+(margs.length>1?"s":"")+" · median "+median(margs).toFixed(0)+"%"):"save estimates to see margins")+'</div></div>'+
+    '<div class="bcard"><div class="blabel">Owed to you</div><div class="bbig'+(owed>0?" owe":"")+'">'+fmt(owed)+'</div>'+
+      '<div class="bsub">'+(owed>0
+        ? esc(unpaidCount+" invoice"+(unpaidCount===1?"":"s")+" sent and not paid")
+        : "Nothing invoiced is outstanding")+'</div></div>'+
+    '<div class="bcard"><div class="blabel">Left to bill</div><div class="bbig">'+fmt(toBill)+'</div>'+
+      '<div class="bsub">'+(toBill>0?"Contract value not invoiced yet":"Everything on the books is invoiced")+'</div></div>'+
     '</div>';
+  /* Everything worth chasing, worst first, each row one tap from the job it is about. */
+  const attn=groupAttention(attentionItems(arr, Date.now()));
+  const ATTN_SHOWN=4;
+  if(attn.length){
+    const problems=attn.reduce((c,g)=>c+g.reasons.length,0);
+    html+='<div class="bsect"><span>Needs attention</span><span class="mt" style="font-size:11px">'+
+      problems+(problems===1?' thing':' things')+'</span></div>';
+    html+=attn.slice(0,ATTN_SHOWN).map(g=>'<button type="button" class="attn '+g.tone+'" data-job="'+esc(g.id)+'" aria-label="Open job '+esc(g.name)+'">'+
+      '<span class="anm">'+esc(g.name)+'</span>'+
+      g.reasons.map(it=>'<span class="awhy">'+attentionLine(it)+'</span>').join("")+'</button>').join("");
+    if(attn.length>ATTN_SHOWN) html+='<div class="bnone">'+(attn.length-ATTN_SHOWN)+' more job'+(attn.length-ATTN_SHOWN===1?'':'s')+' on the Jobs board.</div>';
+  } else if(books.length){
+    html+='<div class="bsect"><span>Needs attention</span></div>'+
+      '<div class="bnone">Nothing is late, over budget, or unpaid. Good place to be.</div>';
+  }
   /* in-progress jobs: spend vs target cost + next task */
   const act=arr.filter(e=>boardStage(e)==="active");
   if(act.length){
@@ -3463,11 +3672,22 @@ function renderDashboard(){
   if(!n) html+='<div class="bnone">Saved estimates land here, newest first.</div>';
   else if(!live.some(e=>!e.pinned)) html+='<div class="bnone">Everything on your dashboard is pinned above.</div>';
   live.filter(e=>!e.pinned).slice(0,5).forEach(e=>{ html+=recentRowHtml(e); });
+  /* One sales figure belongs on an operations screen, because a quiet week of
+     work is exactly when you need to know how much is out for bid. The rest of
+     the sales picture is one tap away rather than competing for space up here. */
+  const bo=bidsOut(arr);
+  html+='<button type="button" class="salesstrip" id="dashSales">'+
+    '<span class="t"><span class="nm">Out for bid</span><span class="fig">'+fmt(bidsOutValue(arr))+'</span></span>'+
+    '<span class="sub">'+(bo.length
+      ? esc(bo.length+" bid"+(bo.length===1?"":"s")+" waiting on a decision. Tap for win rate and margins.")
+      : "No bids waiting on a decision. Tap for win rate and margins.")+'</span></button>';
   box.innerHTML=html;
   $("dashNew").onclick=startNewEstimate;
   const xr=$("exRemove"); if(xr) xr.onclick=ev=>{ ev.stopPropagation(); removeExample(); };
   const va=$("dashAll"); if(va) va.onclick=()=>showView("archive");
   const vj=$("dashJobs"); if(vj) vj.onclick=()=>showView("jobs");
+  const vs=$("dashSales"); if(vs) vs.onclick=()=>{ showView("archive");
+    const c=$("salesCard"); if(c) c.scrollIntoView({block:"start", behavior:"smooth"}); };
   box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"dash"); });
   wireRowMenus(box);
   /* Delete asks in place: the menu swaps to the question, and Keep it holds
