@@ -37,8 +37,10 @@ const FNS = ["roundUp","compute","uid","numTs","txt","capArr","validDateStr","da
   "drawsTotal","contractRemaining","accountsReceivable","unbilled","nextTask","isOverdue","barTone",
   "pruneArchive","entryPrice","safeImg","sanitizePhotos","sanitizeRows","sanitizeEntry","sanitizeArchive",
   "clampNum","boundVal","cleanRows","dayAdd","dayDiff","calJobs","calLane","calColor","calAssignColors",
-  "needsExampleRetire","retireExample"];
-const CONSTS = ["COST_CATS","HISTORY_CAP","QTY_CAP","PCT_BOUNDS","CAL_COLORS"];
+  "needsExampleRetire","retireExample","dayFromTs",
+  "onBooks","onBooksValue","owedToYou","leftToBill","bidsOut","bidsOutValue",
+  "attentionItems","groupAttention","salesByMonth"];
+const CONSTS = ["COST_CATS","HISTORY_CAP","QTY_CAP","PCT_BOUNDS","CAL_COLORS","UNPAID_CHASE_DAYS"];
 
 /* The two example flags are module globals in the app rather than consts, so the
    sandbox declares its own pair. retireExample writes one of them, which is part
@@ -379,6 +381,110 @@ S.setExFlags(false, true);
 eq(S.retireExample(exPlusReal).length, 2, "an example you asked to keep survives alongside real work");
 eq(S.exFlags().off, false, "and keeping it does not flip the retired flag");
 S.setExFlags(false, false);
+
+// 26. operations roll-ups: only work already won, never bids or archived jobs
+const NOW = Date.UTC(2026, 7, 4, 18, 0, 0);
+const TODAY = S.dayFromTs(NOW);
+const days = n => NOW - n * 86400000;
+const mkJob = o => Object.assign({ id: "j", state: { ts: NOW, jobName: "Job" },
+  results: { mode: "cost", price: 10000, trueCost: 6000, marginPct: 40 },
+  costs: [], tasks: [], draws: [], changes: [], sched: {} }, o);
+
+const active = mkJob({ id: "act", state: { ts: NOW, jobName: "Reseda kitchen" },
+  outcome: "won", stage: "active",
+  costs: [{ id: "c1", amount: 7000 }],                              // over the 6000 target
+  tasks: [{ id: "t1", ts: 1, title: "Rough plumbing", done: false, due: S.dayAdd(TODAY, -3) }],
+  draws: [{ id: "d1", ts: days(30), label: "Deposit", amount: 3000, paidAmount: 0,
+            status: "invoiced", invoicedTs: days(30) }] });
+const upnext = mkJob({ id: "up", state: { ts: NOW, jobName: "Encino bath" },
+  outcome: "won", stage: "", stageChangedTs: days(10) });
+const bidding = mkJob({ id: "bid", state: { ts: NOW, jobName: "Tarzana deck" }, outcome: "pending" });
+const lost = mkJob({ id: "lost", outcome: "lost" });
+const done = mkJob({ id: "done", outcome: "won", stage: "complete" });
+const filed = mkJob({ id: "filed", outcome: "won", stage: "active", archived: true,
+  draws: [{ id: "d9", ts: days(90), amount: 5000, paidAmount: 0, status: "invoiced", invoicedTs: days(90) }] });
+const book = [active, upnext, bidding, lost, done, filed];
+
+eq(S.onBooks(book).length, 2, "on the books counts won work that is not finished");
+eq(S.onBooksValue(book), 20000, "on the books is the contract value of that work");
+eq(S.bidsOut(book).length, 1, "only undecided bids are out for bid");
+eq(S.bidsOutValue(book), 10000, "out for bid is their bid value");
+eq(S.owedToYou(book), 3000, "owed to you skips archived jobs");
+eq(S.leftToBill(book), 17000, "left to bill is contract value not yet invoiced");
+ok(S.onBooks(book).every(e => e.id !== "lost" && e.id !== "done" && e.id !== "filed"),
+   "lost, completed and archived jobs stay out of the operational figures");
+eq(S.onBooksValue([]), 0, "an empty archive rolls up to zero rather than throwing");
+eq(S.owedToYou(null), 0, "a missing archive rolls up to zero");
+
+// approved change orders move the contract, so they move the roll-up with it
+const withCO = mkJob({ id: "co", outcome: "won", stage: "active",
+  changes: [{ id: "o1", ts: 1, amount: 1450, cost: 920, status: "approved", approvedTs: 2 },
+            { id: "o2", ts: 1, amount: 999, cost: 500, status: "pending", approvedTs: null }] });
+eq(S.onBooksValue([withCO]), 11450, "approved change orders raise the value on the books, pending ones do not");
+
+// 27. needs attention
+const attn = S.attentionItems(book, NOW);
+const kinds = attn.map(i => i.kind);
+ok(kinds.indexOf("overdue") >= 0, "a past due phase on a live job is flagged");
+ok(kinds.indexOf("overbudget") >= 0, "spending past the cost target is flagged");
+ok(kinds.indexOf("unpaid") >= 0, "an invoice older than the chase window is flagged");
+ok(kinds.indexOf("notstarted") >= 0, "a job won and never started is flagged");
+ok(attn.every(i => i.id !== "filed"), "archived jobs are never chased");
+ok(attn.every(i => i.id !== "bid" && i.id !== "lost"), "undecided and lost bids are not operational problems");
+ok(attn[0].tone === "bad", "the worst items sort to the top");
+eq(attn.filter(i => i.kind === "unpaid")[0].amount, 3000, "the unpaid item carries what is actually still owed");
+eq(attn.filter(i => i.kind === "unpaid")[0].days, 30, "and how long it has been sitting");
+eq(attn.filter(i => i.kind === "overdue")[0].name, "Reseda kitchen", "items name the job they belong to");
+
+// a fresh invoice is not yet worth chasing
+const fresh = mkJob({ id: "fresh", outcome: "won", stage: "active",
+  draws: [{ id: "d2", ts: days(2), amount: 3000, paidAmount: 0, status: "invoiced", invoicedTs: days(2) }] });
+eq(S.attentionItems([fresh], NOW).filter(i => i.kind === "unpaid").length, 0,
+   "an invoice inside the chase window is left alone");
+const aging = mkJob({ id: "aging", outcome: "won", stage: "active",
+  draws: [{ id: "d3", ts: days(S.UNPAID_CHASE_DAYS), amount: 3000, paidAmount: 0,
+            status: "invoiced", invoicedTs: days(S.UNPAID_CHASE_DAYS) }] });
+eq(S.attentionItems([aging], NOW).filter(i => i.kind === "unpaid").length, 1,
+   "an invoice exactly at the chase window is flagged");
+// a fully paid invoice is not owed, even while its status still reads invoiced
+const settled2 = mkJob({ id: "settled2", outcome: "won", stage: "active",
+  draws: [{ id: "d4", ts: days(40), amount: 3000, paidAmount: 3000, status: "invoiced", invoicedTs: days(40) }] });
+eq(S.attentionItems([settled2], NOW).filter(i => i.kind === "unpaid").length, 0,
+   "a covered invoice is not chased");
+// every phase ticked off is a prompt to close the job out, not a failure
+const allDone = mkJob({ id: "alldone", outcome: "won", stage: "active",
+  tasks: [{ id: "t9", ts: 1, title: "Punch list", done: true, doneTs: 1 }] });
+eq(S.attentionItems([allDone], NOW).filter(i => i.kind === "noplan").length, 1,
+   "a live job with nothing left to work on asks to be closed out");
+eq(S.attentionItems([allDone], NOW)[0].tone, "warn", "and it is a nudge rather than an alarm");
+eq(S.attentionItems(null, NOW).length, 0, "a missing archive produces no items");
+
+// a job with three problems is still one thing to go and deal with
+const grouped = S.groupAttention(attn);
+eq(grouped.length, 2, "attention rows are grouped by job, not by problem");
+eq(grouped[0].reasons.length, 3, "the worst job carries all of its reasons");
+eq(grouped[0].name, "Reseda kitchen", "and keeps its name");
+eq(grouped[0].tone, "bad", "a job with any severe problem reads as severe");
+eq(grouped[1].tone, "warn", "a job with only nudges stays a nudge");
+eq(S.groupAttention([]).length, 0, "nothing to chase groups to nothing");
+eq(S.groupAttention(null).length, 0, "a missing list groups to nothing rather than throwing");
+
+// 28. bid volume by real calendar month
+const months = S.salesByMonth([
+  mkJob({ id: "m1", createdTs: NOW, results: { mode: "cost", price: 5000, trueCost: 3000, marginPct: 40 } }),
+  mkJob({ id: "m2", createdTs: NOW - 2 * 86400000, results: { mode: "cost", price: 2500, trueCost: 1500, marginPct: 40 } }),
+  mkJob({ id: "m3", createdTs: NOW - 200 * 86400000, results: { mode: "cost", price: 9999, trueCost: 5000, marginPct: 40 } }),
+  mkJob({ id: "m4", isLead: true, createdTs: NOW, results: { mode: "cost", price: 8000, trueCost: 4000, marginPct: 40 } })
+], 6, NOW);
+eq(months.length, 6, "six months of buckets by default");
+eq(months[5].total, 7500, "this month sums the bids priced in it");
+eq(months[5].count, 2, "and counts them");
+ok(months.every(m => m.total !== 9999), "anything older than the window falls outside it");
+ok(months[5].total === 7500, "leads carry no bid value, so they do not inflate the month");
+eq(S.salesByMonth([], 6, NOW).reduce((a, m) => a + m.total, 0), 0, "an empty archive is a flat chart, not a crash");
+eq(S.salesByMonth([], 0, NOW).length, 6, "a missing window falls back to six months rather than drawing nothing");
+eq(S.salesByMonth([], -3, NOW).length, 1, "a negative window is clamped to one month rather than trusted");
+eq(S.salesByMonth([], 99, NOW).length, 24, "and clamped at the top too");
 
 if (failures) { console.error("\n" + failures + " PM test(s) failed."); process.exit(1); }
 console.log("\nAll PM invariants passed.");
