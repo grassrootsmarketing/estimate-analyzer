@@ -33,7 +33,8 @@ function extractFn(src, name){
   }
   throw new Error("Unbalanced braces extracting " + name);
 }
-const CLIENT_FNS = ["makeSyncCode","normCode","b64FromBuf","bufFromB64","splitB64","syncKey","syncId","encryptBackup","decryptBackup","mergeArchives","emptyBackupOk"];
+const CLIENT_FNS = ["makeSyncCode","normCode","b64FromBuf","bufFromB64","splitB64","syncKey","syncId","encryptBackup","decryptBackup","mergeArchives","emptyBackupOk",
+  "numTs","profileTs","profileEmpty","pickProfile","shouldPullProfile","stampProfile"];
 const S = new Function(CLIENT_FNS.map(f => extractFn(html, f)).join("\n") + "\nreturn {" + CLIENT_FNS.join(",") + "};")();
 
 (async function(){
@@ -142,6 +143,44 @@ eq(wouldHold([], { exists: true, bytes: 137504 }), true, "empty device + real cl
 eq(wouldHold([], { exists: true, bytes: 10 }), false, "empty device + trivial cloud copy = allow, nothing to lose");
 eq(wouldHold([], { exists: false }), false, "empty device + no cloud copy = allow the first backup");
 eq(wouldHold([{ id: "e1" }], { exists: true, bytes: 137504 }), false, "a device with estimates always backs up normally");
+eq(wouldHold([{ id: "ea-example-job", isExample: true }], { exists: true, bytes: 137504 }), true,
+   "a device carrying only the seeded example is still empty, and must not overwrite a real backup");
+eq(wouldHold([{ id: "ea-example-job", isExample: true }, { id: "e1" }], { exists: true, bytes: 137504 }), false,
+   "one real estimate alongside the example is enough to back up");
+
+
+// 9. the company profile follows the account, not the device
+const pFilled = { name: "All Terrain Builders", logo: "data:image/png;base64,AAA", updatedTs: 2000 };
+const pBlank = {};
+const pRatesOnly = { defMarkup: 40, defOverhead: 12, defContingency: 10, defTax: 9.5 };
+
+ok(S.profileEmpty(pBlank), "a device with nothing set up reads as empty");
+ok(S.profileEmpty(null), "a missing profile reads as empty rather than throwing");
+ok(S.profileEmpty(pRatesOnly), "default rates alone are not a set-up device: they arrive prefilled");
+ok(!S.profileEmpty(pFilled), "a name or a logo makes a device set up");
+ok(!S.profileEmpty({ name: "  x  " }), "whitespace around a real name still counts");
+ok(S.profileEmpty({ name: "   " }), "whitespace alone does not");
+
+eq(S.pickProfile(pBlank, pFilled).from, "cloud", "an empty device takes the cloud profile");
+eq(S.pickProfile(pFilled, pBlank).from, "local", "an empty cloud copy never overwrites a set-up device");
+eq(S.pickProfile({ name: "Old", updatedTs: 1000 }, pFilled).from, "cloud", "a newer cloud profile wins");
+eq(S.pickProfile({ name: "New", updatedTs: 3000 }, pFilled).from, "local",
+   "an older cloud profile never silently undoes an edit made here");
+eq(S.pickProfile({ name: "Same", updatedTs: 2000 }, pFilled).from, "local", "a tie stays put rather than churning");
+eq(S.pickProfile(pBlank, null).from, "local", "no cloud copy means nothing to adopt");
+eq(S.pickProfile(pBlank, pFilled).profile.name, "All Terrain Builders", "and the adopted copy is the cloud one");
+eq(S.pickProfile({ updatedTs: 9999 }, pFilled).from, "cloud",
+   "a blank device with a fast clock still takes the cloud profile");
+
+ok(S.shouldPullProfile(pBlank, { code: "EA12-CD34-EF56-GH78" }), "a signed-in device with nothing set up fetches once");
+ok(!S.shouldPullProfile(pFilled, { code: "EA12-CD34-EF56-GH78" }), "a device that knows who it is never pays for the fetch");
+ok(!S.shouldPullProfile(pBlank, null), "no sync code means no fetch");
+ok(!S.shouldPullProfile(pBlank, { code: "" }), "an empty sync code means no fetch");
+
+const pStamped = S.stampProfile({ name: "x" });
+ok(S.profileTs(pStamped) > 0, "saving stamps the profile so newer means something");
+eq(S.profileTs({}), 0, "an unstamped profile is the oldest possible");
+eq(S.profileTs(null), 0, "a missing profile has no timestamp rather than throwing");
 
 if(failures){ console.error("\n" + failures + " backup test(s) failed."); process.exit(1); }
 console.log("\nAll cloud backup invariants passed.");
