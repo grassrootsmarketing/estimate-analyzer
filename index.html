@@ -59,6 +59,22 @@
   input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
     border-radius:11px;padding:12px 12px;font-size:16px;outline:none;min-height:46px}
   textarea{min-height:90px;resize:vertical}
+  /* Checkboxes were inheriting the text field rule above, so they came out as
+     46px browser-blue slabs. Their own box, at a normal size, in the app's own
+     colours. The label wraps the input, so the tap target is the whole row of
+     text rather than the 18px square. */
+  input[type=checkbox]{-webkit-appearance:none;appearance:none;
+    width:18px;height:18px;min-width:18px;min-height:18px;flex:0 0 auto;padding:0;margin:0;
+    border:1.5px solid var(--fieldbd);border-radius:5px;background:var(--field);
+    display:inline-grid;place-content:center;cursor:pointer;vertical-align:-3px;
+    transition:background .14s ease,border-color .14s ease}
+  input[type=checkbox]::before{content:"";width:10px;height:10px;background:var(--primink);
+    transform:scale(0);transition:transform .13s cubic-bezier(.2,.9,.3,1.5);
+    clip-path:polygon(14% 44%,0 65%,50% 100%,100% 16%,80% 0,43% 62%)}
+  input[type=checkbox]:checked{background:var(--accentfill);border-color:var(--accentfill)}
+  input[type=checkbox]:checked::before{transform:scale(1)}
+  input[type=checkbox]:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){ input[type=checkbox]::before{transition:none} }
   input:focus,select:focus,textarea:focus{border-color:var(--accent)}
   .row{display:grid;gap:10px}
   .g2{grid-template-columns:1fr 1fr}
