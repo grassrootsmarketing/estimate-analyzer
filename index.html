@@ -583,32 +583,32 @@
   .bcard{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 1px 2px var(--shadowsoft)}
   .bgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
   .blabel{font-size:13.5px;letter-spacing:0;color:var(--muted)}
-  .bbig{font-size:34px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:3px}
+  .bbig{font-size:38px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:3px}
   .bbars{display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:14px}
   .bbars i{flex:1;max-width:52px;border-radius:6px 6px 3px 3px;background:var(--accent2);opacity:.3;min-height:3px;transition:opacity .16s ease}
   .bbars i.hot{opacity:1;background:var(--accent)}
   /* pipeline funnel (replaces the old win-rate ring) */
   .funl{display:flex;flex-direction:column;gap:6px;margin-top:12px}
   .funl .fr{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-  .funl .fn{font-size:14px;color:var(--muted);letter-spacing:.02em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-  .funl .fv{font-size:15px;color:var(--ink);font-family:var(--numfont);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .funl .fn{font-size:15px;color:var(--muted);letter-spacing:.02em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .funl .fv{font-size:16.5px;color:var(--ink);font-family:var(--numfont);font-variant-numeric:tabular-nums;white-space:nowrap}
   .funl .fbar{height:12px;border-radius:6px;background:var(--panel2);position:relative;overflow:hidden;margin-bottom:2px}
   .funl .fbar i{position:absolute;left:50%;transform:translateX(-50%);top:0;bottom:0;border-radius:6px;background:var(--accent2);transition:width .4s ease}
-  .bsub{font-size:12.5px;color:var(--muted);text-align:center;margin-top:8px}
+  .bsub{font-size:15px;color:var(--muted);text-align:center;margin-top:9px;line-height:1.4}
   .bmargin .bbig{color:var(--accent2)}
   .bcard.bmargin{display:flex;flex-direction:column}
   .mdist{display:flex;align-items:flex-end;gap:6px;min-height:34px;flex:1;margin-top:12px}
   .mdist i{flex:1;background:var(--panel2);border-radius:4px;min-height:3px}
   .mdist i.f{background:var(--accent2);opacity:.75}
   .mlbl{display:flex;gap:6px;margin-top:5px}
-  .mlbl span{flex:1;text-align:center;font-size:11px;color:var(--muted);white-space:nowrap}
+  .mlbl span{flex:1;text-align:center;font-size:12px;color:var(--muted);white-space:nowrap}
   .bsect{font-size:14px;letter-spacing:0;color:var(--muted);font-weight:600;margin:16px 2px 8px;display:flex;justify-content:space-between;align-items:center}
   .iprow{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;color:var(--ink);transition:transform .13s ease,border-color .16s ease,box-shadow .16s ease}
   .iprow:hover{transform:translateY(-1px);border-color:var(--accent2);box-shadow:0 4px 14px var(--shadowsoft)}
   .iprow:active{transform:none}
   .iprow .t{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:15.5px;font-weight:500}
   .iprow .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .iprow .fig{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .iprow .fig{font-size:14.5px;color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 auto}
   .iprow .jbar{height:5px;margin-top:9px}
   /* Needs attention: the colour bar carries the severity, so the row itself stays
      quiet. One tap goes straight to the job the problem belongs to. */
@@ -618,7 +618,7 @@
   .attn.bad{border-left-color:var(--bad)}
   .attn.warn{border-left-color:var(--warn)}
   .attn .anm{display:block;font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .attn .awhy{display:block;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.42}
+  .attn .awhy{display:block;font-size:14px;color:var(--muted);margin-top:2px;line-height:1.42}
   /* Second and later reasons on the same job read as a list, not a paragraph. */
   .attn .awhy+.awhy{margin-top:1px}
   /* The one sales figure worth seeing on an operations screen, and the door to
@@ -628,7 +628,7 @@
   .salesstrip:active{transform:none}
   .salesstrip .t{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:15.5px;font-weight:500}
   .salesstrip .fig{font-variant-numeric:tabular-nums;flex:0 0 auto}
-  .salesstrip .sub{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.42}
+  .salesstrip .sub{display:block;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.42}
   /* The hero card runs full width, so its caption reads left like a sentence
      rather than centred like a tile label. */
   .bhero .bsub{text-align:left}
@@ -643,9 +643,9 @@
   /* Small enough to read as a marker on the name rather than a second badge. */
   .ic.rowstar{width:13px;height:13px;flex:0 0 auto}
   .brrow .nm{display:block;font-size:15.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
-  .brrow .mt{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .brrow .mt{display:block;font-size:13.5px;color:var(--muted);margin-top:2px}
   .brrow .br{text-align:right;flex:0 0 auto}
-  .brrow .pr{display:block;font-size:17px;font-weight:500;color:var(--accent2);font-variant-numeric:tabular-nums}
+  .brrow .pr{display:block;font-size:18.5px;font-weight:500;color:var(--accent2);font-variant-numeric:tabular-nums}
   /* Recent-list row actions. The dot button lives inside the card and opens a
      menu, so the row never resizes and there is room for future actions. */
   .brwrap{position:relative;margin-bottom:8px}
@@ -732,7 +732,7 @@
   .pipopen .pm{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
   .pipbody{padding:0 14px 12px}
   .pipbody .jbar{height:5px;margin-top:8px}
-  .pnext{font-size:12.5px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:6px}
+  .pnext{font-size:13.5px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:6px}
   .pnext .ic{width:13px;height:13px;flex:0 0 auto}
   .pnext .od{color:var(--badink);font-weight:500}
   .pipact{padding:0 14px 12px;display:flex;gap:8px}
@@ -2514,8 +2514,8 @@ function renderSales(){
     '<div class="bsub">'+(anyM
       ? esc("Every estimate you priced, by the month you priced it")
       : "Save estimates to see how your bidding moves month to month")+'</div></div>';
-  const stages=[["Leads","lead",function(){return 0;},.3],["Out for bid","bidding",entryPrice,.45],
-    ["Won","won",contractPrice,.62],["Started","active",contractPrice,.82],["Completed","complete",contractPrice,1]];
+  const stages=[["Leads","lead",function(){return 0;},.3],["Bids out","bidding",entryPrice,.45],
+    ["Won","won",contractPrice,.62],["Started","active",contractPrice,.82],["Done","complete",contractPrice,1]];
   const groups=stages.map(s=>s[1]==="won" ? arr.filter(e=>entryMeta(e).outcome==="won")
     : arr.filter(e=>boardStage(e)===s[1]));
   const maxC=Math.max.apply(null, groups.map(g=>g.length).concat([1]));
@@ -3602,23 +3602,53 @@ function renderDashboard(){
       +'nothing below ever mixes sample money into your numbers.</div>'
       +'<button type="button" class="minibtn" id="exRemove">Remove example</button></div>';
   }
-  /* Operations hero. Every figure here is about work already won: what it is
-     worth, how much of it has been invoiced, what is still owed. Bids nobody has
-     decided are sales, not operations, and they live behind the strip below. */
+  /* hero: pipeline total + bar chart of the last ~8 job prices (most recent highlighted) */
+  const pipeline=arr.reduce((a,e)=>a+entryPrice(e),0);
+  const last=arr.slice(0,8).reverse();
+  const maxP=Math.max.apply(null,last.map(entryPrice).concat([1]));
+  const bars=n
+    ? last.map((e,i)=>'<i class="'+(i===last.length-1?"hot":"")+'" style="height:'+Math.max(4,Math.round(entryPrice(e)/maxP*100))+'%"></i>').join("")
+    : [18,26,20,34,28,42,30,48].map(h=>'<i class="ghost" style="height:'+h+'%"></i>').join("");
+  html+='<div class="bcard"><div class="blabel">Pipeline <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="The total value of every estimate you have saved, newest eight shown as bars. It counts everything: bids waiting on a decision, jobs you won, jobs you finished. Owed to you below is the money actually invoiced and unpaid.">i</span></div><div class="bbig">'+fmt(pipeline)+'</div><div class="bbars">'+bars+'</div></div>';
+  /* bento row: win-rate ring + avg-margin tile with distribution */
+  const decided=arr.filter(e=>{ const o=entryMeta(e).outcome; return o==="won"||o==="lost"; });
+  const won=decided.filter(e=>entryMeta(e).outcome==="won").length;
+  const winRate=decided.length?Math.round(won/decided.length*100):null;
+  /* funnel stages: leads -> bids -> won -> in progress -> completed */
+  const stLeads=arr.filter(e=>boardStage(e)==="lead");
+  const stBids=arr.filter(e=>boardStage(e)==="bidding");
+  const stWon=arr.filter(e=>entryMeta(e).outcome==="won");
+  const stAct=arr.filter(e=>boardStage(e)==="active");
+  const stDone=arr.filter(e=>boardStage(e)==="complete");
+  const kfmt=v=>v>=100000?"$"+Math.round(v/1000)+"k":(v>=10000?"$"+(v/1000).toFixed(1)+"k":fmt(v));
+  const margs=arr.map(e=>e.results&&e.results.marginPct).filter(v=>typeof v==="number"&&isFinite(v));
+  const avgM=margs.length?margs.reduce((a,b)=>a+b,0)/margs.length:null;
+  const bands=[[0,20],[20,35],[35,1e9]].map(b=>margs.filter(v=>v>=b[0]&&v<b[1]).length);
+  const maxB=Math.max.apply(null,bands.concat([1]));
+  html+='<div class="bgrid">'+
+    '<div class="bcard"><div class="blabel">Funnel <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="How work flows: bids out, marked won, started, completed. Mark outcomes in the Archive or move jobs on the board to keep this true.">i</span></div>'+
+      '<div class="funl">'+(function(){
+        const stages=[["Leads",stLeads,function(){return 0;},.3],["Bids out",stBids,entryPrice,.45],["Won",stWon,contractPrice,.62],["Started",stAct,contractPrice,.82],["Done",stDone,contractPrice,1]];
+        const maxC=Math.max.apply(null,stages.map(s=>s[1].length).concat([1]));
+        return stages.map(s=>{
+          const c=s[1].length, sum=s[1].reduce((a,e)=>a+s[2](e),0);
+          return '<div class="fr"><span class="fn">'+s[0]+'</span><span class="fv">'+c+(c&&sum>0?' · '+kfmt(sum):'')+'</span></div>'+
+            '<div class="fbar"><i style="width:'+(c?Math.max(8,Math.round(c/maxC*100)):0)+'%;opacity:'+s[3]+'"></i></div>';
+        }).join("");
+      })()+'</div>'+
+      '<div class="bsub">'+(decided.length?winRate+"% win rate · "+won+" of "+decided.length+" decided":"mark jobs won or lost")+'</div></div>'+
+    '<div class="bcard bmargin"><div class="blabel">Avg margin</div><div class="bbig">'+(avgM!=null?avgM.toFixed(0)+"%":"–")+'</div>'+
+      '<div class="mdist">'+bands.map(c=>'<i class="'+(c?"f":"")+'" style="height:'+(c?Math.max(12,Math.round(c/maxB*100)):0)+'%"></i>').join("")+'</div>'+
+      '<div class="mlbl"><span>under 20</span><span>20–35</span><span>over 35</span></div>'+
+      '<div class="bsub">'+(margs.length?("across "+margs.length+" estimate"+(margs.length>1?"s":"")+" · median "+median(margs).toFixed(0)+"%"):"save estimates to see margins")+'</div></div>'+
+    '</div>';
+  /* Kept from the operations pass: what is on the books right now, what has been
+     invoiced against it, and what is still owed. These sit under the pipeline
+     picture rather than replacing it. */
   const books=onBooks(arr);
-  const bookVal=onBooksValue(arr), owed=owedToYou(arr), toBill=leftToBill(arr);
-  const billed=fromC(sumC(books, drawsInvoiced));
-  const billPct=bookVal>0?Math.min(100, billed/bookVal*100):0;
-  const actCount=books.filter(e=>boardStage(e)==="active").length;
-  const upCount=books.length-actCount;
+  const owed=owedToYou(arr), toBill=leftToBill(arr);
   const unpaidCount=arr.filter(e=>e&&!e.archived).reduce((c,e)=>c+(e.draws||[])
     .filter(d=>d&&d.status==="invoiced"&&(toC(d.amount)-toC(d.paidAmount||0))>0).length, 0);
-  html+='<div class="bcard bhero"><div class="blabel">On the books <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="Contract value of work you have won and not finished, including approved change orders. Bids you are still waiting to hear about are not in this number; tap Out for bid lower down to see those.">i</span></div>'+
-    '<div class="bbig">'+fmt(bookVal)+'</div>'+
-    '<div class="jbar"><i style="width:'+billPct.toFixed(0)+'%"></i></div>'+
-    '<div class="bsub">'+(books.length
-      ? esc(fmt(billed)+" invoiced so far · "+actCount+" in progress"+(upCount?", "+upCount+" won and not started":""))
-      : "Nothing won and unfinished right now.")+'</div></div>';
   html+='<div class="bgrid">'+
     '<div class="bcard"><div class="blabel">Owed to you</div><div class="bbig'+(owed>0?" owe":"")+'">'+fmt(owed)+'</div>'+
       '<div class="bsub">'+(owed>0
