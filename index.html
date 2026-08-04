@@ -1779,7 +1779,29 @@ function compute(s){
   return {mode:"analyze",direct,price,impliedCost,breakeven,grossProfit,net,marginPct:m*100,assumed:m*100,
     oh:oh, sc25:price*0.25, sc35:price*0.35, sc45:price*0.45};
 }
-function persist(){ const st=getState(); STATE_CACHE=st; saveKey(LS_STATE, st); }
+/* The working estimate is held on this device so closing the app mid quote does
+   not lose it. It expires, though, and expiry has to be measured from the last
+   real edit rather than the last write. Simply opening the app calls persist a
+   few times, so a timestamp stamped on every write would reset the clock every
+   morning and nothing would ever age out. touchedTs only moves when the content
+   actually changes. */
+const DRAFT_TTL_MS=72*60*60*1000;
+let _touchedTs=0, _lastSig=null, _draftReady=false;
+function persist(){
+  const st=getState();
+  /* Boot itself writes a few times while the form is being rebuilt, and none of
+     that is the user editing anything. The clock only starts once boot says so. */
+  if(_draftReady){
+    const sig=stateSig(st);
+    if(sig!==_lastSig){ _touchedTs=Date.now(); _lastSig=sig; }
+  }
+  st.touchedTs=_touchedTs||Date.now();
+  STATE_CACHE=st; saveKey(LS_STATE, st);
+}
+/* Age of a held estimate, from its last real edit. Older files fall back to ts,
+   which is the best they have. */
+function draftAgeMs(s){ const t=numTs(s&&s.touchedTs)||numTs(s&&s.ts); return t?Math.max(0,Date.now()-t):0; }
+function draftExpired(s){ return !!s && draftAgeMs(s)>DRAFT_TTL_MS; }
 function getArchive(){ return ARCH_CACHE; }
 /* Archive writes are serialized, awaited, and cross-tab notified. PM actions
    (payments, approvals, stage changes) await the returned promise so a failed
@@ -4092,7 +4114,20 @@ async function maybeInstallHint(){
     LEADKEY=(typeof lk==="string"&&lk.length>=12)?lk:null; }catch(e){ LEADKEY=null; }
   let saved=null;
   try{ saved = (IDB_OK? await idbGet(LS_STATE):null) || readLS(LS_STATE) || null; }catch(e){ saved=null; }
+  /* An estimate left on this screen expires after three days. Checked before
+     anything else runs, because boot writes to storage and any write would look
+     like a fresh edit. Only work that was never saved to a job is actually lost,
+     and only after 72 hours of nobody touching it. */
+  let dropped=null;
+  if(draftExpired(saved)){
+    const hadWork = !!((saved.jobName&&String(saved.jobName).trim())
+      || (saved.rows||[]).some(r=>(+r.qty||0)*(+r.unit||0)>0));
+    dropped={ days:Math.max(3,Math.floor(draftAgeMs(saved)/86400000)), hadWork:hadWork,
+      wasJob:!!(saved.editId && getArchive().some(x=>x&&x.id===saved.editId)) };
+    saved=null;
+  }
   STATE_CACHE = saved;
+  _touchedTs = numTs(saved&&saved.touchedTs) || numTs(saved&&saved.ts) || Date.now();
   defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI(); renderPhotos();
   let hadState=false;
   if(saved && saved.rows){ applyState(saved); hadState=true;
@@ -4115,6 +4150,16 @@ async function maybeInstallHint(){
   if(_savedMargin) $("margin").value=saved.margin;
   calc();
   _savedSig = (hadState && getArchive().some(e=>stateSig(e.state)===stateSig())) ? stateSig() : null;
+  /* Boot is done rebuilding the form, so from here a changed signature is a real
+     edit and the three day clock restarts from it. */
+  _lastSig=stateSig(); _draftReady=true;
+  if(dropped){
+    _touchedTs=Date.now();
+    persist();
+    if(dropped.hadWork) toast(dropped.wasJob
+      ? "Cleared an estimate untouched for "+dropped.days+" days. The job it belonged to is safe in your jobs."
+      : "Cleared an estimate untouched for "+dropped.days+" days. It had never been saved to your jobs.");
+  }
   updateSaveStatus();
   renderArchive();
   renderDashboard();
