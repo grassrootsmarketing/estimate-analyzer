@@ -32,7 +32,7 @@
     --bg:#141413; --panel:#1f1e1c; --panel2:#2a2825; --line:#35332f;
     --ink:#f5f3ee; --muted:#bfb7a9; --accent:#d97757; --accent2:#e8a184;
     --good:#8fc79c; --warn:#e8b87a; --bad:#e58a6c; --chip:#2a2723;
-    --navh:68px;
+    --accentfill:#b8552f; --navh:68px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   *{min-width:0}
@@ -46,7 +46,7 @@
   .app{max-width:640px;margin:0 auto;padding:0 14px}
   header{position:sticky;top:0;z-index:30;background:rgba(15,20,25,.92);backdrop-filter:blur(8px);
     border-bottom:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:10px}
-  header .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto}
+  header .logo{width:30px;height:30px;border-radius:8px;background:var(--accentfill);display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto}
   header .ttl{font-size:16px;font-weight:800;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   header .sub{font-size:11px;color:var(--muted);margin-top:-2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .view{display:none;padding:14px 0 24px}
@@ -68,7 +68,7 @@
   /* segmented mode toggle */
   .seg{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:14px}
   .seg button{flex:1;background:transparent;border:none;color:var(--muted);padding:12px 8px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer}
-  .seg button.active{background:var(--accent);color:var(--primink)}
+  .seg button.active{background:var(--accentfill);color:var(--primink)}
   /* result */
   .result{background:var(--resultbg);border:1px solid var(--resultbd);box-shadow:none}
   .marg-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
@@ -102,7 +102,7 @@
   .btn{flex:1;min-width:120px;background:var(--chip);border:1px solid var(--line);color:var(--ink);
     border-radius:12px;padding:13px 10px;font-weight:800;font-size:14px;cursor:pointer;min-height:48px;
     transition:transform .13s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease,filter .16s ease}
-  .btn.primary{background:var(--accent);color:var(--primink);border-color:var(--accent)}
+  .btn.primary{background:var(--accentfill);color:var(--primink);border-color:var(--accentfill)}
   .btn.ghost{background:transparent}
   .btn:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 4px 14px rgba(0,0,0,.28)}
   .btn.primary:hover{filter:brightness(1.06)}
@@ -179,7 +179,7 @@
   .th-kicker{font-size:10.5px;text-transform:uppercase;letter-spacing:1.4px;color:var(--accent2);font-weight:500}
   .th-head{font-size:21px;font-weight:500;letter-spacing:-.2px;color:var(--ink);margin-top:5px}
   .th-sub{font-size:12.5px;color:var(--muted);margin:8px auto 16px;max-width:400px;line-height:1.55}
-  .micorb{background:var(--accent);color:var(--primink);border:none;border-radius:46px;min-width:86px;height:86px;padding:0 26px;display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;font-weight:500;font-size:14px;font-family:inherit;box-shadow:0 8px 26px var(--shadowsoft);transition:transform .14s ease,filter .16s ease}
+  .micorb{background:var(--accentfill);color:var(--primink);border:none;border-radius:46px;min-width:86px;height:86px;padding:0 26px;display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;font-weight:500;font-size:14px;font-family:inherit;box-shadow:0 8px 26px var(--shadowsoft);transition:transform .14s ease,filter .16s ease}
   .micorb .ic{width:32px;height:32px}
   .micorb:hover{filter:brightness(1.05);transform:translateY(-2px)}
   .micorb:active{transform:scale(.94)}
@@ -213,11 +213,14 @@
   .link{color:var(--accent2);text-decoration:underline;cursor:pointer}
   .bench{font-size:12.5px;color:var(--muted);margin-top:8px}
   /* line items */
+  .rowsnone{border:1px dashed var(--line);border-radius:13px;padding:14px 15px;margin-bottom:9px;
+    font-size:12.5px;line-height:1.45;color:var(--muted)}
+  .rowsnone span{display:block;margin-top:6px}
   .litem{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:11px;margin-bottom:9px}
   .litem.review{border-color:var(--warnbd);box-shadow:inset 0 0 0 1px var(--warnbd)}
   .reviewbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:9px;background:var(--warnbg);border:1px solid var(--warnbd);border-radius:10px;padding:7px 10px}
   .revbadge{font-size:12px;color:var(--warnink);font-weight:700;line-height:1.2}
-  .revok{background:var(--accent);color:var(--primink);border:none;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;cursor:pointer;min-height:38px;white-space:nowrap}
+  .revok{background:var(--accentfill);color:var(--primink);border:none;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;cursor:pointer;min-height:38px;white-space:nowrap}
   .litem-r1{display:flex;gap:8px;align-items:center}
   .litem-item{flex:1}
   .litem-desc{margin-top:8px}
@@ -257,7 +260,7 @@
   .arch-tools .btn{flex:0 1 auto;min-width:0;padding:10px 12px;font-size:12.5px;min-height:42px}
   .arch-entry{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px}
   .arch-entry.pinned{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
-  .arch-row button.pin-on{background:var(--accent);color:var(--primink);border-color:var(--accent)}
+  .arch-row button.pin-on{background:var(--accentfill);color:var(--primink);border-color:var(--accentfill)}
   .arch-meta{font-size:11px;color:var(--muted)}
   .arch-title{font-size:15px;font-weight:800;margin:2px 0}
   .arch-nums{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.7}
@@ -347,6 +350,7 @@
     --warnbg:#2a2418; --warnbd:#57492a; --warnink:#ebc98d;
     --badbg:#2c1e18; --badbd:#5d3a2d; --badink:#f0ae96;
     --dangerfill:#a83f27; --ondanger:#fff3ee;
+    --accentfill:#b8552f;
     --tipbg:#0b0b0a; --tipink:#f5f3ee; --primink:#fff7f2;
     --field:#1a1917; --fieldbd:#3c3934; --onaccent2:#141413;
     --shadow:rgba(0,0,0,.50); --shadowsoft:rgba(0,0,0,.32);
@@ -360,6 +364,7 @@
     --warnbg:#faf0dc; --warnbd:#e6d2a6; --warnink:#77571c;
     --badbg:#fbeee8; --badbd:#f0cdbe; --badink:#96341f;
     --dangerfill:#96341f; --ondanger:#fff7f2;
+    --accentfill:#b8552f;
     --tipbg:#141413; --tipink:#f5f3ee; --primink:#fff7f2;
     --field:#ffffff; --fieldbd:#dad4c6; --onaccent2:#fff7f2;
     --shadow:rgba(40,30,20,.14); --shadowsoft:rgba(40,30,20,.05);
@@ -367,13 +372,13 @@
   body{background:var(--bg);color:var(--ink)}
   a{color:var(--accent2)}
   header{background:var(--panel);border-bottom:1px solid var(--line)}
-  header .logo{background:var(--accent);color:var(--primink)}
+  header .logo{background:var(--accentfill);color:var(--primink)}
   header .ttl{color:var(--ink)} header .sub{color:var(--muted)}
   .card{box-shadow:0 1px 2px var(--shadowsoft)}
   .result{background:var(--resultbg);border:1px solid var(--resultbd);box-shadow:none}
   .seg{background:var(--panel);border:1px solid var(--line)}
   .seg button{color:var(--muted)}
-  .seg button.active{background:var(--accent);color:var(--primink)}
+  .seg button.active{background:var(--accentfill);color:var(--primink)}
   .seg button:hover:not(.active){color:var(--ink);background:rgba(127,127,127,.10)}
   .drop{border-color:var(--accent2);background:var(--panel2);color:var(--muted)}
   .drop:hover{border-color:var(--accent2);background:var(--chip)}
@@ -384,7 +389,7 @@
   .litem.review{border-color:var(--warnbd);box-shadow:inset 0 0 0 1px var(--warnbd)}
   .reviewbar{background:var(--warnbg);border-color:var(--warnbd)}
   .revbadge{color:var(--warnink)}
-  .revok{background:var(--accent);color:var(--primink)}
+  .revok{background:var(--accentfill);color:var(--primink)}
   .flag.good{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
   .flag.warn{background:var(--warnbg);border-color:var(--warnbd);color:var(--warnink)}
   .flag.bad{background:var(--badbg);border-color:var(--badbd);color:var(--badink)}
@@ -509,7 +514,7 @@
   .jstat .v{font-size:19px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:3px}
   .jsecthead{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 10px}
   .jsecthead .t{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:500}
-  .addcost{background:var(--accent);color:var(--primink);border:none;border-radius:20px;padding:9px 15px;font-weight:500;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:38px;transition:filter .16s ease,transform .12s ease}
+  .addcost{background:var(--accentfill);color:var(--primink);border:none;border-radius:20px;padding:9px 15px;font-weight:500;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:38px;transition:filter .16s ease,transform .12s ease}
   .addcost:hover{filter:brightness(1.06)}
   .addcost:active{transform:scale(.96)}
   .addcost .ic{width:15px;height:15px}
@@ -533,12 +538,12 @@
   /* The one button that starts work. It lifts and turns a quarter under the
      finger, springs back on release, and on a dashboard with nothing on it yet
      it breathes every few seconds so a new user can find it. */
-  .bnew{background:var(--accent);color:var(--primink);border:none;border-radius:14px;width:44px;height:44px;
+  .bnew{background:var(--accentfill);color:var(--primink);border:none;border-radius:14px;width:44px;height:44px;
     display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;position:relative;
     transition:filter .16s ease,transform .26s cubic-bezier(.2,.9,.3,1.5),box-shadow .2s ease}
   .bnew .ic{width:20px;height:20px;transition:transform .3s cubic-bezier(.2,.9,.3,1.5)}
   @media(hover:hover) and (pointer:fine){
-    .bnew:hover{filter:brightness(1.06);transform:translateY(-1.5px);box-shadow:0 5px 14px rgba(217,119,87,.32)}
+    .bnew:hover{filter:brightness(1.06);transform:translateY(-1.5px);box-shadow:0 5px 14px rgba(184,85,47,.34)}
     .bnew:hover .ic{transform:rotate(90deg)}
   }
   /* A quarter turn on a plus lands back on itself, so the press reads as a spin
@@ -549,9 +554,9 @@
   .bnew.callout{animation:bnewcall 3.4s ease-in-out .8s infinite}
   .bnew.callout:hover,.bnew.callout:active{animation:none}
   @keyframes bnewcall{
-    0%,74%,100%{transform:none;box-shadow:0 0 0 0 rgba(217,119,87,0)}
-    82%{transform:scale(1.07);box-shadow:0 0 0 7px rgba(217,119,87,.18)}
-    92%{transform:scale(1);box-shadow:0 0 0 14px rgba(217,119,87,0)}
+    0%,74%,100%{transform:none;box-shadow:0 0 0 0 rgba(184,85,47,0)}
+    82%{transform:scale(1.07);box-shadow:0 0 0 7px rgba(184,85,47,.20)}
+    92%{transform:scale(1);box-shadow:0 0 0 14px rgba(184,85,47,0)}
   }
   @media(prefers-reduced-motion:reduce){
     .bnew,.bnew .ic{transition:filter .16s ease}
@@ -675,7 +680,7 @@
   /* small explicit-action buttons (payments, COs, lifecycle) */
   .minibtn{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:500;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;gap:5px;transition:border-color .16s ease,background .16s ease,transform .12s ease}
   .minibtn:hover{border-color:var(--accent2)} .minibtn:active{transform:scale(.96)}
-  .minibtn.gold{background:var(--accent);border-color:var(--accent);color:var(--primink)}
+  .minibtn.gold{background:var(--accentfill);border-color:var(--accentfill);color:var(--primink)}
   .minibtn.danger{color:var(--badink);border-color:var(--badbd);background:var(--badbg)}
   .chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
   .chip.good{background:var(--goodbg);border-color:var(--goodbd);color:var(--goodink)}
@@ -742,7 +747,7 @@
   .calday:first-child{border-left:none}
   .calday .dn{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:10px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
   .calday.out .dn{opacity:.4}
-  .calday.tdy .dn{background:var(--accent);color:var(--primink);font-weight:700}
+  .calday.tdy .dn{background:var(--accentfill);color:var(--primink);font-weight:700}
   .calbars{position:absolute;left:0;right:0;top:27px;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:24px;row-gap:3px;pointer-events:none}
   .calbar{pointer-events:auto;position:relative;margin:0 1px;border-radius:7px;background:var(--c);color:#fff;font-size:11px;font-weight:600;line-height:24px;padding:0 8px;overflow:hidden;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 1px 2px var(--shadowsoft)}
   .calbar .bn{pointer-events:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1337,7 +1342,10 @@ let BENCH = JSON.parse(JSON.stringify(SEED_BENCH));
 let BENCH_UPDATED = SEED_UPDATED;
 
 let rows = [];
-function defaultRows(){ rows=[{item:"Subcontractor",desc:"",qty:1,unit:0},{item:"Materials",desc:"",qty:1,unit:0},{item:"Permits / fees",desc:"",qty:1,unit:0}]; }
+/* An estimate starts empty. Three placeholder lines at zero dollars were three
+   things to delete before you could start, and they made a blank estimate look
+   like it already had something in it. */
+function defaultRows(){ rows=[]; }
 function isTaxable(it){ return /material/i.test(it); }
 
 /* ---- input boundary guards (Codex audit): clamp at the edges, never inside compute() ---- */
@@ -1352,6 +1360,13 @@ function snapRow(el,i,k){ if(!rows[i]||el.value==="") return;
 
 function render(){
   const tb=$("rows"); tb.innerHTML="";
+  /* Empty is now the starting state, so it has to say something. The tax note is
+     the part worth knowing: material tax keys off the item name, so a line has to
+     be called Materials to be taxed. That used to be taught by a prefilled row. */
+  if(!rows.length){
+    tb.innerHTML='<div class="rowsnone">No line items yet. Add what the job costs you, one line at a time.'
+      +'<span>Anything with "material" in the item name gets material tax added. Everything else does not.</span></div>';
+  }
   rows.forEach((r,i)=>{
     const d=document.createElement("div"); d.className="litem"+(r.review?" review":"");
     d.innerHTML=`
