@@ -117,6 +117,15 @@
     })
     .catch(function(){ btn.disabled=false; btn.textContent=old; alert("Couldn't send that. Please text your contractor to approve."); });
   }
+  function fmtPhone(p){ p=String(p||"").replace(/[^\d]/g,""); return p.length===10?("("+p.slice(0,3)+") "+p.slice(3,6)+"-"+p.slice(6)):p; }
+  function subConfirmed(phone){
+    var wrap=document.getElementById("subwrap"); if(!wrap) return;
+    wrap.innerHTML='<div class="duenow" style="background:rgba(33,122,75,.10);border-color:rgba(33,122,75,.32)"><span class="l" style="color:var(--good)">Text updates are on'+(phone?" for "+fmtPhone(phone):"")+'</span></div><p class="sub" style="margin:8px 0 0;font-size:12px"><a href="#" id="suboff" style="color:var(--accent2);font-weight:600">Turn off</a></p>';
+    var off=document.getElementById("suboff");
+    if(off) off.onclick=function(ev){ ev.preventDefault();
+      fetch("/api/portal",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({op:"sub",token:k,on:false,phone:""})}).catch(function(){});
+      var w=document.getElementById("subwrap"); if(w) w.innerHTML='<p class="sub" style="margin:0">Text updates are off.</p>'; };
+  }
   var app=document.getElementById("app");
   var k=(new URLSearchParams(location.search).get("k")||"").toLowerCase();
   if(!/^[0-9a-f]{32}$/.test(k)){ app.innerHTML='<div class="empty">This link is incomplete. Ask for a fresh one.</div>'; return; }
@@ -277,12 +286,32 @@
     if(co.phone||co.email){
       html+='<div class="card"><h2>Questions?</h2><p class="sub" style="margin:0 0 2px">Reach '+esc(co.name||"your contractor")+' anytime.</p>'+actionBtns()+'</div>';
     }
+    /* text updates opt-in */
+    html+='<div class="card"><h2>Text updates</h2>'+
+      '<p class="sub" style="margin:0 0 10px">Get a text from '+esc(co.name||"your contractor")+' when your project moves forward, new photos, schedule changes, and payment reminders.</p>'+
+      '<div id="subwrap">'+
+        '<input id="subphone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Your mobile number" style="width:100%;box-sizing:border-box;font:16px Inter,-apple-system,sans-serif;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--ink);margin-bottom:8px">'+
+        '<button type="button" id="subbtn" class="abtn primary" style="width:100%">Turn on text updates</button>'+
+        '<p class="sub" style="margin:8px 0 0;font-size:11.5px">Your number is shared with '+esc(co.name||"your contractor")+' so they can text you. Message and data rates may apply. Turn it off anytime.</p>'+
+      '</div></div>';
     html+='<div class="savehint">Bookmark this page to check progress anytime. Only people with your link can see it.</div>';
     app.innerHTML=html;
     app.querySelectorAll(".grid img").forEach(function(im){
       im.onclick=function(){ document.getElementById("lightimg").src=im.src; document.getElementById("lightbox").style.display="flex"; };
     });
     app.querySelectorAll(".co-approve").forEach(function(b){ b.onclick=function(){ approveCO(b); }; });
+    var subbtn=document.getElementById("subbtn");
+    if(subbtn) subbtn.onclick=function(){
+      var ph=((document.getElementById("subphone")||{}).value||"").replace(/[^\d]/g,"");
+      if(ph.length<7){ alert("Please enter a valid mobile number."); return; }
+      subbtn.disabled=true; subbtn.textContent="Saving…";
+      fetch("/api/portal",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({op:"sub",token:k,phone:ph,on:true})})
+      .then(function(r){ return r.ok; }).then(function(ok){
+        if(ok){ subConfirmed(ph); } else { subbtn.disabled=false; subbtn.textContent="Turn on text updates"; alert("Couldn't save that. Please try again."); }
+      }).catch(function(){ subbtn.disabled=false; subbtn.textContent="Turn on text updates"; alert("Couldn't save that. Please try again."); });
+    };
+    fetch("/api/portal",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({op:"acts",token:k})})
+    .then(function(r){ return r.ok?r.json():null; }).then(function(d){ if(d&&d.sub&&d.sub.on) subConfirmed(d.sub.phone||""); }).catch(function(){});
   })
   .catch(function(){ app.innerHTML='<div class="empty">Couldn\'t load this project. Check your connection and try again.</div>'; });
 })();

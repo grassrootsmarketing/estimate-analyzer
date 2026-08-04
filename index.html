@@ -3153,7 +3153,8 @@ function sanitizeEntry(e){
     d.status="paid"; if(!d.paidTs) d.paidTs=d.invoicedTs||d.ts||0; } });
   // Client portal: on/off, capability token, and what the client is allowed to see.
   e.portal=(e.portal&&typeof e.portal==="object"&&e.portal.on===true&&/^[0-9a-f]{32}$/.test(String(e.portal.token||"")))?
-    {on:true, token:String(e.portal.token), photos:e.portal.photos!==false, money:e.portal.money!==false, publishedTs:numTs(e.portal.publishedTs)}:null;
+    {on:true, token:String(e.portal.token), photos:e.portal.photos!==false, money:e.portal.money!==false, publishedTs:numTs(e.portal.publishedTs),
+     clientSms:(e.portal.clientSms&&typeof e.portal.clientSms==="object"&&e.portal.clientSms.on===true&&/^\d{7,20}$/.test(String(e.portal.clientSms.phone||"")))?{on:true, phone:String(e.portal.clientSms.phone), ts:numTs(e.portal.clientSms.ts)}:null}:null;
   // Lead fields: a captured lead keeps its note, source, and dedupe key.
   e.isLead=e.isLead===true;
   e.lead=(e.lead&&typeof e.lead==="object")?{desc:txt(e.lead.desc,600),area:txt(e.lead.area,120),timing:txt(e.lead.timing,40),
@@ -3566,20 +3567,28 @@ async function syncPortalApprovals(id){
   if(!e0||!e0.portal||!e0.portal.on||!navigator.onLine) return;
   if(_syncedPortal[id] && Date.now()-_syncedPortal[id]<8000) return;
   _syncedPortal[id]=Date.now();
-  let acts=null;
-  try{ const r=await portalApi({op:"acts", token:e0.portal.token}); acts=r&&r.acts; }catch(err){ return; }
-  if(!acts||typeof acts!=="object") return;
+  let resp=null;
+  try{ resp=await portalApi({op:"acts", token:e0.portal.token}); }catch(err){ return; }
+  if(!resp) return;
+  const acts=(resp.acts&&typeof resp.acts==="object")?resp.acts:{};
+  const sub=(resp.sub&&typeof resp.sub==="object")?resp.sub:null;
   const arr=getArchive(), t=arr.find(x=>x&&x.id===id);
-  if(!t||!Array.isArray(t.changes)) return;
-  let changed=0, names=[];
-  t.changes.forEach(c=>{ if(c && c.status==="pending" && !/^Reopened/.test(c.note||"") && Object.prototype.hasOwnProperty.call(acts, c.id)){
+  if(!t||!t.portal) return;
+  let coApproved=[], smsOn=false, changed=0;
+  if(Array.isArray(t.changes)) t.changes.forEach(c=>{ if(c && c.status==="pending" && !/^Reopened/.test(c.note||"") && Object.prototype.hasOwnProperty.call(acts, c.id)){
     c.status="approved"; c.approvedTs=numTs(acts[c.id])||Date.now();
     c.note=txt("Approved by client in the portal "+new Date(c.approvedTs).toLocaleDateString()+(c.note?" · "+c.note:""),200);
-    changed++; names.push(c.number||"change order");
+    coApproved.push(c.number||"change order"); changed++;
   }});
-  if(changed){ setArchive(arr); if(typeof schedulePortalPublish==="function") schedulePortalPublish(id);
+  if(sub){
+    const phone=String(sub.phone||"").replace(/[^\d]/g,"");
+    const next=(sub.on&&phone.length>=7)?{on:true, phone:phone, ts:numTs(sub.ts)||Date.now()}:(t.portal.clientSms?{on:false, phone:"", ts:numTs(sub.ts)||Date.now()}:null);
+    if(JSON.stringify(next||null)!==JSON.stringify(t.portal.clientSms||null)){ t.portal.clientSms=next; changed++; smsOn=!!(next&&next.on); }
+  }
+  if(changed){ setArchive(arr); if(coApproved.length && typeof schedulePortalPublish==="function") schedulePortalPublish(id);
     if(CUR_JOB===id && $("jobView").classList.contains("on")) renderJob();
-    toast(changed===1?(names[0]+" approved by your client in the portal"):(changed+" changes approved by your client")); }
+    if(coApproved.length) toast(coApproved.length===1?(coApproved[0]+" approved by your client in the portal"):(coApproved.length+" changes approved by your client"));
+    else if(smsOn) toast("Your client turned on text updates"); }
 }
 
 /* ---------------- NAV / VIEWS ---------------- */
@@ -4399,6 +4408,24 @@ function renderJob(){
       +'<div class="arch-tools" style="margin-top:8px;gap:14px">'
       +'<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)"><input type="checkbox" id="portalPhotosTgl" '+(po.photos?'checked':'')+'> Show photos</label>'
       +'<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)"><input type="checkbox" id="portalMoneyTgl" '+(po.money?'checked':'')+'> Show payments</label></div>';
+    if(po.clientSms && po.clientSms.on && po.clientSms.phone){
+      const cp=String(po.clientSms.phone), cpFmt=(cp.length===10?"("+cp.slice(0,3)+") "+cp.slice(3,6)+"-"+cp.slice(6):cp);
+      const cliName=txt(e.state&&e.state.contactName,80)||"there", jobNm=txt(e.state&&e.state.jobName,80)||"your project";
+      const stg={lead:"getting started",bidding:"in review",upnext:"scheduled",active:"in progress",complete:"complete"}[boardStage(e)]||"in progress";
+      const nt=(typeof nextTask==="function")?nextTask(e):null;
+      const bal=contractPrice(e)-drawsPaid(e);
+      const dueNow=(e.draws||[]).filter(d=>d&&d.status==="invoiced").reduce((a,d)=>a+(+d.amount||0),0);
+      const smsTo=function(body){ return "sms:"+cp+"?&body="+encodeURIComponent(body); };
+      const tUpdate="Hi "+cliName+", quick update on "+jobNm+": we're "+stg+"."+(nt&&nt.title?(" Next up: "+nt.title+"."):"")+" Any questions, just reply.";
+      const tWay="Hi "+cliName+", we're heading to "+jobNm+" today.";
+      const tPay="Hi "+cliName+", friendly reminder: "+fmt(dueNow>0?dueNow:bal)+" is due on "+jobNm+". Thank you.";
+      html+='<div class="jcap" style="margin-top:10px">Client wants text updates · '+esc(cpFmt)+'</div>'
+        +'<div class="arch-tools" style="margin-top:7px">'
+        +'<a class="minibtn gold" href="'+esc(smsTo(tUpdate))+'">Text update</a>'
+        +'<a class="minibtn" href="'+esc(smsTo(tWay))+'">On the way</a>'
+        +((dueNow>0||bal>0)?('<a class="minibtn" href="'+esc(smsTo(tPay))+'">Payment reminder</a>'):'')
+        +'</div>';
+    }
   } else {
     html+='<p class="jcap" style="margin:2px 0 10px">Give this client a private progress page: status, schedule, photos, and their balance. Costs and margins stay yours.</p>'
       +'<div class="btns" style="margin-top:0"><button class="btn wide" id="portalOn">Create client link</button></div>';
