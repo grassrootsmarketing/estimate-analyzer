@@ -36,11 +36,19 @@ const FNS = ["roundUp","compute","uid","numTs","txt","capArr","validDateStr","da
   "jobSpent","projectedProfit","contractLessCosts","rowPaidC","rowInvoicedC","drawsPaid","drawsInvoiced",
   "drawsTotal","contractRemaining","accountsReceivable","unbilled","nextTask","isOverdue","barTone",
   "pruneArchive","entryPrice","safeImg","sanitizePhotos","sanitizeRows","sanitizeEntry","sanitizeArchive",
-  "clampNum","boundVal","cleanRows","dayAdd","dayDiff","calJobs","calLane","calColor","calAssignColors"];
+  "clampNum","boundVal","cleanRows","dayAdd","dayDiff","calJobs","calLane","calColor","calAssignColors",
+  "needsExampleRetire","retireExample"];
 const CONSTS = ["COST_CATS","HISTORY_CAP","QTY_CAP","PCT_BOUNDS","CAL_COLORS"];
 
-const srcParts = CONSTS.map(c => extractConst(html, c)).concat(FNS.map(f => extractFn(html, f)));
-const sandbox = new Function(srcParts.join("\n") + "\nreturn {" + FNS.concat(CONSTS).join(",") + "};")();
+/* The two example flags are module globals in the app rather than consts, so the
+   sandbox declares its own pair. retireExample writes one of them, which is part
+   of the behaviour under test, so they are readable from outside. */
+const PRELUDE = "let EXAMPLE_OFF=false, EXAMPLE_KEEP=false;\n" +
+  "function exFlags(){ return {off:EXAMPLE_OFF, keep:EXAMPLE_KEEP}; }\n" +
+  "function setExFlags(off,keep){ EXAMPLE_OFF=off; EXAMPLE_KEEP=keep; }\n";
+const EXTRA = ["exFlags","setExFlags"];
+const srcParts = [PRELUDE].concat(CONSTS.map(c => extractConst(html, c)), FNS.map(f => extractFn(html, f)));
+const sandbox = new Function(srcParts.join("\n") + "\nreturn {" + FNS.concat(CONSTS, EXTRA).join(",") + "};")();
 
 let failures = 0;
 function ok(cond, label) {
@@ -343,6 +351,34 @@ eq(S.sanitizeArchive(null).length, 0, "a missing archive becomes an empty one ra
 eq(S.sanitizeArchive("not an array").length, 0, "a non-array archive becomes an empty one");
 const passed = S.sanitizeArchive([{ state: { ts: 1 }, stage: "active", outcome: "pending" }]);
 eq(passed[0].outcome, "won", "sanitizeArchive applies the same repairs as a single entry");
+
+// 25. the example job retires itself once real work exists
+const exOnly = [{ id: "ea-example-job", isExample: true, state: { ts: 1 } }];
+const exPlusReal = [{ id: "ea-example-job", isExample: true, state: { ts: 1 } },
+                    { id: "e1", state: { ts: 2 } }];
+S.setExFlags(false, false);
+ok(!S.needsExampleRetire(exOnly), "an example alone on an empty board is left where it is");
+ok(!S.needsExampleRetire([{ id: "e1", state: { ts: 1 } }]), "real jobs with no example need no retirement");
+ok(!S.needsExampleRetire(null), "a missing archive does not ask to retire anything");
+ok(S.needsExampleRetire(exPlusReal), "an example sitting next to real work is due to retire");
+
+S.setExFlags(false, false);
+const kept = S.retireExample(exOnly);
+eq(kept.length, 1, "retireExample leaves a lone example untouched");
+eq(S.exFlags().off, false, "and does not set the retired flag while it is still teaching");
+
+S.setExFlags(false, false);
+const retired = S.retireExample(exPlusReal);
+eq(retired.length, 1, "the example is dropped once a real job is saved");
+eq(retired[0].id, "e1", "and it is the real job that survives");
+eq(S.exFlags().off, true, "retiring records the flag so it does not come back on the next boot");
+eq(S.retireExample(retired).length, 1, "retireExample is idempotent");
+
+// Asking for it back explicitly holds it in place against auto-retire.
+S.setExFlags(false, true);
+eq(S.retireExample(exPlusReal).length, 2, "an example you asked to keep survives alongside real work");
+eq(S.exFlags().off, false, "and keeping it does not flip the retired flag");
+S.setExFlags(false, false);
 
 if (failures) { console.error("\n" + failures + " PM test(s) failed."); process.exit(1); }
 console.log("\nAll PM invariants passed.");
