@@ -3075,21 +3075,21 @@ async function renderLeadCapture(){
   const box=$("leadCapBody"); if(!box) return;
   if(LEADKEY){
     const idHex=await leadId(LEADKEY), link=leadShareLink(idHex);
-    box.innerHTML='<p class="sub" style="margin-top:0">Anyone with this link can send you a job request. New requests land in your Leads column.</p>'+
+    box.innerHTML='<p class="sub" style="margin-top:0">This is your form. The link does not expire, so put it on your card, your truck, your website. Anything sent lands in your Leads column.</p>'+
       '<div style="font-size:12.5px;word-break:break-all;padding:9px 11px;border:1px dashed var(--line);border-radius:10px;color:var(--ink)">'+esc(link)+'</div>'+
       '<div class="arch-tools" style="margin-top:9px">'+
         '<button class="btn" id="leadCopy">Copy link</button>'+
         '<button class="btn" id="leadCheck">Check now</button>'+
         '<button class="btn ghost" id="leadOff">Turn off</button>'+
       '</div>';
-    $("leadCopy").onclick=()=>{ try{ navigator.clipboard.writeText(link); toast("Link copied. Text it, put it on your card, anywhere."); }catch(e){ toast("Couldn't copy. Long-press the link to copy it."); } };
+    $("leadCopy").onclick=()=>{ try{ navigator.clipboard.writeText(link); toast("Link copied. Text it, print it, put it anywhere."); }catch(e){ toast("Couldn't copy. Long-press the link to copy it."); } };
     $("leadCheck").onclick=()=>fetchLeads(true);
-    $("leadOff").onclick=()=>{ if(!confirm("Turn off the request link? The link stops working for new requests until you turn it back on."))return;
+    $("leadOff").onclick=()=>{ if(!confirm("Turn off the form? The link stops accepting requests until you turn it back on."))return;
       LEADKEY=null; saveKey(LEAD_LS,null); renderLeadCapture(); };
   } else {
-    box.innerHTML='<p class="sub" style="margin-top:0">Get a shareable link where anyone can request an estimate: name, phone, and what they need. Requests show up here as leads.</p>'+
-      '<div class="btns" style="margin-top:6px"><button class="btn primary wide" id="leadOn">Create my request link</button></div>';
-    $("leadOn").onclick=async ()=>{ LEADKEY=makeSyncCode(); saveKey(LEAD_LS,LEADKEY); await renderLeadCapture(); toast("Request link created"); };
+    box.innerHTML='<p class="sub" style="margin-top:0">One permanent link to a form anyone can fill in: name, phone, and what they need. Set it up once, and the link never changes. Every request lands in your Leads column.</p>'+
+      '<div class="btns" style="margin-top:6px"><button class="btn primary wide" id="leadOn">Set up my form</button></div>';
+    $("leadOn").onclick=async ()=>{ LEADKEY=makeSyncCode(); saveKey(LEAD_LS,LEADKEY); await renderLeadCapture(); toast("Your form is live. The link is yours to keep."); };
   }
 }
 
@@ -3693,7 +3693,7 @@ function renderJobs(){
         +'<span class="pm">'+esc(cl(e))+(e.completed?' · completed '+fmtDay(e.completed):'')+'</span></button></div>';
     });
   }
-  html+='<div class="card" id="leadCapCard" style="margin-top:14px"><h2>Request link <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="A public page where anyone can ask you for an estimate. Only this device can read the requests; the link itself cannot.">i</span></h2><div id="leadCapBody"></div></div>';
+  html+='<div class="card" id="leadCapCard" style="margin-top:14px"><h2>Your request form <span class="tip eleft" tabindex="0" role="button" aria-label="What is this?" data-tip="One permanent link to a public form where anyone can ask you for an estimate. Only this device can read what comes in; the link itself cannot.">i</span></h2><div id="leadCapBody"></div></div>';
   box.innerHTML=html;
   box.querySelectorAll("[data-job]").forEach(el=>{ el.onclick=()=>openJob(el.dataset.job,"jobs"); });
   box.querySelectorAll("[data-start]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation(); startJob(el.dataset.start); }; });
