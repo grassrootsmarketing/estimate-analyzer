@@ -4145,6 +4145,7 @@ async function maybeInstallHint(){
 
 // boot (async: open DB → migrate → load caches → init UI)
 (async function boot(){
+  const bootFailures=[];
   registerSW();   // does not depend on storage; run first so a storage error cannot skip it
   try{ await idbOpen(); }catch(e){}
   try{ await migrate(); }catch(e){}
@@ -4172,19 +4173,46 @@ async function maybeInstallHint(){
      like a fresh edit. Only work that was never saved to a job is actually lost,
      and only after 72 hours of nobody touching it. */
   let dropped=null;
-  if(draftExpired(saved)){
-    const hadWork = !!((saved.jobName&&String(saved.jobName).trim())
-      || (saved.rows||[]).some(r=>(+r.qty||0)*(+r.unit||0)>0));
-    dropped={ days:Math.max(3,Math.floor(draftAgeMs(saved)/86400000)), hadWork:hadWork,
-      wasJob:!!(saved.editId && getArchive().some(x=>x&&x.id===saved.editId)) };
-    saved=null;
-  }
+  try{
+    if(draftExpired(saved)){
+      const hadWork = !!((saved.jobName&&String(saved.jobName).trim())
+        || (saved.rows||[]).some(r=>(+r.qty||0)*(+r.unit||0)>0));
+      dropped={ days:Math.max(3,Math.floor(draftAgeMs(saved)/86400000)), hadWork:hadWork,
+        wasJob:!!(saved.editId && getArchive().some(x=>x&&x.id===saved.editId)) };
+      saved=null;
+    }
+  }catch(e){ bootFailures.push("draft expiry: "+(e&&e.message||e)); saved=null; }
   STATE_CACHE = saved;
-  _touchedTs = numTs(saved&&saved.touchedTs) || numTs(saved&&saved.ts) || Date.now();
-  defaultRows(); render(); syncQtyLabel(); loadProfileIntoForm(); initVoiceUI(); renderPhotos();
+  try{ _touchedTs = numTs(saved&&saved.touchedTs) || numTs(saved&&saved.ts) || Date.now(); }catch(e){ _touchedTs=Date.now(); }
+  /* Each of these used to sit on one line, so a throw in the first skipped the
+     rest and boot never reached the point where anything is painted. That is a
+     blank screen with a header on it, which is what a dead app looks like. */
+  try{ defaultRows(); }catch(e){ bootFailures.push("default rows: "+(e&&e.message||e)); rows=[]; }
+  try{ render(); }catch(e){ bootFailures.push("line items: "+(e&&e.message||e)); }
+  try{ syncQtyLabel(); }catch(e){ bootFailures.push("qty label: "+(e&&e.message||e)); }
+  try{ loadProfileIntoForm(); }catch(e){ bootFailures.push("company profile: "+(e&&e.message||e)); }
+  try{ initVoiceUI(); }catch(e){ bootFailures.push("voice: "+(e&&e.message||e)); }
+  try{ renderPhotos(); }catch(e){ bootFailures.push("photos: "+(e&&e.message||e)); }
   let hadState=false;
-  if(saved && saved.rows){ applyState(saved); hadState=true;
-    EDIT_ENTRY_ID=(saved.editId && getArchive().some(x=>x&&x.id===saved.editId)) ? saved.editId : null; }
+  /* A corrupt held estimate must not take the app down with it. Losing the draft
+     is recoverable; a screen that will not load is not. */
+  /* Repair before restoring, not just catch afterwards. The held estimate is the
+     one blob nothing was sanitizing, and a bad rows array is what takes boot down. */
+  try{
+    if(saved && typeof saved==="object"){
+      saved.rows=sanitizeRows(saved.rows);
+      saved.photos=sanitizePhotos(saved.photos);
+      if(saved.proposal && typeof saved.proposal!=="object") saved.proposal=null;
+    }
+  }catch(e){ bootFailures.push("repairing your estimate: "+(e&&e.message||e)); saved=null; }
+  try{
+    if(saved && saved.rows && saved.rows.length){ applyState(saved); hadState=true;
+      EDIT_ENTRY_ID=(saved.editId && getArchive().some(x=>x&&x.id===saved.editId)) ? saved.editId : null; }
+  }catch(e){
+    bootFailures.push("restoring your estimate: "+(e&&e.message||e));
+    hadState=false; EDIT_ENTRY_ID=null;
+    try{ rows=[]; render(); }catch(e2){}
+  }
   /* Your Settings defaults apply to any rate the restored estimate does not carry
      itself. They used to apply only when there was no saved estimate at all, which
      after the very first job is never, so setting a default appeared to do nothing.
@@ -4199,25 +4227,36 @@ async function maybeInstallHint(){
   rateDefault("tax",{state:"tax",profile:"defTax"},0,30);
   // Always open in Build-from-cost (analyze is a deliberate choice / the PDF-import path). Preserve restored numbers.
   const _savedMargin = hadState && saved && saved.margin;
-  setMode("cost");
-  if(_savedMargin) $("margin").value=saved.margin;
-  calc();
-  _savedSig = (hadState && getArchive().some(e=>stateSig(e.state)===stateSig())) ? stateSig() : null;
+  try{ setMode("cost"); if(_savedMargin) $("margin").value=saved.margin; calc(); }
+  catch(e){ bootFailures.push("pricing panel: "+(e&&e.message||e)); }
+  try{ _savedSig = (hadState && getArchive().some(e=>stateSig(e.state)===stateSig())) ? stateSig() : null; }
+  catch(e){ _savedSig=null; }
   /* Boot is done rebuilding the form, so from here a changed signature is a real
      edit and the three day clock restarts from it. */
-  _lastSig=stateSig(); _draftReady=true;
+  try{ _lastSig=stateSig(); }catch(e){ _lastSig=null; }
+  _draftReady=true;
   if(dropped){
     _touchedTs=Date.now();
-    persist();
+    try{ persist(); }catch(e){}
     if(dropped.hadWork) toast(dropped.wasJob
       ? "Cleared an estimate untouched for "+dropped.days+" days. The job it belonged to is safe in your jobs."
       : "Cleared an estimate untouched for "+dropped.days+" days. It had never been saved to your jobs.");
   }
-  updateSaveStatus();
-  renderArchive();
-  renderDashboard();
-  updateNavBadges();
-  maybeInstallHint();
+  /* Nothing below here is allowed to leave a blank screen. A throw in any one of
+     these paints nothing at all: no dashboard, no nav, just the header, which
+     looks like the app died. Each one stands on its own, and whatever happens the
+     dashboard is shown and the failure is said out loud rather than swallowed. */
+  const step=(fn,what)=>{ try{ fn(); }catch(e){ bootFailures.push(what+": "+(e&&e.message||e)); } };
+  step(updateSaveStatus,"save status");
+  step(renderArchive,"archive");
+  step(renderDashboard,"dashboard");
+  step(updateNavBadges,"nav badges");
+  step(maybeInstallHint,"install hint");
+  try{ if(!document.querySelector(".view.on")) showView("dash"); }catch(e){}
+  if(bootFailures.length){
+    try{ toast("Some of the screen could not be drawn. Your data is safe. "+bootFailures[0]); }catch(e){}
+    try{ console.error("boot failures:", bootFailures); }catch(e){}
+  }
 })();
 </script>
 </body>
