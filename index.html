@@ -1273,6 +1273,12 @@
       <div id="benchList"></div>
       <div class="btns"><button class="btn primary" id="saveBench">Save benchmarks</button><button class="btn ghost" id="resetBench">Reset to LA 2026</button></div>
     </div>
+    <div class="card">
+      <h2>Example job</h2>
+      <p class="sub">A worked sample: a priced estimate, a schedule, tracked costs, a paid draw and one still owed, and two change orders. It only ever appears on an empty dashboard, and it retires itself the first time you save real work so it never counts toward your numbers.</p>
+      <div id="exStatus" class="bench" style="margin-top:0"></div>
+      <div class="btns"><button class="btn" id="exShow">Show the example again</button></div>
+    </div>
   </section>
 
   <!-- ============ PROPOSAL ============ -->
@@ -1875,7 +1881,7 @@ async function _writeArch(v){
    contradiction is fixed once at the moment it is created rather than surviving
    until the next boot. Callers keep their own array reference; the cache is the
    sanitized one, holding the same entry objects. */
-function setArchive(a){ ARCH_CACHE=sanitizeArchive(a); const v=ARCH_CACHE;
+function setArchive(a){ ARCH_CACHE=sanitizeArchive(retireExample(a)); const v=ARCH_CACHE;
   _archWriteQ=_archWriteQ.then(()=>_writeArch(v)); return _archWriteQ; }
 if($("persistRetry")) $("persistRetry").addEventListener("click",()=>{ setArchive(getArchive()); toast("Retrying save"); });
 
@@ -1941,7 +1947,10 @@ function buildExampleJob(){
   e.costTracking="tracking"; e.paymentTracking="tracking";
   return sanitizeEntry(e);
 }
-let EXAMPLE_OFF=false;
+/* Three states, one key. Unset is a first run. "off" is retired, by hand or by
+   the first real save. "keep" means you asked for it back knowing you have real
+   jobs, so it stays put and auto-retire leaves it alone. */
+let EXAMPLE_OFF=false, EXAMPLE_KEEP=false;
 function exampleOff(){ return EXAMPLE_OFF; }
 function hasExample(){ return getArchive().some(e=>e&&e.isExample); }
 /* Seeded only into a genuinely empty archive, and only once. */
@@ -1953,13 +1962,59 @@ function maybeSeedExample(){
   ARCH_CACHE=sanitizeArchive([ex]);
   return true;
 }
-async function removeExample(){
-  const arr=getArchive().filter(e=>!(e&&e.isExample));
+/* The example is a teaching aid for an empty board. The moment there is one real
+   job it stops teaching and starts lying: it adds its own price to the Pipeline,
+   its own win to the win rate, and its own margin to the average. So it retires
+   itself as soon as real work exists, rather than waiting to be dismissed.
+   Pure decision, no side effects, so boot can ask before it writes anything. */
+function needsExampleRetire(a){
+  if(EXAMPLE_KEEP) return false;
+  return Array.isArray(a) && a.some(e=>e&&e.isExample) && a.some(e=>e&&!e.isExample);
+}
+function retireExample(a){
+  if(!needsExampleRetire(a)) return a;
   EXAMPLE_OFF=true;
   try{ saveKey(LS_EXAMPLE,"off"); }catch(e){}
+  return a.filter(e=>!(e&&e.isExample));
+}
+/* Repainting only the calculator left the banner sitting on the dashboard, which
+   is the screen the button is on, so removing the example looked like a button
+   that did nothing. Every surface that can show the example is repainted here. */
+function renderExampleSurfaces(){
+  const on=id=>{ const el=$(id); return !!(el && el.classList.contains("on")); };
+  try{ render(); }catch(e){}
+  try{ renderJobs(); }catch(e){}
+  try{ if(on("dashView")) renderDashboard(); }catch(e){}
+  try{ if(on("archiveView")) renderArchive(); }catch(e){}
+  try{ if(on("schedView")) renderCal(); }catch(e){}
+  try{ if(on("settingsView")) renderExampleSetting(); }catch(e){}
+}
+async function removeExample(){
+  const arr=getArchive().filter(e=>!(e&&e.isExample));
+  EXAMPLE_OFF=true; EXAMPLE_KEEP=false;
+  try{ saveKey(LS_EXAMPLE,"off"); }catch(e){}
   await setArchive(arr);
-  render(); renderJobs(); if($("schedView").classList.contains("on")) renderCal();
+  renderExampleSurfaces();
   toast("Example removed");
+}
+/* Auto-retire is only fair if it is reversible, so Settings can put it back. */
+async function restoreExample(){
+  if(hasExample()){ toast("The example is already on your dashboard."); return; }
+  EXAMPLE_OFF=false; EXAMPLE_KEEP=true;
+  try{ saveKey(LS_EXAMPLE,"keep"); }catch(e){}
+  const arr=getArchive().slice();
+  arr.push(buildExampleJob());
+  await setArchive(arr);
+  renderExampleSurfaces();
+  toast("Example added back");
+}
+function renderExampleSetting(){
+  const box=$("exStatus"); if(!box) return;
+  box.textContent = hasExample()
+    ? "On your dashboard now."
+    : (exampleOff() ? "Retired. Nothing on your dashboard is from the example."
+                    : "Not showing, because your dashboard already has jobs on it.");
+  const b=$("exShow"); if(b) b.disabled=hasExample();
 }
 /* ---- row overflow menus ----
    One menu open at a time. The menu flips above the row when it would otherwise
@@ -2669,6 +2724,7 @@ function resetBench(){
 }
 $("saveBench").addEventListener("click",saveBench);
 $("resetBench").addEventListener("click",resetBench);
+if($("exShow")) $("exShow").addEventListener("click",restoreExample);
 
 /* ---------------- CLIENT PROPOSAL ---------------- */
 function proposalLines(s){
@@ -3235,7 +3291,7 @@ function showView(name){
   if(name==="jobs") renderJobs();
   if(name==="sched") renderCal();
   if(name==="archive"){ renderArchive(); if(typeof renderCloud==="function") renderCloud(); }
-  if(name==="settings"){ renderBenchSettings(); updateStorageMeter(); }
+  if(name==="settings"){ renderBenchSettings(); updateStorageMeter(); renderExampleSetting(); }
   if(name==="calc" && typeof renderSimilar==="function") renderSimilar();
   // Returning to the Jobs board restores its scroll position; everything else opens at the top.
   window.scrollTo(0, name==="jobs"?(_viewScroll.jobs||0):0);
@@ -3333,9 +3389,10 @@ function renderDashboard(){
   } else if(hasExample()){
     /* Never let someone mistake the sample for their own money. The banner
        states it outright and the remove button sits inside it. */
-    html+='<div class="dash-start exnote"><div><b>This is an example job.</b> It shows a priced estimate, '
+    html+='<div class="dash-start exnote"><div><b>This is an example job, not yours.</b> It shows a priced estimate, '
       +'a schedule, tracked costs, a paid draw and one still owed, plus an approved and a pending change order. '
-      +'Open it to see how the pieces fit, then remove it.</div>'
+      +'Open it to see how the pieces fit. <b>It retires itself the moment you save your first real job</b>, so '
+      +'nothing below ever mixes sample money into your numbers.</div>'
       +'<button type="button" class="minibtn" id="exRemove">Remove example</button></div>';
   }
   /* hero: pipeline total + bar chart of the last ~8 job prices (most recent highlighted) */
@@ -4228,7 +4285,12 @@ async function maybeInstallHint(){
   try{ PROFILE = (IDB_OK? await idbGet(LS_PROFILE):null) || readLS(LS_PROFILE) || {}; }catch(e){ PROFILE={}; }
   try{ const rawArch=(IDB_OK? await idbGet(LS_ARCH):null) || readLS(LS_ARCH) || [];
     ARCH_CACHE=sanitizeArchive(rawArch); }catch(e){ ARCH_CACHE=[]; }
-  try{ EXAMPLE_OFF = ((IDB_OK? await idbGet(LS_EXAMPLE):null) || readLS(LS_EXAMPLE)) === "off"; }catch(e){ EXAMPLE_OFF=false; }
+  try{ const xf=(IDB_OK? await idbGet(LS_EXAMPLE):null) || readLS(LS_EXAMPLE);
+    EXAMPLE_OFF = xf==="off"; EXAMPLE_KEEP = xf==="keep"; }catch(e){ EXAMPLE_OFF=false; EXAMPLE_KEEP=false; }
+  /* Anyone who already saved a real job while the example was still on the board
+     is carrying both, with the sample's price folded into their pipeline. Retire
+     it on this load and write the corrected archive once. */
+  try{ if(needsExampleRetire(ARCH_CACHE)) setArchive(ARCH_CACHE); }catch(e){ bootFailures.push("retiring the example: "+(e&&e.message||e)); }
   /* Held in memory only until something else writes. Persisting it at boot would
      turn a read into a write on every cold start, and a first run that cannot
      write is exactly when that would hurt. */
