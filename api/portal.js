@@ -94,7 +94,34 @@ async function handler(req, res){
     if(op === "wipe"){
       const b = await findBlob(blobPath(token), blobToken);
       if(b) await del(b.url, { token: blobToken });
+      const ab = await findBlob(PREFIX + token + ".acts.json", blobToken);
+      if(ab) await del(ab.url, { token: blobToken });
       res.status(200).json({ ok: true });
+      return;
+    }
+    // client records an approval for one change order (co id from the snapshot).
+    // No secret data: just a change-order id the client already sees, timestamped.
+    if(op === "approve"){
+      const co = String(body.co || "");
+      if(!/^[a-z0-9_-]{1,40}$/i.test(co)){ res.status(400).json({ error: "This change reference isn't valid." }); return; }
+      const ap = PREFIX + token + ".acts.json";
+      let acts = {};
+      const eb = await findBlob(ap, blobToken);
+      if(eb){ try{ const er = await fetch(eb.url, { cache: "no-store" }); if(er.ok){ const parsed = JSON.parse(await er.text()); if(parsed && typeof parsed === "object" && !Array.isArray(parsed)) acts = parsed; } }catch(e){ acts = {}; } }
+      if(Object.keys(acts).length < 200 || Object.prototype.hasOwnProperty.call(acts, co)) acts[co] = Date.now();
+      await put(ap, JSON.stringify(acts), { access: "public", addRandomSuffix: false, allowOverwrite: true, contentType: "application/json", token: blobToken });
+      res.status(200).json({ ok: true });
+      return;
+    }
+    // owner reads recorded client approvals to reflect them in the app
+    if(op === "acts"){
+      const ap = PREFIX + token + ".acts.json";
+      const eb = await findBlob(ap, blobToken);
+      if(!eb){ res.status(200).json({ acts: {} }); return; }
+      const er = await fetch(eb.url, { cache: "no-store" });
+      if(!er.ok){ res.status(200).json({ acts: {} }); return; }
+      let acts = {}; try{ const parsed = JSON.parse(await er.text()); if(parsed && typeof parsed === "object" && !Array.isArray(parsed)) acts = parsed; }catch(e){ acts = {}; }
+      res.status(200).json({ acts: acts });
       return;
     }
     res.status(400).json({ error: "bad op" });
