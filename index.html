@@ -600,6 +600,8 @@
   .brrow .bl{min-width:0}
   .brrow .nmrow{display:flex;align-items:center;gap:6px;min-width:0}
   .brrow .nmrow .bdg{flex:0 0 auto}
+  /* Small enough to read as a marker on the name rather than a second badge. */
+  .ic.rowstar{width:13px;height:13px;flex:0 0 auto}
   .brrow .nm{display:block;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
   .brrow .mt{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
   .brrow .br{text-align:right;flex:0 0 auto}
@@ -3324,12 +3326,16 @@ function renderDashboard(){
   /* recent jobs */
   html+='<div class="bsect"><span>Recent</span><span class="link" id="dashAll" style="font-size:11px">View all</span></div>';
   if(!n) html+='<div class="bnone">Saved estimates land here, newest first.</div>';
-  arr.filter(e=>!e.archived).slice(0,5).forEach(e=>{
+  /* Pinned jobs hold the top of the list. Sort is stable, so within pinned and
+     within the rest the order is still newest first. Pinning is also what keeps a
+     job out of the rolling history, so it earns its place ahead of five recents. */
+  arr.filter(e=>!e.archived).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)).slice(0,5).forEach(e=>{
     const s=e.state, r=e.results||compute(s);
     const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
     const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
     const meta=[(e.isExample?"Example":""),(s.clientType||""),when].filter(Boolean).join(" · ");
-    const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nmrow"><span class="nm">'+esc(nm)+'</span>'+stageBadge(e,{noExample:true})+'</span><span class="mt">'+esc(meta)+'</span></span>'+
+    const star=e.pinned?ic("star","starfill rowstar"):"";
+    const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nmrow">'+star+'<span class="nm">'+esc(nm)+'</span>'+stageBadge(e,{noExample:true})+'</span><span class="mt">'+esc(meta)+'</span></span>'+
       '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
     /* Archive files it off the dashboard and is reversible; delete is permanent.
        Both live behind one dot button so the card never resizes to make room. */
@@ -3338,6 +3344,9 @@ function renderDashboard(){
       +' title="More" aria-label="More actions for '+esc(nm)+'">'+ic("more")+'</button>'
       +'<div class="rowmenu" data-menu="'+esc(e.id)+'" role="menu" hidden>'
       +'<div class="rmmain">'
+      +'<button type="button" role="menuitem" data-pin="'+esc(e.id)+'">'+ic("star",e.pinned?"starfill":"")
+      +'<span>'+(e.pinned?'Unpin':'Pin to top')
+      +'<span class="msub">'+(e.pinned?'Back in date order':'Holds the top of this list')+'</span></span></button>'
       +'<button type="button" role="menuitem" data-arch="'+esc(e.id)+'">'+ic("folder")
       +'<span>Archive<span class="msub">Off the dashboard, kept in Archive</span></span></button>'
       +'<button type="button" role="menuitem" class="danger" data-delbid="'+esc(e.id)+'">'+ic("trash")
@@ -3382,6 +3391,16 @@ function renderDashboard(){
     const arr=getArchive(), t=arr.find(x=>x&&x.id===el.dataset.arch); if(!t) return;
     t.archived=true; t.updatedTs=Date.now();
     setArchive(arr); renderDashboard(); toast("Archived. Find it in the Archive tab.");
+  }; });
+  /* Same pinned flag the Archive tab already uses, so pinning here also exempts
+     the job from the rolling history rather than being a second, parallel idea. */
+  box.querySelectorAll("[data-pin]").forEach(el=>{ el.onclick=ev=>{ ev.stopPropagation();
+    const arr=getArchive(), t=arr.find(x=>x&&x.id===el.dataset.pin); if(!t) return;
+    t.pinned=!t.pinned; t.updatedTs=Date.now();
+    closeRowMenus();
+    setArchive(arr); renderDashboard(); renderArchive();
+    toast(t.pinned?"Pinned to the top. It also stops rolling off your history."
+                  :"Unpinned. Back in date order.");
   }; });
 }
 
