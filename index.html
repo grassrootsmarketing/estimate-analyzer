@@ -2842,6 +2842,34 @@ function downloadSummary(s){
 /* ---------------- COMPANY PROFILE ---------------- */
 let PROFILE={};
 function getProfile(){ return PROFILE||{}; }
+/* ---- the profile follows the account, not the device ----
+   Company name, licence, contact details, logo and default rates are one thing:
+   they belong to the business, not to whichever laptop you happened to open.
+   They ride along inside the encrypted cloud payload already, so all that was
+   missing was a rule for which copy wins and a reason to go and get it. */
+function profileTs(p){ return (p && typeof p==="object") ? numTs(p.updatedTs) : 0; }
+/* Empty means nobody has set this device up yet. Default rates alone do not
+   count: they arrive prefilled, so a device carrying only those is still blank. */
+function profileEmpty(p){
+  if(!p || typeof p!=="object") return true;
+  return !["name","license","phone","email","address","logo"]
+    .some(k=>typeof p[k]==="string" && p[k].trim()!=="");
+}
+/* Newer wins, and an empty device always yields to a filled cloud copy even if
+   its clock disagrees. A filled local profile is never silently replaced by an
+   older cloud one, because that would quietly undo work you just did here. */
+function pickProfile(local, cloud){
+  if(!cloud || typeof cloud!=="object" || profileEmpty(cloud)) return {profile:local||{}, from:"local"};
+  if(profileEmpty(local)) return {profile:cloud, from:"cloud"};
+  return profileTs(cloud) > profileTs(local) ? {profile:cloud, from:"cloud"} : {profile:local, from:"local"};
+}
+/* Worth one download, once, on a device that has a sync code and nothing set up:
+   that is exactly the new-laptop case. A device that already knows who it is
+   never pays for this. */
+function shouldPullProfile(local, sync){
+  return !!(sync && sync.code && profileEmpty(local));
+}
+function stampProfile(p){ if(p && typeof p==="object") p.updatedTs=Date.now(); return p; }
 function loadProfileIntoForm(){
   const p=PROFILE;
   $("coName").value=p.name||""; $("coLicense").value=p.license||""; $("coPhone").value=p.phone||"";
@@ -2898,18 +2926,19 @@ $("coLogo").addEventListener("change",async e=>{
   if(f.size>6000000){ toast("Logo too big. Use one under ~6 MB"); return; }
   try{
     const out=await processLogo(f);
-    PROFILE.logo=out; $("coLogoPrev").style.backgroundImage="url("+out+")";
+    PROFILE.logo=out; stampProfile(PROFILE); $("coLogoPrev").style.backgroundImage="url("+out+")";
     applyBrand(); toast("Logo updated. Hit Save to keep it.");
   }catch(err){ toast("Couldn't read that image. Try a PNG or JPG."); }
 });
-$("clearLogo").addEventListener("click",()=>{ PROFILE.logo=""; $("coLogoPrev").style.backgroundImage="";
+$("clearLogo").addEventListener("click",()=>{ PROFILE.logo=""; stampProfile(PROFILE); $("coLogoPrev").style.backgroundImage="";
   const el=$("brandLogo"); el.style.background=""; el.style.width=""; el.style.borderRadius="";
   el.innerHTML='<svg class="ic"><use href="#i-ruler"/></svg>'; });
 $("saveSettings").addEventListener("click",()=>{
   PROFILE.name=$("coName").value.trim(); PROFILE.license=$("coLicense").value.trim(); PROFILE.phone=$("coPhone").value.trim();
   PROFILE.email=$("coEmail").value.trim(); PROFILE.address=$("coAddress").value.trim();
   PROFILE.defMarkup=$("defMarkup").value; PROFILE.defOverhead=$("defOverhead").value; PROFILE.defContingency=$("defContingency").value; PROFILE.defTax=$("defTax").value;
-  saveKey(LS_PROFILE, PROFILE);
+  saveKey(LS_PROFILE, stampProfile(PROFILE));
+  if(typeof queueCloudBackup==="function") queueCloudBackup();
   applyBrand(); toast("Profile saved"); showView("calc");
 });
 
@@ -3209,7 +3238,11 @@ function cloudStatusLine(){
 /* A backup carrying no estimates is only safe to upload when the cloud has nothing
    substantial to lose. Pure, so the test suite can pin the rule down. */
 const EMPTY_GUARD_BYTES=2048;
-function emptyBackupOk(arch){ return Array.isArray(arch) && arch.length>0; }
+/* The seeded example is not the contractor's work, so a device carrying only
+   the example still counts as empty for the wipe guard. Otherwise a fresh
+   device that has been given the sync code would pass the guard on the
+   strength of a sample bathroom remodel and overwrite a real backup. */
+function emptyBackupOk(arch){ return Array.isArray(arch) && arch.some(e=>e && !e.isExample); }
 async function cloudBackupNow(manual){
   if(!SYNC||!SYNC.code||_syncBusy) return;
   if(!navigator.onLine){ if(manual) toast("You're offline. It'll back up next time you're online."); return; }
@@ -3244,6 +3277,32 @@ async function cloudBackupNow(manual){
   }finally{ _syncBusy=false; }
 }
 function queueCloudBackup(){ if(!SYNC||!SYNC.code) return; clearTimeout(_syncTimer); _syncTimer=setTimeout(()=>cloudBackupNow(false), 20000); }
+/* A device with a sync code and no company set up is a device you just signed in
+   on. Fetch the account's profile once, quietly, and adopt it. Jobs are left
+   alone on purpose: merging someone's whole archive without asking at boot is
+   not a thing an app should do on its own. Any failure is silent, because this
+   runs unprompted and a new laptop with no logo yet is not an error worth a toast. */
+async function cloudPullProfile(){
+  if(!shouldPullProfile(PROFILE, SYNC)) return false;
+  try{
+    const code=normCode(SYNC.code);
+    const id=await syncId(code);
+    const st=await syncApi({op:"status",id:id});
+    if(!st || !st.exists) return false;
+    let b64="";
+    for(let n=0;n<st.parts;n++){ const d=await syncApi({op:"get",id:id,n:n}); b64+=d.data; }
+    const payload=await decryptBackup(code,b64);
+    if(!payload || !payload.profile || typeof payload.profile!=="object") return false;
+    payload.profile.logo=safeImg(payload.profile.logo);
+    const picked=pickProfile(PROFILE, payload.profile);
+    if(picked.from!=="cloud") return false;
+    PROFILE=picked.profile; saveKey(LS_PROFILE,PROFILE);
+    try{ loadProfileIntoForm(); }catch(e){}
+    try{ applyBrand(); }catch(e){}
+    toast("Loaded your company profile from the cloud");
+    return true;
+  }catch(e){ return false; }
+}
 async function cloudRestore(codeInput){
   const code=normCode(codeInput);
   if(code.length<12){ toast("That code looks too short. It's 16 characters, like EA12-CD34-EF56-GH78."); return; }
@@ -3261,12 +3320,18 @@ async function cloudRestore(codeInput){
     const inc=[]; let skipped=0; raw.forEach(en=>{ const c=sanitizeEntry(en); if(c) inc.push(c); else skipped++; });
     if(!confirm("Cloud backup from "+new Date(st.ts).toLocaleString()+" has "+inc.length+" estimate(s). Merge into this device? Newer versions win; nothing here gets deleted.")){ setSyncStatus(); return; }
     await setArchive(mergeArchives(getArchive(), inc).slice(0,500));
-    if(payload.profile && typeof payload.profile==="object" && confirm("Also bring over the company profile from the backup?")){
-      payload.profile.logo=safeImg(payload.profile.logo); PROFILE=payload.profile; saveKey(LS_PROFILE,PROFILE); loadProfileIntoForm(); }
+    /* No confirm: the profile belongs to the account, so restoring the account
+       brings it. The rule protects a profile edited here more recently. */
+    let gotProfile=false;
+    if(payload.profile && typeof payload.profile==="object"){
+      payload.profile.logo=safeImg(payload.profile.logo);
+      const picked=pickProfile(PROFILE, payload.profile);
+      if(picked.from==="cloud"){ PROFILE=picked.profile; saveKey(LS_PROFILE,PROFILE); loadProfileIntoForm(); applyBrand(); gotProfile=true; }
+    }
     if(payload.benchmarks && payload.benchmarks.data){ BENCH=payload.benchmarks.data; BENCH_UPDATED=payload.benchmarks.updated||BENCH_UPDATED; saveKey("ea_bench",payload.benchmarks); calc(); }
     SYNC={code:code, lastTs:Date.now(), lastBytes:b64.length, lastErr:""}; saveKey(SYNC_LS,SYNC);
     renderArchive(); renderDashboard(); renderCloud();
-    toast("Restored "+inc.length+" estimate(s) from cloud"+(skipped?", skipped "+skipped+" invalid":"")+". Cloud backup is now on for this device.");
+    toast("Restored "+inc.length+" estimate(s) from cloud"+(skipped?", skipped "+skipped+" invalid":"")+(gotProfile?", plus your company profile":"")+". Cloud backup is now on for this device.");
   }catch(err){ setSyncStatus(); toast("Cloud restore failed: "+(err&&err.message||"error")); }
 }
 function renderCloud(){
@@ -4560,6 +4625,8 @@ async function maybeInstallHint(){
   try{ const sy=(IDB_OK? await idbGet(SYNC_LS):null) || readLS(SYNC_LS) || null;
     SYNC=(sy&&typeof sy==="object"&&typeof sy.code==="string"&&sy.code)?sy:null; }catch(e){ SYNC=null; }
   if(SYNC && (!SYNC.lastTs || Date.now()-SYNC.lastTs>3600000)) queueCloudBackup();   // catch up if the last backup is stale
+  /* Off the critical path: boot never waits on the network for this. */
+  if(shouldPullProfile(PROFILE, SYNC)) setTimeout(()=>{ cloudPullProfile(); }, 1200);
   try{ const lk=(IDB_OK? await idbGet(LEAD_LS):null) || readLS(LEAD_LS) || null;
     LEADKEY=(typeof lk==="string"&&lk.length>=12)?lk:null; }catch(e){ LEADKEY=null; }
   let saved=null;

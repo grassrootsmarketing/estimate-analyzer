@@ -1,7 +1,7 @@
 /* Service worker — offline shell + vendored libraries */
 /* Bumped for the Homestead visual system: new palette, new display face. Without
    this every installed device keeps serving the old forest shell offline. */
-const CACHE = "ea-shell-v32";
+const CACHE = "ea-shell-v33";
 self.addEventListener("install", e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["/","/index.html"])).then(()=>self.skipWaiting()).catch(()=>{}));
 });
