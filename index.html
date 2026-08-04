@@ -666,6 +666,27 @@
   .rowmenu .rmbtns button.solid{background:var(--dangerfill);border-color:var(--dangerfill);color:var(--ondanger)}
   .rowmenu .rmbtns button.solid:hover{background:var(--dangerfill);filter:brightness(.93)}
   .rmconf,.rmmain{animation:rowpane .13s ease}
+  /* Confetti. Fixed and unclickable, launched from just under the header so it
+     reads as coming off the job rather than raining from nowhere. */
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:80;overflow:hidden}
+  .confetti i{position:absolute;left:50%;top:34%;display:block;opacity:0;
+    animation:confetti var(--d) cubic-bezier(.15,.6,.35,1) var(--delay) forwards}
+  @keyframes confetti{
+    0%{opacity:0;transform:translate(-50%,0) rotate(0) scale(.7)}
+    8%{opacity:1;transform:translate(calc(-50% + var(--x) * .18), calc(var(--rise) * -.4)) rotate(calc(var(--spin) * .2)) scale(1)}
+    45%{opacity:1;transform:translate(calc(-50% + var(--x) * .62), calc(var(--rise) * -1)) rotate(calc(var(--spin) * .55)) scale(1)}
+    78%{opacity:.95}
+    100%{opacity:0;transform:translate(calc(-50% + var(--x)), 54vh) rotate(var(--spin)) scale(.92)}
+  }
+  /* The chip that just changed, pointed at once and then left alone. */
+  .chip.stagepop{animation:stagepop 1.1s cubic-bezier(.2,.8,.3,1)}
+  @keyframes stagepop{
+    0%{transform:scale(1);box-shadow:0 0 0 0 rgba(184,85,47,.55)}
+    18%{transform:scale(1.13);box-shadow:0 0 0 6px rgba(184,85,47,.22)}
+    45%{transform:scale(1)}
+    100%{transform:scale(1);box-shadow:0 0 0 16px rgba(184,85,47,0)}
+  }
+  @media(prefers-reduced-motion:reduce){ .confetti{display:none} .chip.stagepop{animation:none} }
   @keyframes rowmenuin{from{opacity:0;transform:scale(.95) translateY(-6px)}to{opacity:1;transform:none}}
   @keyframes rowpane{from{opacity:0}to{opacity:1}}
   @media(prefers-reduced-motion:reduce){ .rowmenu,.rmconf,.rmmain{animation:none} }
@@ -3724,13 +3745,64 @@ async function _pmWrite(arr, okMsg){
   return ok;
 }
 /* Lifecycle transitions are explicit actions with timestamps, never tap-to-cycle. */
+/* ---- marking the moment ----
+   Winning a job is the best thing that happens in this app, and it was landing as
+   a line of grey text. A short burst of the brand colours, then the new status chip
+   is pointed at so the state change is seen rather than merely stored.
+   DOM nodes rather than a canvas: about twenty of them for under a second, no new
+   dependency, and nothing left behind. Reduced motion gets neither. */
+function celebrate(n){
+  try{
+    if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const host=document.createElement("div");
+    host.className="confetti"; host.setAttribute("aria-hidden","true");
+    const colors=["#d97757","#b8552f","#e8b87a","#e08e6e","#8fc79c","#f0eee6"];
+    const count=Math.max(8,Math.min(48,n||30));
+    for(let i=0;i<count;i++){
+      const b=document.createElement("i");
+      const x=(Math.random()*2-1)*46;          // vw of travel, left or right
+      const rise=16+Math.random()*16;          // vh upward before falling back, kept in frame
+      const spin=(Math.random()*2-1)*720;
+      b.style.cssText="--x:"+x.toFixed(1)+"vw;--rise:"+rise.toFixed(1)+"vh;--spin:"+spin.toFixed(0)+"deg;"
+        +"--d:"+(760+Math.random()*520).toFixed(0)+"ms;--delay:"+(Math.random()*140).toFixed(0)+"ms;"
+        +"background:"+colors[i%colors.length]+";"
+        +"width:"+(8+Math.random()*5).toFixed(1)+"px;height:"+(11+Math.random()*8).toFixed(1)+"px;"
+        +"border-radius:"+(Math.random()<0.35?"50%":"2px")+";";
+      host.appendChild(b);
+    }
+    document.body.appendChild(host);
+    setTimeout(()=>{ try{ host.remove(); }catch(e){} }, 1700);
+  }catch(e){}
+}
+/* Draw the eye to the chip that just changed. Runs after the repaint that
+   rebuilt it, which is why it waits a frame rather than firing immediately. */
+function flashStatus(){
+  try{
+    if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    requestAnimationFrame(()=>{ setTimeout(()=>{
+      const chip=document.querySelector("[data-stagechip]");
+      if(!chip) return;
+      chip.classList.remove("stagepop"); void chip.offsetWidth; chip.classList.add("stagepop");
+      setTimeout(()=>{ try{ chip.classList.remove("stagepop"); }catch(e){} }, 1400);
+    }, 60); });
+  }catch(e){}
+}
+/* Starting a job used to sit behind a browser confirm. Two problems with that.
+   It is a forward action and fully reversible, so the question was not earning its
+   place. And Chrome offers "prevent this page from creating additional dialogs"
+   after a few dialogs in a row; once that is ticked every confirm returns false
+   silently, so the button does nothing at all and says nothing about why. */
 function startJob(id){
   const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
   const o=(t.outcome==="won"||t.outcome==="lost")?t.outcome:"pending";
   if(o==="lost"){ toast("This bid is marked lost. Change its outcome in the Archive first."); return; }
-  if(o==="pending"){ if(!confirm("Mark this bid won and start the job?")) return; t.outcome="won"; }
+  const wasPending = o==="pending";
+  if(wasPending) t.outcome="won";
   t.stage="active"; t.stageChangedTs=Date.now(); if(!t.actualStart) t.actualStart=todayStr();
-  _pmWrite(arr,"Job started");
+  _pmWrite(arr, wasPending ? "Won and started. Marked won today; change that in the Archive if it was already won earlier."
+                           : "Job started.");
+  celebrate();
+  flashStatus();
 }
 function completeJob(id){
   const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
@@ -3740,7 +3812,9 @@ function completeJob(id){
      so it lets go of the pin by itself. It stays safe from the rolling history
      regardless, because a completed job counts as managed. */
   t.pinned=false;
-  _pmWrite(arr,"Marked complete");
+  _pmWrite(arr,"Marked complete.");
+  /* Finishing a job is at least as big as starting one. */
+  celebrate(); flashStatus();
 }
 function reopenJob(id){
   const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
@@ -3762,12 +3836,13 @@ function renderJob(){
   const nm=(s.jobName&&s.jobName.trim())||"Untitled job";
   const sub=[(s.clientType||""), (e.createdTs?"bid "+new Date(e.createdTs).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"")].filter(Boolean).join(" · ");
   const backLbl={jobs:"Jobs",dash:"Dashboard",archive:"Archive",sched:"Schedule"}[CUR_FROM]||"Jobs";
-  /* header + explicit lifecycle actions */
+  /* header + explicit lifecycle actions. The chip carries data-stage so a change
+     of stage can be signalled: same element, different state, worth pointing at. */
   let stHtml="";
   if(b==="bidding") stHtml='<span class="chip">Pending bid</span><button type="button" class="minibtn gold" id="jobStart">Start job</button>';
   else if(b==="upnext") stHtml='<span class="chip good">Won</span><button type="button" class="minibtn gold" id="jobStart">Start job</button>';
-  else if(b==="active") stHtml=(e.portal&&e.portal.on?'<span class="bdg bdg-upnext">Portal live</span>':'')+'<span class="chip good">In progress'+(e.actualStart?" · "+fmtDay(e.actualStart):"")+'</span><button type="button" class="minibtn" id="jobComplete">Mark complete</button>';
-  else if(b==="complete") stHtml='<span class="chip">'+ic("check")+'Complete'+(e.completed?" · "+fmtDay(e.completed):"")+'</span><button type="button" class="minibtn" id="jobReopen">Reopen</button>';
+  else if(b==="active") stHtml=(e.portal&&e.portal.on?'<span class="bdg bdg-upnext">Portal live</span>':'')+'<span class="chip good" data-stagechip="1">In progress'+(e.actualStart?" · "+fmtDay(e.actualStart):"")+'</span><button type="button" class="minibtn" id="jobComplete">Mark complete</button>';
+  else if(b==="complete") stHtml='<span class="chip" data-stagechip="1">'+ic("check")+'Complete'+(e.completed?" · "+fmtDay(e.completed):"")+'</span><button type="button" class="minibtn" id="jobReopen">Reopen</button>';
   else stHtml='<span class="chip bad">Lost</span>';
   let html='<button type="button" class="jback" id="jobBack" aria-label="Back to '+backLbl+'">'+ic("chevron-left")+backLbl+'</button>'
     +'<div class="jhead"><div style="min-width:0"><div class="jtitle">'+esc(nm)+'</div><div class="jsub">'+esc(sub)+'</div></div><div class="jstage">'+stHtml+'</div></div>';
