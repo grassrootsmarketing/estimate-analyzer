@@ -3246,6 +3246,37 @@ function tickClock(){
   const g=$("dashGreet"); if(g) g.textContent=(hour<12?"Good morning":(hour<17?"Good afternoon":"Good evening"))+", David";
 }
 setInterval(tickClock, 5000);
+/* One row, used by both the Pinned section and Recent, so the two can never drift
+   apart. Archive files a job off the dashboard and is reversible; delete is
+   permanent. All three actions live behind one dot button so the card never
+   resizes to make room for them. */
+function recentRowHtml(e){
+  const s=e.state, r=e.results||compute(s);
+  const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
+  const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  const meta=[(e.isExample?"Example":""),(s.clientType||""),when].filter(Boolean).join(" · ");
+  const star=e.pinned?ic("star","starfill rowstar"):"";
+  const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nmrow">'+star+'<span class="nm">'+esc(nm)+'</span>'+stageBadge(e,{noExample:true})+'</span><span class="mt">'+esc(meta)+'</span></span>'+
+    '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
+  return '<div class="brwrap">'+row
+    +'<button type="button" class="rowmore" data-more="'+esc(e.id)+'" aria-haspopup="menu" aria-expanded="false"'
+    +' title="More" aria-label="More actions for '+esc(nm)+'">'+ic("more")+'</button>'
+    +'<div class="rowmenu" data-menu="'+esc(e.id)+'" role="menu" hidden>'
+    +'<div class="rmmain">'
+    +'<button type="button" role="menuitem" data-pin="'+esc(e.id)+'">'+ic("star",e.pinned?"starfill":"")
+    +'<span>'+(e.pinned?'Unpin':'Pin to top')
+    +'<span class="msub">'+(e.pinned?'Back down with the rest':'Keeps it in a section of its own')+'</span></span></button>'
+    +'<button type="button" role="menuitem" data-arch="'+esc(e.id)+'">'+ic("folder")
+    +'<span>Archive<span class="msub">Off the dashboard, kept in Archive</span></span></button>'
+    +'<button type="button" role="menuitem" class="danger" data-delbid="'+esc(e.id)+'">'+ic("trash")
+    +'<span>Delete<span class="msub">Removes it for good</span></span></button>'
+    +'</div>'
+    +'<div class="rmconf" hidden><p class="rmq">Delete <b>'+esc(clip(nm,34))+'</b>?'
+    +'<span>This cannot be undone. Archive keeps it.</span></p>'
+    +'<div class="rmbtns"><button type="button" data-delno="'+esc(e.id)+'">Keep it</button>'
+    +'<button type="button" class="solid" data-delyes="'+esc(e.id)+'">Delete</button></div></div>'
+    +'</div></div>';
+}
 function renderDashboard(){
   const box=$("dashBody"); if(!box) return;
   const arr=getArchive(), n=arr.length;
@@ -3323,41 +3354,21 @@ function renderDashboard(){
         '<span class="jbar '+barTone(pct)+'"><i style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></span>'+ntLine+'</button>';
     });
   }
+  /* Pinned jobs get their own section above Recent, and the section only exists
+     while something is in it. A job leaves either because you unpinned it or
+     because you marked it complete, which drops the pin by itself. Nothing appears
+     in both sections: Recent skips anything already shown as pinned. */
+  const live=arr.filter(e=>!e.archived);
+  const pins=live.filter(e=>e.pinned);
+  if(pins.length){
+    html+='<div class="bsect"><span>Pinned</span><span class="mt" style="font-size:11px">'+pins.length+(pins.length===1?' job':' jobs')+'</span></div>';
+    pins.forEach(e=>{ html+=recentRowHtml(e); });
+  }
   /* recent jobs */
   html+='<div class="bsect"><span>Recent</span><span class="link" id="dashAll" style="font-size:11px">View all</span></div>';
   if(!n) html+='<div class="bnone">Saved estimates land here, newest first.</div>';
-  /* Pinned jobs hold the top of the list. Sort is stable, so within pinned and
-     within the rest the order is still newest first. Pinning is also what keeps a
-     job out of the rolling history, so it earns its place ahead of five recents. */
-  arr.filter(e=>!e.archived).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)).slice(0,5).forEach(e=>{
-    const s=e.state, r=e.results||compute(s);
-    const nm=(s.jobName&&s.jobName.trim())||"Untitled estimate";
-    const when=new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
-    const meta=[(e.isExample?"Example":""),(s.clientType||""),when].filter(Boolean).join(" · ");
-    const star=e.pinned?ic("star","starfill rowstar"):"";
-    const row='<button type="button" class="brrow" data-job="'+esc(e.id)+'"><span class="bl"><span class="nmrow">'+star+'<span class="nm">'+esc(nm)+'</span>'+stageBadge(e,{noExample:true})+'</span><span class="mt">'+esc(meta)+'</span></span>'+
-      '<span class="br"><span class="pr">'+fmt(entryPrice(e))+'</span><span class="mt">'+((r.marginPct||0)).toFixed(0)+'% margin</span></span></button>';
-    /* Archive files it off the dashboard and is reversible; delete is permanent.
-       Both live behind one dot button so the card never resizes to make room. */
-    html+='<div class="brwrap">'+row
-      +'<button type="button" class="rowmore" data-more="'+esc(e.id)+'" aria-haspopup="menu" aria-expanded="false"'
-      +' title="More" aria-label="More actions for '+esc(nm)+'">'+ic("more")+'</button>'
-      +'<div class="rowmenu" data-menu="'+esc(e.id)+'" role="menu" hidden>'
-      +'<div class="rmmain">'
-      +'<button type="button" role="menuitem" data-pin="'+esc(e.id)+'">'+ic("star",e.pinned?"starfill":"")
-      +'<span>'+(e.pinned?'Unpin':'Pin to top')
-      +'<span class="msub">'+(e.pinned?'Back in date order':'Holds the top of this list')+'</span></span></button>'
-      +'<button type="button" role="menuitem" data-arch="'+esc(e.id)+'">'+ic("folder")
-      +'<span>Archive<span class="msub">Off the dashboard, kept in Archive</span></span></button>'
-      +'<button type="button" role="menuitem" class="danger" data-delbid="'+esc(e.id)+'">'+ic("trash")
-      +'<span>Delete<span class="msub">Removes it for good</span></span></button>'
-      +'</div>'
-      +'<div class="rmconf" hidden><p class="rmq">Delete <b>'+esc(clip(nm,34))+'</b>?'
-      +'<span>This cannot be undone. Archive keeps it.</span></p>'
-      +'<div class="rmbtns"><button type="button" data-delno="'+esc(e.id)+'">Keep it</button>'
-      +'<button type="button" class="solid" data-delyes="'+esc(e.id)+'">Delete</button></div></div>'
-      +'</div></div>';
-  });
+  else if(!live.some(e=>!e.pinned)) html+='<div class="bnone">Everything on your dashboard is pinned above.</div>';
+  live.filter(e=>!e.pinned).slice(0,5).forEach(e=>{ html+=recentRowHtml(e); });
   box.innerHTML=html;
   $("dashNew").onclick=startNewEstimate;
   const xr=$("exRemove"); if(xr) xr.onclick=ev=>{ ev.stopPropagation(); removeExample(); };
@@ -3399,8 +3410,8 @@ function renderDashboard(){
     t.pinned=!t.pinned; t.updatedTs=Date.now();
     closeRowMenus();
     setArchive(arr); renderDashboard(); renderArchive();
-    toast(t.pinned?"Pinned to the top. It also stops rolling off your history."
-                  :"Unpinned. Back in date order.");
+    toast(t.pinned?"Pinned. It sits above Recent until you unpin it or mark it complete."
+                  :"Unpinned. Back down with the rest.");
   }; });
 }
 
@@ -3688,6 +3699,9 @@ async function _pmWrite(arr, okMsg){
   if(CUR_JOB && $("jobView").classList.contains("on")) renderJob();
   if($("jobsView").classList.contains("on")) renderJobs();
   if($("schedView").classList.contains("on")) renderCal();
+  /* Completing a job drops its pin, which changes what the dashboard shows. Repaint
+     it rather than leave a job sitting in the Pinned section that is not pinned. */
+  if($("dashView").classList.contains("on")) renderDashboard();
   if(ok){ if(okMsg) toast(okMsg);
     if(CUR_JOB && typeof schedulePortalPublish==="function") schedulePortalPublish(CUR_JOB); }   // portal follows the job
   else { toast("Save failed. Tap Retry in the banner."); }
@@ -3706,6 +3720,10 @@ function completeJob(id){
   const arr=getArchive(), t=arr.find(x=>x&&x.id===id); if(!t) return;
   if(!confirm("Mark this job complete?")) return;
   t.stage="complete"; t.completed=todayStr(); t.stageChangedTs=Date.now();
+  /* Pinned means "keep this in front of me". A finished job is not that any more,
+     so it lets go of the pin by itself. It stays safe from the rolling history
+     regardless, because a completed job counts as managed. */
+  t.pinned=false;
   _pmWrite(arr,"Marked complete");
 }
 function reopenJob(id){
