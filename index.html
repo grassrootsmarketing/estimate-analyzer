@@ -3467,6 +3467,7 @@ function portalSnapshot(e, opts, photoList){
   const snap={v:1, ts:0,
     company:{name:txt(opts.coName,80), phone:txt(opts.coPhone,40), email:txt(opts.coEmail,80), logo:(typeof opts.logo==="string"&&opts.logo.indexOf("data:image/")===0)?opts.logo:""},
     job:{name:txt(s.jobName,80)||"Your project", client:txt(s.contactName,80), stage:stage, stageLabel:stageLabel,
+      scope:txt(s.proposal&&s.proposal.scope,1500),
       started:validDateStr(e.actualStart), completed:validDateStr(e.completed),
       schedStart:validDateStr(e.sched&&e.sched.start), schedTarget:validDateStr(e.sched&&e.sched.target)},
     progress:{done:tasks.filter(t=>t&&t.done).length, total:tasks.length},

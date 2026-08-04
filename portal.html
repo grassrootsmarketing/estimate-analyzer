@@ -76,6 +76,21 @@
   .wd.wlate{color:var(--accent2);font-weight:600}
   .wd.wtbd{color:var(--muted);font-style:normal;opacity:.85}
   .wt.tlate{background:rgba(217,119,87,.14);color:var(--accent2)}
+  /* homeowner actions + callouts */
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .abtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;font-family:"Inter",sans-serif;font-size:14px;font-weight:600;padding:11px 15px;border-radius:12px;border:1px solid var(--line);color:var(--ink);background:var(--panel);min-height:44px;flex:1 1 auto}
+  .abtn.primary{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .abtn:active{transform:scale(.98)}
+  .todo{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+  .todo:last-child{border-bottom:0}
+  .todo .ti{width:26px;height:26px;border-radius:50%;background:rgba(217,119,87,.14);color:var(--accent2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:0 0 auto}
+  .todo .tx{flex:1;min-width:0;font-size:14.5px;font-weight:500}
+  .todo .tx .s{display:block;color:var(--muted);font-size:12.5px;font-weight:400;margin-top:1px}
+  .card.attn{border-color:var(--accent)}
+  .duenow{display:flex;justify-content:space-between;align-items:center;gap:10px;background:rgba(217,119,87,.10);border:1px solid rgba(217,119,87,.32);border-radius:12px;padding:11px 13px;margin:2px 0 10px}
+  .duenow .l{font-size:13px;color:var(--accent2);font-weight:600}
+  .duenow .v{font-family:"Instrument",Georgia,serif;font-size:20px;color:var(--accent2)}
+  .savehint{text-align:center;color:var(--muted);font-size:12px;line-height:1.5;margin-top:16px}
 </style>
 </head>
 <body>
@@ -86,6 +101,9 @@
   var esc=function(v){ return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); };
   var money=function(v){ v=+v||0; return "$"+v.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2}); };
   var day=function(d){ if(!d) return ""; var p=d.split("-"); return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}); };
+  var telHref=function(p){ return "tel:"+String(p||"").replace(/[^\d+]/g,""); };
+  var smsHref=function(p,body){ var d=String(p||"").replace(/[^\d+]/g,""); return "sms:"+d+(body?"?&body="+encodeURIComponent(body):""); };
+  var mailHref=function(em,subj,body){ return "mailto:"+String(em||"").trim()+"?subject="+encodeURIComponent(subj||"")+(body?"&body="+encodeURIComponent(body):""); };
   var app=document.getElementById("app");
   var k=(new URLSearchParams(location.search).get("k")||"").toLowerCase();
   if(!/^[0-9a-f]{32}$/.test(k)){ app.innerHTML='<div class="empty">This link is incomplete. Ask for a fresh one.</div>'; return; }
@@ -108,6 +126,37 @@
     }).join("")+'</div><div class="bignow">'+esc(job.stageLabel||"")+'</div>'+
     (prog.total?'<div class="prog">'+prog.done+' of '+prog.total+' work items complete</div>':'')+
     (job.next&&job.next.title&&!(s.work&&s.work.upcoming&&s.work.upcoming.length)?'<div class="prog" style="margin-top:4px;color:var(--accent2);font-weight:600">Up next: '+esc(job.next.title)+(job.next.due?' · '+day(job.next.due):'')+'</div>':'')+'</div>';
+    /* Reusable contact actions (text / email / call), used here and in the footer */
+    var actionBtns=function(prefill, subj){
+      var out=[];
+      if(co.phone) out.push('<a class="abtn primary" href="'+esc(smsHref(co.phone,prefill||""))+'">Text '+esc(co.name||"us")+'</a>');
+      if(co.email) out.push('<a class="abtn" href="'+esc(mailHref(co.email,subj||("Question about "+(job.name||"my project")),prefill||""))+'">Email</a>');
+      if(co.phone) out.push('<a class="abtn" href="'+esc(telHref(co.phone))+'">Call</a>');
+      return out.length?'<div class="actions">'+out.join("")+'</div>':"";
+    };
+    /* what's needed from you: pending change approvals and any amount due now */
+    var pendCO=(s.changes||[]).filter(function(c){ return c.status==="pending"; });
+    var dueNow=0; ((s.money&&s.money.draws)||[]).forEach(function(d){ if(d.status==="invoiced") dueNow+=(+d.amount||0); });
+    var todos=[];
+    pendCO.forEach(function(c){
+      var amt=(typeof c.amount==="number")?((c.amount<0?"-":"+")+money(Math.abs(c.amount))):"";
+      todos.push({ic:"?",title:"Approve "+((c.number?c.number+" · ":"")+c.title),sub:(amt?amt+" · ":"")+"awaiting your OK",
+        prefill:"Hi "+(co.name||"")+", I approve "+((c.number?c.number+": ":"")+c.title)+(amt?" ("+amt+")":"")+".",subj:"Approval: "+((c.number?c.number+" ":"")+c.title),primary:"Approve by text"});
+    });
+    if(dueNow>0) todos.push({ic:"$",title:"Payment due: "+money(dueNow),sub:"invoiced, awaiting payment",
+      prefill:"Hi "+(co.name||"")+", I'd like to arrange the "+money(dueNow)+" payment for "+(job.name||"the project")+".",subj:"Payment for "+(job.name||"project"),primary:"Arrange payment"});
+    if(todos.length){
+      html+='<div class="card attn"><h2>What\'s needed from you</h2>'+todos.map(function(t){
+        var acts=(co.phone||co.email)?'<div class="actions" style="margin-top:8px">'+
+          (co.phone?'<a class="abtn primary" href="'+esc(smsHref(co.phone,t.prefill))+'">'+esc(t.primary)+'</a>':'')+
+          (co.email?'<a class="abtn" href="'+esc(mailHref(co.email,t.subj,t.prefill))+'">Email</a>':'')+'</div>':'';
+        return '<div class="todo"><span class="ti">'+t.ic+'</span><span class="tx">'+esc(t.title)+'<span class="s">'+esc(t.sub)+'</span>'+acts+'</span></div>';
+      }).join("")+'</div>';
+    }
+    /* your project: the scope of work the client agreed to */
+    if(job.scope){
+      html+='<div class="card"><h2>Your project</h2><p style="margin:0;font-size:14.5px;line-height:1.6;white-space:pre-wrap">'+esc(job.scope)+'</p></div>';
+    }
     /* Summary: one card that answers "where does this stand" in money and time,
        so a client does not have to assemble it from four sections below. */
     var tl=s.timeline||{}, m0=s.money||null;
@@ -171,6 +220,8 @@
         '<div class="mt"><div class="l">Contract</div><div class="v">'+money(m.contract)+'</div></div>'+
         '<div class="mt"><div class="l">Paid</div><div class="v" style="color:var(--good)">'+money(m.paid)+'</div></div>'+
         '<div class="mt"><div class="l">Balance</div><div class="v">'+money(m.balance)+'</div></div></div>';
+      var dueNowP=0; (m.draws||[]).forEach(function(d){ if(d.status==="invoiced") dueNowP+=(+d.amount||0); });
+      if(dueNowP>0) html+='<div class="duenow"><span class="l">Due now</span><span class="v">'+money(dueNowP)+'</span></div>';
       (m.draws||[]).forEach(function(d){
         var chip=d.status==="paid"?'<span class="chip paid">Paid</span>':(d.status==="invoiced"?'<span class="chip invoiced">Invoiced</span>':'<span class="chip">Upcoming</span>');
         html+='<div class="kv"><span class="k">'+esc(d.label)+'</span><span class="v">'+money(d.amount)+' '+chip+'</span></div>';
@@ -193,18 +244,23 @@
         if(m0&&m0.approvedChanges) html+='<div class="kv kvtot"><span class="k">Added to your contract</span><span class="v">'+(m0.approvedChanges<0?"-":"+")+money(Math.abs(m0.approvedChanges))+'</span></div>';
       }
       if(pend.length){
-        html+='<div class="cosplit">Not yet approved, not in your total</div>'+pend.map(corow).join("");
-      }
-      if(s.changes.some(function(c){ return c.status==="pending"; })){
-        html+='<p class="sub" style="margin:10px 0 0;font-size:12.5px">To approve or discuss a change, call or text '+esc((s.company&&s.company.name)||"your contractor")+'.</p>';
+        html+='<div class="cosplit">Not yet approved, not in your total</div>'+pend.map(function(c){
+          var amt=(typeof c.amount==="number")?((c.amount<0?"-":"+")+money(Math.abs(c.amount))):"";
+          var acts=(co.phone||co.email)?'<div class="actions" style="margin:2px 0 6px">'+
+            (co.phone?'<a class="abtn primary" href="'+esc(smsHref(co.phone,"Hi "+(co.name||"")+", I approve "+((c.number?c.number+": ":"")+c.title)+(amt?" ("+amt+")":"")+"."))+'">Approve by text</a>':'')+
+            (co.email?'<a class="abtn" href="'+esc(mailHref(co.email,"Approval: "+((c.number?c.number+" ":"")+c.title),"Hi "+(co.name||"")+", I approve "+((c.number?c.number+": ":"")+c.title)+(amt?" ("+amt+")":"")+"."))+'">Email</a>':'')+
+            '</div>':'';
+          return corow(c)+acts;
+        }).join("");
+        html+='<p class="sub" style="margin:8px 0 0;font-size:12.5px">Approving adds the change to your contract total. Questions? Call or text '+esc((s.company&&s.company.name)||"your contractor")+'.</p>';
       }
       html+='</div>';
     }
-    /* contact */
+    /* contact + save hint */
     if(co.phone||co.email){
-      html+='<div class="foot">Questions? '+(co.phone?'<a href="tel:'+esc(String(co.phone).replace(/[^\d+]/g,""))+'">Call '+esc(co.name||"us")+'</a>':'')+
-        (co.phone&&co.email?' · ':'')+(co.email?'<a href="mailto:'+esc(co.email)+'">Email</a>':'')+'</div>';
+      html+='<div class="card"><h2>Questions?</h2><p class="sub" style="margin:0 0 2px">Reach '+esc(co.name||"your contractor")+' anytime.</p>'+actionBtns()+'</div>';
     }
+    html+='<div class="savehint">Bookmark this page to check progress anytime. Only people with your link can see it.</div>';
     app.innerHTML=html;
     app.querySelectorAll(".grid img").forEach(function(im){
       im.onclick=function(){ document.getElementById("lightimg").src=im.src; document.getElementById("lightbox").style.display="flex"; };
