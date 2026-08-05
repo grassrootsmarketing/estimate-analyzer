@@ -37,14 +37,14 @@
   /* nav */
   header.nav{position:sticky;top:0;z-index:40;background:rgba(251,247,240,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
   .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
-  .brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-size:22px;letter-spacing:-.02em}
-  .brand .mark{width:30px;height:30px;flex:0 0 auto;border-radius:8px;display:block}
+  .brand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-size:23px;letter-spacing:-.02em}
+  .brand .mark{width:38px;height:38px;flex:0 0 auto;border-radius:10px;display:block}
   .nav-links{display:flex;align-items:center;gap:26px}
   .nav-links a.lnk{font-size:14.5px;color:var(--muted)}
   .nav-links a.lnk:hover{color:var(--ink)}
   .nav-cta{display:flex;align-items:center;gap:10px}
   .nav-cta .signin{font-size:14.5px;color:var(--muted)}
-  @media(max-width:760px){ .nav-links{display:none} .nav-cta .signin{display:none} }
+  @media(max-width:760px){ .nav-links{display:none} .nav-cta .signin{display:none} .nav-in{height:72px} header.nav .brand .mark{width:50px;height:50px;border-radius:13px} header.nav .brand{font-size:26px;gap:12px} }
 
   /* hero */
   .hero{position:relative;overflow:hidden;color:#F7EEE1;
@@ -160,7 +160,7 @@
 <header class="nav">
   <div class="wrap nav-in">
     <a class="brand" href="#top">
-      <img class="mark" src="/icons/icon-192.png" alt="Homestead sunburst logo" width="30" height="30">
+      <img class="mark" src="/icons/icon-192.png" alt="Homestead sunburst logo" width="38" height="38">
       Homestead
     </a>
     <nav class="nav-links">
@@ -369,7 +369,7 @@
   <div class="wrap">
     <div class="foot-in">
       <a class="brand" href="#top">
-        <img class="mark" src="/icons/icon-192.png" alt="Homestead sunburst logo" width="30" height="30">
+        <img class="mark" src="/icons/icon-192.png" alt="Homestead sunburst logo" width="38" height="38">
         Homestead
       </a>
       <div class="foot-links">
